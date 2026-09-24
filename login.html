@@ -99,6 +99,37 @@
                 <!-- Error Alert Box -->
                 <div id="login-error-alert" class="p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl hidden mb-4"></div>
 
+                <!-- Device Accounts Bar / Switcher -->
+                <div id="device-accounts-bar" class="flex items-center justify-between p-2.5 px-3.5 bg-slate-950/70 border border-slate-800 rounded-2xl mb-4">
+                    <div class="flex items-center space-x-2 text-xs text-slate-300 font-bold">
+                        <span class="text-sm">👥</span>
+                        <span>Saved on this device</span>
+                    </div>
+                    <button type="button" onclick="AuthModule.openSwitchAccountModal()" class="text-xs text-gold-400 hover:text-gold-300 font-bold transition flex items-center space-x-1 cursor-pointer">
+                        <span>Switch Account</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                </div>
+
+                <!-- Switched Account Preselected Card (shown if switch_to is active) -->
+                <div id="switched-account-card" class="hidden p-3.5 bg-slate-950/90 border border-gold-500/50 rounded-2xl flex items-center justify-between mb-4 shadow-lg">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div id="switched-card-avatar" class="w-10 h-10 rounded-xl bg-gold-500 text-hirna-950 flex items-center justify-center font-black text-sm shadow flex-shrink-0">
+                            EA
+                        </div>
+                        <div class="overflow-hidden">
+                            <div class="flex items-center space-x-2">
+                                <span id="switched-card-name" class="text-xs font-bold text-white truncate block">Edgar Adovas</span>
+                                <span id="switched-card-badge" class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-gold-500 text-hirna-950 flex-shrink-0">SuperAdmin</span>
+                            </div>
+                            <span id="switched-card-email" class="text-[11px] text-gold-400 font-mono block truncate">edgaradovas50@gmail.com</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="cancelSwitchedAccountMode()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition flex-shrink-0 ml-2 cursor-pointer border border-slate-700">
+                        Change
+                    </button>
+                </div>
+
                 <!-- ========================================== -->
                 <!-- STEP 1: Main Email & Password Form        -->
                 <!-- ========================================== -->
@@ -167,6 +198,47 @@
                         <svg class="w-4 h-4 text-hirna-950 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </button>
                 </form>
+
+                <!-- ========================================== -->
+                <!-- STEP 1.5: Simultaneous Active Sessions Screen -->
+                <!-- ========================================== -->
+                <div id="simultaneous-sessions-section" class="hidden space-y-4 text-xs">
+                    <div class="p-3.5 bg-amber-500/10 border border-amber-500/40 rounded-2xl flex items-start space-x-3">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-black text-amber-300 uppercase tracking-wide">Simultaneous Active Sign-In Detected</h4>
+                            <p class="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                                This account is currently active on another device. Review the active sessions below:
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Active Sessions List -->
+                    <div id="simultaneous-sessions-list" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <div class="p-3 bg-slate-950/60 border border-slate-800 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+                        <p>
+                            • <strong class="text-emerald-400">Allow & Continue:</strong> Approves sign-in on this device and advances to OTP.<br>
+                            • <strong class="text-rose-400">Restrict & Block:</strong> Aborts this sign-in attempt and protects the existing active session.
+                        </p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        <button type="button" id="btn-simultaneous-restrict" onclick="handleSimultaneousDecision('restrict')" class="py-3.5 bg-rose-600/20 hover:bg-rose-600 border border-rose-500/50 text-rose-300 hover:text-white font-black text-xs uppercase tracking-wider rounded-2xl transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                            <span>Restrict & Block</span>
+                        </button>
+                        <button type="button" id="btn-simultaneous-allow" onclick="handleSimultaneousDecision('allow')" class="py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                            <span>Allow & Continue</span>
+                            <svg class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        </button>
+                    </div>
+                </div>
 
                 <!-- ========================================== -->
                 <!-- STEP 2: 2-Factor OTP Verification Form     -->
@@ -1075,6 +1147,183 @@
             }, 1200);
         }
 
+        let pendingSimultaneousUser = null;
+
+        // Check URL Query Parameters (reasons, switched accounts)
+        function checkUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const reason = urlParams.get('reason');
+            const switchTo = urlParams.get('switch_to');
+
+            if (reason === 'password_changed') {
+                const err = document.getElementById('login-error-alert');
+                if (err) {
+                    err.className = "p-3 bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-bold rounded-xl mb-4";
+                    err.innerHTML = "🔑 Security Notice: Your password was changed. All active sessions have been signed out. Please sign in with your new password.";
+                    err.classList.remove('hidden');
+                }
+            } else if (reason === 'remote_logout') {
+                const err = document.getElementById('login-error-alert');
+                if (err) {
+                    err.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl mb-4";
+                    err.innerHTML = "🔒 Security Notice: Your previous session was remotely signed out from another authorized device.";
+                    err.classList.remove('hidden');
+                }
+            } else if (reason === 'concurrent_superseded') {
+                const err = document.getElementById('login-error-alert');
+                if (err) {
+                    err.className = "p-3 bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-bold rounded-xl mb-4";
+                    err.innerHTML = "⚠️ Session Terminated: Your account signed in from another device. Concurrent active usage is restricted.";
+                    err.classList.remove('hidden');
+                }
+            }
+
+            if (switchTo) {
+                selectAccountForLogin(switchTo);
+            }
+        }
+
+        // Switched Account Preselected Mode
+        function selectAccountForLogin(email) {
+            const cleanEmail = (email || '').trim().toLowerCase();
+            const matchedUser = AuthModule.accounts.find(a => a.email.toLowerCase() === cleanEmail);
+            if (!matchedUser) return;
+
+            document.getElementById('input-identifier-email').value = matchedUser.email;
+            document.getElementById('field-email-container').classList.add('hidden');
+            
+            const card = document.getElementById('switched-account-card');
+            if (card) {
+                document.getElementById('switched-card-avatar').innerText = matchedUser.avatar || 'HU';
+                document.getElementById('switched-card-name').innerText = matchedUser.name;
+                document.getElementById('switched-card-email').innerText = matchedUser.email;
+                const badge = document.getElementById('switched-card-badge');
+                if (badge) {
+                    badge.innerText = matchedUser.roleTitle || matchedUser.role;
+                    badge.className = `text-[9px] px-2 py-0.5 rounded-full font-bold ${matchedUser.badgeClass || 'bg-gold-500 text-hirna-950'}`;
+                }
+                card.classList.remove('hidden');
+            }
+
+            // Update title / instructions
+            document.getElementById('panel-title').innerText = `Welcome, ${matchedUser.name.split(' ')[0]}`;
+            document.getElementById('panel-subtitle').innerText = "Enter your password or PIN to sign in";
+
+            // Focus password or PIN directly
+            if (isPinMode) {
+                const firstPin = document.querySelector('.pin-digit');
+                if (firstPin) setTimeout(() => firstPin.focus(), 150);
+            } else {
+                const pwdInput = document.getElementById('input-password');
+                if (pwdInput) setTimeout(() => pwdInput.focus(), 150);
+            }
+        }
+
+        function cancelSwitchedAccountMode() {
+            document.getElementById('switched-account-card').classList.add('hidden');
+            document.getElementById('field-email-container').classList.remove('hidden');
+            document.getElementById('panel-title').innerText = "Sign In to Your Account";
+            document.getElementById('panel-subtitle').innerText = "Enter your email address and password";
+            
+            // Clear switch_to from URL without reloading
+            const url = new URL(window.location);
+            url.searchParams.delete('switch_to');
+            window.history.replaceState({}, '', url);
+
+            document.getElementById('input-identifier-email').focus();
+        }
+
+        // Simultaneous Sessions Screen Handling
+        function renderSimultaneousSessions(sessions) {
+            const list = document.getElementById('simultaneous-sessions-list');
+            if (!list) return;
+            list.innerHTML = sessions.map(s => {
+                return `
+                    <div class="p-3 bg-slate-950/80 border border-amber-500/30 rounded-2xl flex items-center justify-between">
+                        <div class="flex items-center space-x-3 overflow-hidden">
+                            <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-base flex-shrink-0">
+                                ${s.deviceName.toLowerCase().includes('phone') || s.deviceName.toLowerCase().includes('mobile') || s.deviceName.toLowerCase().includes('android') || s.deviceName.toLowerCase().includes('apple') ? '📱' : '💻'}
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs font-bold text-white truncate">${s.deviceName}</span>
+                                    <span class="text-[9px] bg-amber-500/20 text-amber-300 font-bold px-1.5 py-0.5 rounded-full flex-shrink-0">Active Now</span>
+                                </div>
+                                <span class="text-[11px] text-slate-400 block truncate">🌐 ${s.browser} • IP: <span class="font-mono text-slate-300">${s.ip}</span></span>
+                                <span class="text-[10px] text-slate-500 block truncate">📍 ${s.location} • Signed in ${new Date(s.loginTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function handleSimultaneousDecision(decision) {
+            const errorAlert = document.getElementById('login-error-alert');
+            
+            if (decision === 'restrict') {
+                if (typeof SupabaseBridge !== 'undefined' && pendingSimultaneousUser) {
+                    SupabaseBridge.logAudit("Security", "SIMULTANEOUS_LOGIN_RESTRICTED", pendingSimultaneousUser.email, pendingSimultaneousUser.name, {
+                        device: AuthModule.getDeviceInfo().deviceName,
+                        ip: AuthModule.getDeviceInfo().ip,
+                        action: "RESTRICT_CONCURRENT_SIGNIN"
+                    });
+                }
+                
+                document.getElementById('simultaneous-sessions-section').classList.add('hidden');
+                document.getElementById('standalone-login-form').classList.remove('hidden');
+                document.getElementById('panel-title').innerText = "Sign In to Your Account";
+                document.getElementById('panel-subtitle').innerText = "Enter your email address and password";
+                
+                // Clear credential inputs
+                document.getElementById('input-password').value = '';
+                document.querySelectorAll('.pin-digit').forEach(i => i.value = '');
+                
+                errorAlert.className = "p-3 bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-bold rounded-xl mb-4";
+                errorAlert.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        <span>Sign-in restricted. Concurrent access was blocked to protect your active session.</span>
+                    </div>
+                `;
+                errorAlert.classList.remove('hidden');
+                pendingSimultaneousUser = null;
+                return;
+            }
+
+            if (decision === 'allow' && pendingSimultaneousUser) {
+                const user = pendingSimultaneousUser;
+                pendingSimultaneousUser = null;
+                document.getElementById('simultaneous-sessions-section').classList.add('hidden');
+                proceedToOtpStep(user);
+            }
+        }
+
+        function proceedToOtpStep(user) {
+            pendingUser = user;
+            activeOtpCode = generateRandomOtp();
+
+            // Transition UI to OTP Screen
+            document.getElementById('standalone-login-form').classList.add('hidden');
+            document.getElementById('simultaneous-sessions-section').classList.add('hidden');
+            const otpSection = document.getElementById('otp-verification-section');
+            otpSection.classList.remove('hidden');
+            
+            document.getElementById('panel-title').innerText = "Two-Factor Email Verification";
+            document.getElementById('panel-subtitle').innerText = "A 6-digit security code has been sent to your Gmail inbox";
+            document.getElementById('otp-target-email').innerText = user.email;
+
+            // Clear digits & focus first box
+            document.querySelectorAll('.otp-digit').forEach(i => i.value = '');
+            const firstDigit = document.querySelector('.otp-digit');
+            if (firstDigit) setTimeout(() => firstDigit.focus(), 100);
+
+            startOtpTimer();
+
+            // Dispatch REAL Gmail OTP email
+            triggerRealEmailOtp(activeOtpCode, user.email, "login");
+        }
+
         // STEP 1: Verify Email and Password OR PIN
         document.getElementById('standalone-login-form').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -1130,33 +1379,28 @@
                 return;
             }
 
-            // Valid credentials: reset password attempts & lockout count, proceed to Step 2 (OTP)
+            // Valid credentials: reset password attempts & lockout count
             passwordAttempts = 0;
             passwordLockoutCount = 0;
             otpAttempts = 0;
             otpLockoutCount = 0;
             errorAlert.classList.add('hidden');
-            pendingUser = matchedUser;
-            activeOtpCode = generateRandomOtp();
 
-            // Transition UI to OTP Screen
-            document.getElementById('standalone-login-form').classList.add('hidden');
-            const otpSection = document.getElementById('otp-verification-section');
-            otpSection.classList.remove('hidden');
-            
-            document.getElementById('panel-title').innerText = "Two-Factor Email Verification";
-            document.getElementById('panel-subtitle').innerText = "A 6-digit security code has been sent to your Gmail inbox";
-            document.getElementById('otp-target-email').innerText = matchedUser.email;
+            // Check for simultaneous sessions on other devices
+            const remoteSessions = AuthModule.getRemoteActiveSessions(matchedUser.email);
+            if (remoteSessions.length > 0) {
+                pendingSimultaneousUser = matchedUser;
+                renderSimultaneousSessions(remoteSessions);
+                
+                document.getElementById('standalone-login-form').classList.add('hidden');
+                document.getElementById('simultaneous-sessions-section').classList.remove('hidden');
+                document.getElementById('panel-title').innerText = "Active Sessions Review";
+                document.getElementById('panel-subtitle').innerText = "Simultaneous sign-in occurred on another device";
+                return;
+            }
 
-            // Clear digits & focus first box
-            document.querySelectorAll('.otp-digit').forEach(i => i.value = '');
-            const firstDigit = document.querySelector('.otp-digit');
-            if (firstDigit) setTimeout(() => firstDigit.focus(), 100);
-
-            startOtpTimer();
-
-            // Dispatch REAL Gmail OTP email
-            triggerRealEmailOtp(activeOtpCode, matchedUser.email, "login");
+            // No simultaneous remote sessions: proceed directly to OTP
+            proceedToOtpStep(matchedUser);
         });
 
         // STEP 2: Verify OTP
@@ -1181,6 +1425,15 @@
                 const btn = document.getElementById('btn-verify-otp');
                 btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-hirna-950 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Verifying Code & Launching Session...</span>`;
                 btn.classList.add('opacity-80', 'pointer-events-none');
+
+                // Check for new device alert & push notification
+                if (AuthModule.isNewDevice(pendingUser.email)) {
+                    AuthModule.triggerNewLoginAlert(pendingUser.email);
+                    AuthModule.markDeviceKnown(pendingUser.email);
+                }
+
+                // Enforce single active use limit (auto-signout remote devices upon login)
+                AuthModule.signOutAllOtherDevices(pendingUser.email);
 
                 // Save session in AuthModule with remember-me checkbox state
                 const rememberMe = document.getElementById('check-remember-me') ? document.getElementById('check-remember-me').checked : false;
@@ -1212,6 +1465,7 @@
             setupDigitGroupListeners('.pin-digit');
             setupDigitGroupListeners('.new-pin-digit');
             setupDigitGroupListeners('.confirm-pin-digit');
+            checkUrlParameters();
         });
     </script>
 </body>
