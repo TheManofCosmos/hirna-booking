@@ -1,0 +1,15 @@
+[
+  {
+    "sessionId": "sess_laptop_asus_tuf",
+    "email": "edgaradovas50@gmail.com",
+    "deviceId": "dev_asus_tuf_f15_primary",
+    "deviceName": "Asus TUF Gaming F15 (Windows 11)",
+    "deviceModel": "Asus TUF Gaming F15",
+    "browser": "Microsoft Edge 128 (Windows 11)",
+    "ip": "120.28.17.44 (PLDT Home Fiber)",
+    "location": "Caloocan City, Metro Manila, Philippines",
+    "loginTime": "2026-09-24T22:00:00.000Z",
+    "lastActive": "2026-09-24T23:00:00.000Z",
+    "status": "active"
+  }
+]

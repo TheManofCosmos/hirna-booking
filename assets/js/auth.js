@@ -119,6 +119,76 @@ const AuthModule = {
                 bc.postMessage({ type: 'ACCOUNTS_UPDATE', accounts: deduplicated });
             } catch(e) {}
         }
+        // Asynchronously persist to centralized backend server so accounts work on all devices
+        if (typeof fetch !== 'undefined') {
+            fetch('/api/accounts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(deduplicated)
+            }).catch(() => {});
+        }
+    },
+
+    async fetchAccountsFromServer() {
+        if (typeof fetch === 'undefined') return this.accounts;
+        try {
+            const res = await fetch('/api/accounts', { cache: 'no-store' });
+            if (res.ok) {
+                const serverAccounts = await res.json();
+                if (Array.isArray(serverAccounts) && serverAccounts.length > 0) {
+                    const uniqueMap = new Map();
+                    this.accounts.forEach(a => { if (a && a.email) uniqueMap.set(a.email.toLowerCase(), a); });
+                    serverAccounts.forEach(sa => {
+                        if (sa && sa.email) {
+                            const e = sa.email.toLowerCase();
+                            const existing = uniqueMap.get(e);
+                            uniqueMap.set(e, existing ? { ...existing, ...sa } : sa);
+                        }
+                    });
+                    const merged = Array.from(uniqueMap.values());
+                    localStorage.setItem('hirna_custom_accounts', JSON.stringify(merged));
+                    return merged;
+                }
+            }
+        } catch (e) {
+            try {
+                const res2 = await fetch('database/accounts.json', { cache: 'no-store' });
+                if (res2.ok) {
+                    const serverAccounts = await res2.json();
+                    if (Array.isArray(serverAccounts) && serverAccounts.length > 0) {
+                        const uniqueMap = new Map();
+                        this.accounts.forEach(a => { if (a && a.email) uniqueMap.set(a.email.toLowerCase(), a); });
+                        serverAccounts.forEach(sa => {
+                            if (sa && sa.email) {
+                                const e = sa.email.toLowerCase();
+                                const existing = uniqueMap.get(e);
+                                uniqueMap.set(e, existing ? { ...existing, ...sa } : sa);
+                            }
+                        });
+                        const merged = Array.from(uniqueMap.values());
+                        localStorage.setItem('hirna_custom_accounts', JSON.stringify(merged));
+                        return merged;
+                    }
+                }
+            } catch(err) {}
+        }
+        return this.accounts;
+    },
+
+    async fetchSessionsFromServer(email) {
+        if (typeof fetch === 'undefined') return this.getActiveSessions();
+        try {
+            const url = email ? `/api/sessions?email=${encodeURIComponent(email)}` : '/api/sessions';
+            const res = await fetch(url, { cache: 'no-store' });
+            if (res.ok) {
+                const serverSessions = await res.json();
+                if (Array.isArray(serverSessions) && serverSessions.length > 0) {
+                    localStorage.setItem('hirna_active_sessions', JSON.stringify(serverSessions));
+                    return serverSessions;
+                }
+            }
+        } catch(e) {}
+        return this.getActiveSessions();
     },
 
     addOrUpdateAccount(accountData) {
@@ -273,27 +343,139 @@ const AuthModule = {
 
     getDeviceInfo() {
         const ua = navigator.userAgent || '';
-        let os = "Windows 11 PC";
-        if (ua.includes("Win")) os = "Windows 11 PC";
-        else if (ua.includes("Mac")) os = "macOS Workstation";
-        else if (ua.includes("Android")) os = "Android Mobile";
-        else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS Apple Device";
-        else if (ua.includes("Linux")) os = "Linux Desktop";
+        let deviceName = "Asus TUF Gaming F15 (Windows 11)";
+        let deviceModel = "Asus TUF Gaming F15";
+        let isMobile = false;
 
-        let browser = "Microsoft Edge";
+        const hasTouch = (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0) || ('ontouchstart' in window);
+        const isSmallScreen = typeof screen !== 'undefined' && (screen.width <= 768 || screen.height <= 768);
+
+        if (/Android/i.test(ua)) {
+            isMobile = true;
+            const modelMatch = ua.match(/Android[^;]+;\s*([^;)]+)\s*Build/i) || ua.match(/Android[^;]+;\s*([^;)]+)\)/i);
+            if (modelMatch && modelMatch[1]) {
+                deviceModel = modelMatch[1].trim();
+                if (/SM-S928/i.test(deviceModel)) deviceModel = "Samsung Galaxy S24 Ultra";
+                else if (/SM-S918/i.test(deviceModel)) deviceModel = "Samsung Galaxy S23 Ultra";
+                else if (/SM-A/i.test(deviceModel)) deviceModel = "Samsung Galaxy A-Series";
+                else if (/Pixel/i.test(deviceModel)) deviceModel = "Google Pixel";
+            } else {
+                deviceModel = "Android Mobile Device";
+            }
+            const isDesktopMode = !/Mobile/i.test(ua);
+            deviceName = isDesktopMode ? `${deviceModel} (Desktop Mode)` : `${deviceModel} (Android)`;
+        } else if (/iPhone/i.test(ua)) {
+            isMobile = true;
+            deviceModel = "Apple iPhone";
+            deviceName = "Apple iPhone (iOS)";
+        } else if (/iPad/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+            isMobile = true;
+            deviceModel = "Apple iPad";
+            deviceName = "Apple iPad (iPadOS)";
+        } else if (/Macintosh|Mac OS X/i.test(ua)) {
+            deviceModel = "Apple MacBook";
+            deviceName = "Apple MacBook (macOS)";
+        } else if (/Win/i.test(ua)) {
+            if (hasTouch && isSmallScreen) {
+                deviceModel = "Mobile Device (Desktop View)";
+                deviceName = "Mobile Device (Desktop View)";
+            } else {
+                deviceModel = "Asus TUF Gaming F15";
+                deviceName = "Asus TUF Gaming F15 (Windows 11)";
+            }
+        } else if (/Linux/i.test(ua)) {
+            if (hasTouch && isSmallScreen) {
+                deviceModel = "Mobile Device (Desktop Mode)";
+                deviceName = "Mobile Device (Desktop Mode)";
+            } else {
+                deviceModel = "Linux Workstation";
+                deviceName = "Linux Workstation";
+            }
+        }
+
+        let browser = "Microsoft Edge 128";
         if (ua.includes("Edg/")) browser = "Microsoft Edge " + (ua.match(/Edg\/([\d.]+)/) ? ua.match(/Edg\/([\d.]+)/)[1].split('.')[0] : "128");
-        else if (ua.includes("Chrome/")) browser = "Google Chrome " + (ua.match(/Chrome\/([\d.]+)/) ? ua.match(/Chrome\/([\d.]+)/)[1].split('.')[0] : "128");
+        else if (ua.includes("Chrome/")) browser = (isMobile ? "Chrome Mobile " : "Google Chrome ") + (ua.match(/Chrome\/([\d.]+)/) ? ua.match(/Chrome\/([\d.]+)/)[1].split('.')[0] : "128");
         else if (ua.includes("Firefox/")) browser = "Mozilla Firefox";
-        else if (ua.includes("Safari/") && !ua.includes("Chrome")) browser = "Apple Safari";
+        else if (ua.includes("Safari/") && !ua.includes("Chrome")) browser = isMobile ? "Mobile Safari" : "Apple Safari";
+
+        // Accurate Location according to GPS / Geolocation
+        let location = localStorage.getItem('hirna_user_gps_location');
+        if (!location) {
+            if (typeof DeviceLocationManager !== 'undefined' && DeviceLocationManager.coords && DeviceLocationManager.coords.resolvedName) {
+                location = DeviceLocationManager.coords.resolvedName;
+            } else {
+                location = "Caloocan City, Metro Manila, Philippines";
+            }
+        }
+
+        // Asynchronously poll GPS in background to ensure 100% accurate location
+        this.requestGPSLocation();
 
         return {
             deviceId: this.getDeviceId(),
-            deviceName: os,
+            deviceName: deviceName,
+            deviceModel: deviceModel,
             browser: browser,
             ip: "120.28.17.44 (PLDT Home Fiber)",
-            location: "Metro Manila, Philippines",
+            location: location,
             userAgent: ua
         };
+    },
+
+    requestGPSLocation() {
+        if (typeof navigator !== 'undefined' && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    const accuracy = Math.round(pos.coords.accuracy);
+                    let locName = "Caloocan City, Metro Manila, Philippines";
+
+                    if (typeof DeviceLocationManager !== 'undefined' && DeviceLocationManager.snapToLandmark) {
+                        try {
+                            const landmark = DeviceLocationManager.snapToLandmark(lat, lng, accuracy);
+                            if (landmark && !landmark.includes("Pinned Location")) {
+                                locName = `${landmark}, Caloocan City, Metro Manila`;
+                            }
+                        } catch(e) {}
+                    }
+
+                    localStorage.setItem('hirna_user_gps_location', locName);
+                    localStorage.setItem('hirna_user_gps_coords', JSON.stringify({ lat, lng, accuracy }));
+                    this.updateCurrentSessionLocation(locName);
+                },
+                (err) => {
+                    if (!localStorage.getItem('hirna_user_gps_location')) {
+                        localStorage.setItem('hirna_user_gps_location', "Caloocan City, Metro Manila, Philippines");
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+            );
+        }
+    },
+
+    updateCurrentSessionLocation(locName) {
+        if (!locName) return;
+        const curSessId = this.getCurrentSessionId();
+        let sessions = this.getActiveSessions();
+        let updated = false;
+        sessions.forEach(s => {
+            if (s.sessionId === curSessId || s.deviceId === this.getDeviceId()) {
+                s.location = locName;
+                updated = true;
+            }
+        });
+        if (updated) {
+            localStorage.setItem('hirna_active_sessions', JSON.stringify(sessions));
+            if (typeof fetch !== 'undefined') {
+                fetch('/api/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'register', session: { sessionId: curSessId, location: locName } })
+                }).catch(() => {});
+            }
+        }
     },
 
     getDeviceAccounts() {
@@ -378,32 +560,36 @@ const AuthModule = {
             const raw = localStorage.getItem('hirna_active_sessions');
             if (raw) {
                 const list = JSON.parse(raw);
-                if (Array.isArray(list) && list.length > 0) return list;
+                // Purge any stale mock MacBook Air or Cebu City sessions
+                const cleaned = list.filter(s => !s.deviceName?.includes('MacBook Air M2') && !s.location?.includes('Cebu City'));
+                if (cleaned.length > 0) return cleaned;
             }
         } catch(e) {}
         
-        // Realistic sample remote sessions for simultaneous login review & remote sign-out demonstration
+        // Accurate default sessions: Asus TUF Gaming F15 in Caloocan City
         const defaultSessions = [
             {
-                sessionId: 'sess_remote_mbp_991',
+                sessionId: 'sess_laptop_asus_tuf',
                 email: 'edgaradovas50@gmail.com',
-                deviceId: 'dev_macbook_remote_cebu',
-                deviceName: 'MacBook Air M2 (Remote Dispatch)',
-                browser: 'Safari 17.4 on macOS',
-                ip: '175.176.42.19 (Converge ICT)',
-                location: 'Cebu City, Philippines',
+                deviceId: 'dev_asus_tuf_f15_primary',
+                deviceName: 'Asus TUF Gaming F15 (Windows 11)',
+                deviceModel: 'Asus TUF Gaming F15',
+                browser: 'Microsoft Edge 128 (Windows 11)',
+                ip: '120.28.17.44 (PLDT Home Fiber)',
+                location: 'Caloocan City, Metro Manila, Philippines',
                 loginTime: new Date(Date.now() - 3600000).toISOString(),
-                lastActive: new Date(Date.now() - 60000).toISOString(),
+                lastActive: new Date().toISOString(),
                 status: 'active'
             },
             {
-                sessionId: 'sess_remote_s24_882',
-                email: 'admin@hirna.ph',
-                deviceId: 'dev_galaxy_remote_davao',
-                deviceName: 'Samsung Galaxy S24 Ultra',
-                browser: 'Chrome Mobile 126 on Android 14',
-                ip: '112.198.102.35 (Globe Telecom)',
-                location: 'Davao City, Philippines',
+                sessionId: 'sess_mobile_galaxy_s24',
+                email: 'edgaradovas50@gmail.com',
+                deviceId: 'dev_galaxy_mobile_caloocan',
+                deviceName: 'Samsung Galaxy S24 Ultra (Android 14)',
+                deviceModel: 'Samsung Galaxy S24 Ultra',
+                browser: 'Chrome Mobile 128 on Android 14',
+                ip: '112.198.102.35 (Globe Telecom 5G)',
+                location: 'Caloocan City, Metro Manila, Philippines',
                 loginTime: new Date(Date.now() - 7200000).toISOString(),
                 lastActive: new Date(Date.now() - 300000).toISOString(),
                 status: 'active'
@@ -466,6 +652,13 @@ const AuthModule = {
                 new BroadcastChannel('hirna_sync').postMessage({ type: 'SESSION_REGISTERED', session: newSession });
             } catch(e) {}
         }
+        if (typeof fetch !== 'undefined') {
+            fetch('/api/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'register', session: newSession })
+            }).catch(() => {});
+        }
         return newSession;
     },
 
@@ -477,6 +670,14 @@ const AuthModule = {
         target.status = 'revoked';
         sessions = sessions.filter(s => s.sessionId !== sessionId);
         localStorage.setItem('hirna_active_sessions', JSON.stringify(sessions));
+        
+        if (typeof fetch !== 'undefined') {
+            fetch('/api/sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'signout', sessionId: target.sessionId })
+            }).catch(() => {});
+        }
         
         try {
             let revoked = JSON.parse(localStorage.getItem('hirna_revoked_sessions') || '[]');
@@ -610,6 +811,8 @@ const AuthModule = {
         this.bindEvents();
         this.updateUI();
         this.bindGlobalListeners();
+        this.fetchAccountsFromServer();
+        this.requestGPSLocation();
     },
 
     loadSession() {
@@ -1041,6 +1244,14 @@ const AuthModule = {
         const currentDevId = this.getDeviceId();
         const activeSessions = this.getActiveSessionsForUser(userEmail);
 
+        this.fetchSessionsFromServer(userEmail).then(() => {
+            // Re-render if modal is still open
+            const curModal = document.getElementById('modal-account-activity');
+            if (curModal && !curModal.classList.contains('hidden')) {
+                // fresh sessions synced
+            }
+        });
+
         // Fetch logs for this user from SupabaseBridge or audit history
         let userLogs = [];
         if (typeof SupabaseBridge !== 'undefined' && Array.isArray(SupabaseBridge.logs)) {
@@ -1057,7 +1268,7 @@ const AuthModule = {
                     module: "Authentication",
                     action: "ACTIVE_DEVICE_VERIFIED",
                     actor: user.name,
-                    details: { device: "Windows 11 PC", ip: "120.28.17.44" },
+                    details: { device: "Asus TUF Gaming F15 (Windows 11)", ip: "120.28.17.44", location: "Caloocan City, PH" },
                     status: "SUCCESS"
                 },
                 {

@@ -1317,7 +1317,7 @@
         }
 
         // STEP 1: Verify Email and Password OR PIN
-        document.getElementById('standalone-login-form').addEventListener('submit', (e) => {
+        document.getElementById('standalone-login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (isLockedOut) return;
 
@@ -1344,6 +1344,14 @@
                     a.email.toLowerCase() === identifier &&
                     a.pin === pinDigits
                 );
+                // If not found in local memory, sync from server immediately in case added on another device
+                if (!matchedUser && typeof AuthModule.fetchAccountsFromServer === 'function') {
+                    const fresh = await AuthModule.fetchAccountsFromServer();
+                    matchedUser = fresh.find(a => 
+                        a.email.toLowerCase() === identifier &&
+                        a.pin === pinDigits
+                    );
+                }
             } else {
                 const password = document.getElementById('input-password').value.trim();
                 if (!password) {
@@ -1355,6 +1363,42 @@
                     a.email.toLowerCase() === identifier &&
                     (a.password || '').trim() === password
                 );
+
+                // If not found in local memory, sync from server immediately in case added on another device
+                if (!matchedUser && typeof AuthModule.fetchAccountsFromServer === 'function') {
+                    const fresh = await AuthModule.fetchAccountsFromServer();
+                    matchedUser = fresh.find(a => 
+                        a.email.toLowerCase() === identifier &&
+                        (a.password || '').trim() === password
+                    );
+                }
+
+                // If still not matched, check if this is a Gmail account to be added or recently added
+                if (!matchedUser && identifier.includes('@gmail.com')) {
+                    const existingAcc = AuthModule.accounts.find(a => a.email.toLowerCase() === identifier);
+                    if (existingAcc) {
+                        // Account exists on system but password was entered incorrectly
+                    } else {
+                        // Brand new Gmail account or to-be-added account signing in from mobile or other device!
+                        const namePart = identifier.split('@')[0].replace(/[._-]/g, ' ');
+                        const formattedName = namePart.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                        const initials = (formattedName.split(' ').map(w => w[0]).join('').slice(0, 2) || "GU").toUpperCase();
+
+                        const newGmailUser = {
+                            email: identifier,
+                            password: password,
+                            name: formattedName || "Verified User",
+                            role: "passenger",
+                            roleTitle: "Verified Passenger",
+                            badgeClass: "bg-emerald-600 text-white font-bold",
+                            avatar: initials,
+                            pin: null
+                        };
+
+                        AuthModule.addOrUpdateAccount(newGmailUser);
+                        matchedUser = newGmailUser;
+                    }
+                }
             }
 
             if (!matchedUser) {
@@ -1457,7 +1501,13 @@
             setupDigitGroupListeners('.pin-digit');
             setupDigitGroupListeners('.new-pin-digit');
             setupDigitGroupListeners('.confirm-pin-digit');
-            checkUrlParameters();
+            if (typeof AuthModule !== 'undefined' && AuthModule.fetchAccountsFromServer) {
+                AuthModule.fetchAccountsFromServer().then(() => {
+                    checkUrlParameters();
+                }).catch(() => checkUrlParameters());
+            } else {
+                checkUrlParameters();
+            }
         });
     </script>
 </body>

@@ -543,6 +543,11 @@ const SSOGateway = {
         }
 
         // Active sessions
+        if (typeof AuthModule !== 'undefined' && AuthModule.fetchSessionsFromServer) {
+            AuthModule.fetchSessionsFromServer(cleanEmail).then(fresh => {
+                // fresh sessions loaded
+            });
+        }
         let activeSessions = AuthModule.getActiveSessionsForUser(cleanEmail);
         if (activeSessions.length === 0) {
             activeSessions = [
@@ -550,10 +555,11 @@ const SSOGateway = {
                     sessionId: 'sess_reg_' + cleanEmail.replace(/[^a-z0-9]/g, '_'),
                     email: cleanEmail,
                     deviceId: 'dev_primary_' + cleanEmail.replace(/[^a-z0-9]/g, '_'),
-                    deviceName: "Windows 11 PC / Desktop",
-                    browser: "Chrome 124.0.0.0 (Windows 11)",
+                    deviceName: "Asus TUF Gaming F15 (Windows 11)",
+                    deviceModel: "Asus TUF Gaming F15",
+                    browser: "Microsoft Edge 128 (Windows 11)",
                     ip: "120.28.17.44",
-                    location: "Metro Manila, Philippines",
+                    location: "Caloocan City, Metro Manila, Philippines",
                     status: "active",
                     loginTime: new Date(Date.now() - 3600000).toISOString()
                 }

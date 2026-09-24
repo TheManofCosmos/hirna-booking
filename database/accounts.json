@@ -1,0 +1,52 @@
+[
+  {
+    "email": "edgaradovas50@gmail.com",
+    "password": "superadmin",
+    "pin": "1234",
+    "name": "Edgar Adovas (SuperAdmin)",
+    "role": "superadmin",
+    "roleTitle": "SuperAdmin (Full Access & Role Control)",
+    "badgeClass": "bg-gold-500 text-hirna-950 font-black",
+    "avatar": "EA"
+  },
+  {
+    "email": "superadmin@hirna.ph",
+    "password": "superadmin",
+    "pin": null,
+    "name": "SuperAdmin Hirna",
+    "role": "superadmin",
+    "roleTitle": "SuperAdmin (Full Access)",
+    "badgeClass": "bg-gold-500 text-hirna-950 font-black",
+    "avatar": "SA"
+  },
+  {
+    "email": "admin@hirna.ph",
+    "password": "admin",
+    "pin": null,
+    "name": "Operations Admin",
+    "role": "admin",
+    "roleTitle": "Operations Administrator",
+    "badgeClass": "bg-blue-600 text-white",
+    "avatar": "AD"
+  },
+  {
+    "email": "adovasjayvincent@gmail.com",
+    "password": "admin",
+    "pin": null,
+    "name": "Jay Vincent Adovas",
+    "role": "admin",
+    "roleTitle": "Operations Administrator",
+    "badgeClass": "bg-blue-600 text-white",
+    "avatar": "JV"
+  },
+  {
+    "email": "passenger@hirna.ph",
+    "password": "passenger",
+    "pin": null,
+    "name": "Verified Passenger",
+    "role": "passenger",
+    "roleTitle": "Verified Passenger",
+    "badgeClass": "bg-emerald-600 text-white",
+    "avatar": "PA"
+  }
+]

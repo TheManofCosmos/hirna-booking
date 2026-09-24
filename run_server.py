@@ -22,7 +22,7 @@ from email.mime.text import MIMEText
 GMAIL_SENDER = os.environ.get("GMAIL_SENDER", "hirnasecurity@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "mukfvbhuiepcocoq")
 
-def send_real_email_otp(recipient_email, otp_code, purpose="login", device="Windows PC", ip="120.28.17.44", browser="Edge", location="Metro Manila, PH"):
+def send_real_email_otp(recipient_email, otp_code, purpose="login", device="Asus TUF Gaming F15 (Windows 11)", ip="120.28.17.44", browser="Edge", location="Caloocan City, Metro Manila, PH"):
     """Send real OTP email or Security Alert to Gmail inbox using Google App Password."""
     try:
         msg = MIMEMultipart("alternative")
@@ -191,10 +191,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             email = query.get('email', ['User'])[0]
             code = query.get('code', ['123456'])[0]
             purpose = query.get('purpose', ['login'])[0]
-            device = query.get('device', ['Windows PC'])[0]
+            device = query.get('device', ['Asus TUF Gaming F15 (Windows 11)'])[0]
             ip = query.get('ip', ['120.28.17.44'])[0]
             browser = query.get('browser', ['Web Browser'])[0]
-            location = query.get('location', ['Metro Manila, PH'])[0]
+            location = query.get('location', ['Caloocan City, Metro Manila, PH'])[0]
 
             # Dispatch REAL Gmail OTP email asynchronously
             threading.Thread(
@@ -261,7 +261,160 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 except Exception:
                     pass
                 return
+        if self.path.startswith('/api/accounts'):
+            accounts_path = os.path.join(DIRECTORY, 'database', 'accounts.json')
+            if os.path.exists(accounts_path):
+                with open(accounts_path, 'r', encoding='utf-8') as f:
+                    data = f.read().encode('utf-8')
+            else:
+                data = json.dumps([]).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
+        if self.path.startswith('/api/sessions'):
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            filter_email = query.get('email', [''])[0].strip().lower()
+            sessions_path = os.path.join(DIRECTORY, 'database', 'sessions.json')
+            sessions = []
+            if os.path.exists(sessions_path):
+                try:
+                    with open(sessions_path, 'r', encoding='utf-8') as f:
+                        sessions = json.load(f)
+                except Exception:
+                    sessions = []
+            if filter_email:
+                sessions = [s for s in sessions if s.get('email', '').strip().lower() == filter_email and s.get('status') == 'active']
+            data = json.dumps(sessions).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
         super().do_GET()
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
+
+    def do_POST(self):
+        if self.path.startswith('/api/accounts'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            try:
+                payload = json.loads(body) if body else {}
+                accounts_path = os.path.join(DIRECTORY, 'database', 'accounts.json')
+                pub_accounts_path = os.path.join(DIRECTORY, 'public', 'database', 'accounts.json')
+                
+                accounts = []
+                if os.path.exists(accounts_path):
+                    with open(accounts_path, 'r', encoding='utf-8') as f:
+                        accounts = json.load(f)
+
+                if isinstance(payload, list):
+                    accounts = payload
+                elif isinstance(payload, dict) and payload.get('email'):
+                    clean_email = payload['email'].strip().lower()
+                    existing_idx = next((i for i, a in enumerate(accounts) if a.get('email', '').strip().lower() == clean_email), -1)
+                    if existing_idx >= 0:
+                        accounts[existing_idx].update(payload)
+                    else:
+                        accounts.append(payload)
+
+                os.makedirs(os.path.dirname(accounts_path), exist_ok=True)
+                with open(accounts_path, 'w', encoding='utf-8') as f:
+                    json.dump(accounts, f, indent=2)
+
+                try:
+                    os.makedirs(os.path.dirname(pub_accounts_path), exist_ok=True)
+                    with open(pub_accounts_path, 'w', encoding='utf-8') as f:
+                        json.dump(accounts, f, indent=2)
+                except Exception:
+                    pass
+
+                resp_data = json.dumps({'status': 'ok', 'accounts': accounts}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(resp_data)))
+                self.end_headers()
+                self.wfile.write(resp_data)
+                return
+            except Exception as e:
+                err_resp = json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8')
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(err_resp)))
+                self.end_headers()
+                self.wfile.write(err_resp)
+                return
+
+        if self.path.startswith('/api/sessions'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode('utf-8')
+            try:
+                payload = json.loads(body) if body else {}
+                sessions_path = os.path.join(DIRECTORY, 'database', 'sessions.json')
+                pub_sessions_path = os.path.join(DIRECTORY, 'public', 'database', 'sessions.json')
+
+                sessions = []
+                if os.path.exists(sessions_path):
+                    with open(sessions_path, 'r', encoding='utf-8') as f:
+                        sessions = json.load(f)
+
+                action = payload.get('action', 'register')
+                if action == 'register' and payload.get('session'):
+                    new_sess = payload['session']
+                    clean_email = (new_sess.get('email') or '').strip().lower()
+                    dev_id = new_sess.get('deviceId')
+                    sessions = [s for s in sessions if not (s.get('email', '').strip().lower() == clean_email and s.get('deviceId') == dev_id)]
+                    sessions.insert(0, new_sess)
+                elif action == 'signout' and payload.get('sessionId'):
+                    sid = payload['sessionId']
+                    for s in sessions:
+                        if s.get('sessionId') == sid:
+                            s['status'] = 'revoked'
+                    sessions = [s for s in sessions if s.get('sessionId') != sid]
+                elif action == 'signout_all' and payload.get('email'):
+                    clean_email = payload['email'].strip().lower()
+                    curr_dev = payload.get('keepDeviceId')
+                    sessions = [s for s in sessions if not (s.get('email', '').strip().lower() == clean_email and s.get('deviceId') != curr_dev)]
+
+                os.makedirs(os.path.dirname(sessions_path), exist_ok=True)
+                with open(sessions_path, 'w', encoding='utf-8') as f:
+                    json.dump(sessions, f, indent=2)
+
+                try:
+                    os.makedirs(os.path.dirname(pub_sessions_path), exist_ok=True)
+                    with open(pub_sessions_path, 'w', encoding='utf-8') as f:
+                        json.dump(sessions, f, indent=2)
+                except Exception:
+                    pass
+
+                resp_data = json.dumps({'status': 'ok', 'sessions': sessions}).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(resp_data)))
+                self.end_headers()
+                self.wfile.write(resp_data)
+                return
+            except Exception as e:
+                err_resp = json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8')
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(err_resp)))
+                self.end_headers()
+                self.wfile.write(err_resp)
+                return
+
+        super().do_POST()
 
     # Disable caching for instant updates & enable CORS
     def end_headers(self):
@@ -269,6 +422,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Pragma', 'no-cache')
         self.send_header('Expires', '0')
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         super().end_headers()
 
 def find_available_server():
