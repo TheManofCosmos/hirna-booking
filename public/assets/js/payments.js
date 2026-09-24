@@ -220,7 +220,7 @@ const PaymentsModule = {
             id: 'cash',
             name: 'Cash',
             type: 'Cash',
-            icon: '💵',
+            icon: '<svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>',
             iconBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
             badge: 'Active • Offline Channel',
             badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -233,7 +233,7 @@ const PaymentsModule = {
             id: 'gcash',
             name: 'GCash',
             type: 'GCash',
-            icon: '📱',
+            icon: '<svg class="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>',
             iconBg: 'bg-blue-50 text-blue-700 border-blue-200',
             badge: 'Active • Linked',
             badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -246,7 +246,7 @@ const PaymentsModule = {
             id: 'wallet',
             name: 'Hirna Wallet',
             type: 'Hirna Wallet',
-            icon: '👛',
+            icon: '<svg class="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>',
             iconBg: 'bg-amber-50 text-amber-700 border-amber-200',
             badge: 'Active • ₱2,450.00',
             badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -262,7 +262,7 @@ const PaymentsModule = {
             id: 'qr_payment',
             name: 'QR Payment (QR Ph)',
             type: 'QR Payment',
-            icon: '📲',
+            icon: '<svg class="w-5 h-5 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>',
             iconBg: 'bg-rose-50 text-rose-700 border-rose-200',
             badge: 'BSP National Standard',
             badgeClass: 'bg-rose-100 text-rose-800 border-rose-200',
@@ -275,7 +275,7 @@ const PaymentsModule = {
             id: 'maya',
             name: 'Maya',
             type: 'Maya',
-            icon: '⚡',
+            icon: '<svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
             iconBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
             badge: 'Digital Bank',
             badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
@@ -288,7 +288,7 @@ const PaymentsModule = {
             id: 'card',
             name: 'Credit / Debit Card',
             type: 'Card',
-            icon: '💳',
+            icon: '<svg class="w-5 h-5 text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>',
             iconBg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
             badge: 'Visa • Mastercard',
             badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-200',
@@ -301,7 +301,7 @@ const PaymentsModule = {
             id: 'shopeepay',
             name: 'ShopeePay',
             type: 'ShopeePay',
-            icon: '🛍️',
+            icon: '<svg class="w-5 h-5 text-orange-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>',
             iconBg: 'bg-orange-50 text-orange-700 border-orange-200',
             badge: 'E-Wallet',
             badgeClass: 'bg-orange-100 text-orange-800 border-orange-200',
@@ -314,7 +314,7 @@ const PaymentsModule = {
             id: 'corporate',
             name: 'Corporate Account',
             type: 'Corporate Account',
-            icon: '🏢',
+            icon: '<svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>',
             iconBg: 'bg-slate-100 text-slate-700 border-slate-300',
             badge: 'B2B Enterprise',
             badgeClass: 'bg-slate-200 text-slate-800 border-slate-300',
@@ -385,7 +385,7 @@ const PaymentsModule = {
             this.savePaymentMethods(current);
 
             if (typeof App !== 'undefined' && App.showToast) {
-                App.showToast(`✓ "${item.name}" added to your booking payment methods!`, 'success');
+                App.showToast(`"${item.name}" added to your booking payment methods!`, 'success');
             }
         }
 
@@ -419,7 +419,7 @@ const PaymentsModule = {
                                 <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold ${cat.badgeClass} border uppercase tracking-wider">${cat.badge}</span>
                             </div>
                             <p class="text-[11px] text-slate-500 leading-tight mt-0.5">${cat.description}</p>
-                            <span class="text-[10px] text-hirna-700 font-semibold mt-0.5 block">⚡ ${cat.tag}</span>
+                            <span class="text-[10px] text-hirna-700 font-semibold mt-0.5 block">${cat.tag}</span>
                         </div>
                     </div>
                     <div class="flex-shrink-0">
@@ -453,7 +453,7 @@ const PaymentsModule = {
                 <label class="border border-slate-200 rounded-xl p-2.5 flex items-center space-x-2.5 cursor-pointer hover:border-hirna-500 transition has-[:checked]:border-hirna-600 has-[:checked]:bg-hirna-50/70 has-[:checked]:ring-1 has-[:checked]:ring-hirna-500">
                     <input type="radio" name="std-payment-method" value="${m.type}" ${isChecked ? 'checked' : ''} class="sr-only">
                     <div class="w-8 h-8 rounded-lg ${m.iconBg || 'bg-slate-100 text-slate-700'} flex items-center justify-center flex-shrink-0 text-base shadow-xs">
-                        ${m.icon || '💳'}
+                        ${m.icon || '<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>'}
                     </div>
                     <div class="text-left min-w-0">
                         <div class="text-xs font-bold text-slate-800 truncate">${m.name}</div>
@@ -474,7 +474,7 @@ const PaymentsModule = {
                 <div class="space-y-2.5">
                     <div class="flex items-start justify-between">
                         <div class="w-10 h-10 rounded-xl ${m.iconBg || 'bg-slate-100 text-slate-700'} border flex items-center justify-center text-xl shadow-xs">
-                            ${m.icon || '💳'}
+                            ${m.icon || '<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>'}
                         </div>
                         <div class="flex items-center space-x-1.5">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${m.badgeClass || 'bg-slate-100 text-slate-700 border-slate-200'}">
@@ -494,7 +494,7 @@ const PaymentsModule = {
                 </div>
                 <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                     <span class="truncate font-mono">${m.meta || 'Booking Ready'}</span>
-                    <span class="text-emerald-600 font-bold text-xs">✓ In Booking</span>
+                    <span class="text-emerald-600 font-bold text-xs">In Booking</span>
                 </div>
             </div>
         `).join('');
@@ -608,7 +608,7 @@ const PaymentsModule = {
         const badgeEl = document.getElementById('pay-modal-selected-badge');
         const subtitleEl = document.getElementById('pay-modal-selected-subtitle');
 
-        if (iconEl && matched) iconEl.textContent = matched.icon || '💳';
+        if (iconEl && matched) iconEl.innerHTML = matched.icon || '<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>';
         if (iconBgEl && matched) {
             iconBgEl.className = `w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${matched.iconBg || 'bg-slate-100 text-slate-700 border border-slate-200'}`;
         }
@@ -652,7 +652,7 @@ const PaymentsModule = {
             const badgeEl = document.getElementById('pay-modal-selected-badge');
             const subtitleEl = document.getElementById('pay-modal-selected-subtitle');
 
-            if (iconEl) iconEl.textContent = activeItem.icon || '💳';
+            if (iconEl) iconEl.innerHTML = activeItem.icon || '<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>';
             if (iconBgEl) {
                 iconBgEl.className = `w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${activeItem.iconBg || 'bg-slate-100 text-slate-700 border border-slate-200'}`;
             }
@@ -689,7 +689,7 @@ const PaymentsModule = {
                 <div onclick="PaymentsModule.selectConfirmPaymentMethod('${m.type}')" class="p-2.5 rounded-xl border ${isSelected ? 'border-hirna-700 bg-hirna-50/60 ring-1 ring-hirna-700' : 'border-slate-200 bg-white hover:bg-slate-50'} flex items-center justify-between cursor-pointer transition select-none">
                     <div class="flex items-center space-x-2.5 min-w-0">
                         <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0 ${m.iconBg || 'bg-slate-100 text-slate-700'}">
-                            <span>${m.icon || '💳'}</span>
+                            <span>${m.icon || '<svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>'}</span>
                         </div>
                         <div class="min-w-0">
                             <div class="flex items-center space-x-1.5 flex-wrap">
@@ -931,7 +931,7 @@ const PaymentsModule = {
 
         if (roleEl) roleEl.innerText = isParcel ? 'Booker (Sender)' : 'Passenger / Booker';
         if (passEl) passEl.innerText = bookerName;
-        if (passPhoneEl) passPhoneEl.innerText = `📞 ${bookerPhone}`;
+        if (passPhoneEl) passPhoneEl.innerText = `Tel: ${bookerPhone}`;
 
         // Driver Details
         const driverName = booking.driver_name || 'Ricardo Dalisay';
@@ -939,14 +939,14 @@ const PaymentsModule = {
         const driverPhone = booking.driver_phone || '+63 920 555 1234';
 
         if (drivEl) drivEl.innerText = `${driverName} (${driverPlate})`;
-        if (drivPhoneEl) drivPhoneEl.innerText = `📞 ${driverPhone}`;
+        if (drivPhoneEl) drivPhoneEl.innerText = `Tel: ${driverPhone}`;
 
         // Recipient Details (Parcel Only)
         if (recContainer) {
             if (isParcel && (booking.recipient_name || booking.recipient_phone)) {
                 recContainer.classList.remove('hidden');
                 if (recNameEl) recNameEl.innerText = booking.recipient_name || 'Recipient';
-                if (recPhoneEl) recPhoneEl.innerText = `📞 ${booking.recipient_phone || '+63 918 987 6543'}`;
+                if (recPhoneEl) recPhoneEl.innerText = `Tel: ${booking.recipient_phone || '+63 918 987 6543'}`;
             } else {
                 recContainer.classList.add('hidden');
             }
@@ -1006,10 +1006,10 @@ const PaymentsModule = {
                 <td class="px-4 py-3 text-xs font-bold text-slate-900">₱${parseFloat(b.total_fare).toFixed(2)}</td>
                 <td class="px-4 py-3 text-xs font-semibold text-slate-700">
                     ${b.service_type === 'parcel' 
-                        ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">📦 Parcel Delivery</span>' 
+                        ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Parcel Delivery</span>' 
                         : (b.service_type === 'scheduled'
-                            ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">🕒 Scheduled Ride</span>'
-                            : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-hirna-100 text-hirna-900">🚕 ${b.vehicle_class || 'Standard Taxi'}</span>`)}
+                            ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">Scheduled Ride</span>'
+                            : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-hirna-100 text-hirna-900">${b.vehicle_class || 'Standard Taxi'}</span>`)}
                 </td>
                 <td class="px-4 py-3 text-xs text-right space-x-1">
                     <button onclick="PaymentsModule.printReceipt('${b.id || b.booking_code}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-medium text-xs cursor-pointer">

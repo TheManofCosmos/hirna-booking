@@ -9,7 +9,7 @@ const SSOGateway = {
             title: "HR & Recruitment Management",
             category: "Human Capital Management (HCM)",
             modules: "Applicant Management • Recruitment • Core HR • Onboarding",
-            icon: "👥",
+            icon: `<svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>`,
             url: "http://localhost:8001/team1-hr",
             status: "Ready for SSO Handshake"
         },
@@ -18,7 +18,7 @@ const SSOGateway = {
             title: "Workforce Management System",
             category: "Workforce & Scheduling",
             modules: "Time & Attendance • Shift Schedule • Leave Management • Timesheet",
-            icon: "⏱️",
+            icon: `<svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
             url: "http://localhost:8002/team2-workforce",
             status: "Ready for SSO Handshake"
         },
@@ -27,7 +27,7 @@ const SSOGateway = {
             title: "Performance & Development",
             category: "Talent & Training",
             modules: "Driver Competency • Training Management • Succession Planning",
-            icon: "📈",
+            icon: `<svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>`,
             url: "http://localhost:8003/team3-performance",
             status: "Ready for SSO Handshake"
         },
@@ -36,7 +36,7 @@ const SSOGateway = {
             title: "Payroll & Benefits System",
             category: "Compensation Core",
             modules: "Payroll Calculation • Claims & Reimbursement • HMO & Benefits",
-            icon: "💰",
+            icon: `<svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
             url: "http://localhost:8004/team4-payroll",
             status: "Ready for SSO Handshake"
         },
@@ -45,7 +45,7 @@ const SSOGateway = {
             title: "Financial Management System",
             category: "Transaction Core",
             modules: "General Ledger • Accounts Receivable (AR) • Accounts Payable (AP)",
-            icon: "🏦",
+            icon: `<svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>`,
             url: "http://localhost:8005/team5-finance",
             status: "Connected (GL Live Sync)"
         },
@@ -54,7 +54,7 @@ const SSOGateway = {
             title: "Supply Chain & Inventory",
             category: "Logistics & Procurement",
             modules: "Smart Warehousing (SWS) • Procurement & Sourcing • Vendor Mgmt",
-            icon: "📦",
+            icon: `<svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`,
             url: "http://localhost:8006/team6-supplychain",
             status: "Ready for SSO Handshake"
         },
@@ -63,7 +63,7 @@ const SSOGateway = {
             title: "Fleet & Transportation Mgmt",
             category: "Fleet Logistics",
             modules: "Fleet & Vehicle Mgmt (FVM) • Route Planning & Optimization • VRDS",
-            icon: "🚚",
+            icon: `<svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>`,
             url: "http://localhost:8007/team7-fleet",
             status: "Connected (Route Sync)"
         },
@@ -72,7 +72,7 @@ const SSOGateway = {
             title: "Facilities & Admin Management",
             category: "Governance & Archiving",
             modules: "Facilities Reservation • Document Archiving • Legal & Contracts",
-            icon: "🏛️",
+            icon: `<svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>`,
             url: "http://localhost:8008/team8-admin",
             status: "Connected (SOP Audit Sync)"
         },
@@ -81,7 +81,7 @@ const SSOGateway = {
             title: "TNVS Operations & Dispatch",
             category: "Field Operations",
             modules: "Trip Dispatching • Driver Wallet & Earnings • Fuel Management",
-            icon: "🚦",
+            icon: `<svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`,
             url: "http://localhost:8009/team9-operations",
             status: "Connected (Dispatch Bridge)"
         },
@@ -90,7 +90,7 @@ const SSOGateway = {
             title: "HIRNA Booking, Payments & CX",
             category: "Customer & Transaction Gateway",
             modules: "AI Booking • Dynamic Fare • Customer-Relationship Management • GPS Playback • Analytics • SOP Audit",
-            icon: "🚕",
+            icon: `<svg class="w-6 h-6 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>`,
             url: "main.html",
             status: "Active System (Host Core)"
         }
@@ -118,7 +118,7 @@ const SSOGateway = {
                             </span>
                         </div>
                         <div class="flex items-center space-x-2.5 pt-1">
-                            <span class="text-2xl">${s.icon}</span>
+                            <span class="flex-shrink-0">${s.icon}</span>
                             <div>
                                 <h4 class="font-bold text-slate-900 text-sm leading-tight">${s.title}</h4>
                                 <span class="text-[10px] text-slate-500 font-semibold block">${s.category}</span>
@@ -132,8 +132,8 @@ const SSOGateway = {
                         ${isSelf ? `
                             <span class="px-3 py-1.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl">Current Core</span>
                         ` : `
-                            <button onclick="SSOGateway.launchSSO('${s.team}')" class="px-3 py-1.5 bg-hirna-800 hover:bg-hirna-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-1">
-                                <span>🔑 Launch with SSO</span>
+                            <button onclick="SSOGateway.launchSSO('${s.team}')" class="px-3 py-1.5 bg-hirna-800 hover:bg-hirna-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center space-x-1 cursor-pointer">
+                                <span>Launch with SSO</span>
                             </button>
                         `}
                     </div>
@@ -613,7 +613,7 @@ const SSOGateway = {
                 <div class="p-3.5 bg-slate-900 border border-slate-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-start space-x-3">
                         <div class="w-10 h-10 rounded-xl bg-gold-500/20 border border-gold-400/30 text-gold-400 flex items-center justify-center text-lg flex-shrink-0 mt-0.5">
-                            ${isPhone ? '📱' : '💻'}
+                            ${isPhone ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>' : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>'}
                         </div>
                         <div>
                             <div class="flex items-center space-x-2">
@@ -621,12 +621,12 @@ const SSOGateway = {
                                 <span class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Active Now</span>
                             </div>
                             <div class="text-[11px] text-slate-400 mt-0.5 space-x-2">
-                                <span>🌐 <strong>Browser:</strong> ${sess.browser}</span>
+                                <span><strong>Browser:</strong> ${sess.browser}</span>
                                 <span>•</span>
                                 <span class="font-mono text-slate-300"><strong>IP:</strong> ${sess.ip}</span>
                             </div>
                             <div class="text-[10px] text-slate-500 mt-1 flex items-center space-x-2">
-                                <span>📍 <strong>Location:</strong> ${sess.location || 'Metro Manila, PH'}</span>
+                                <span><strong>Location:</strong> ${sess.location || 'Metro Manila, PH'}</span>
                                 <span>•</span>
                                 <span><strong>Signed In:</strong> ${new Date(sess.loginTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
@@ -672,7 +672,7 @@ const SSOGateway = {
                             <p class="text-xs text-slate-400 font-mono">${user.email}</p>
                         </div>
                     </div>
-                    <button onclick="SSOGateway.closeUserInspectionModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer">✕</button>
+                    <button onclick="SSOGateway.closeUserInspectionModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer font-bold">&times;</button>
                 </div>
 
                 <div class="overflow-y-auto pr-1 flex-1 space-y-5 custom-scrollbar">
@@ -680,7 +680,8 @@ const SSOGateway = {
                     <div>
                         <div class="flex items-center justify-between mb-2.5">
                             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                                <span>📱</span> Active Devices & Signed-In Sessions
+                                <svg class="w-4 h-4 text-slate-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                <span>Active Devices & Signed-In Sessions</span>
                             </h4>
                             <span class="text-[10px] text-slate-400">${activeSessions.length} session${activeSessions.length === 1 ? '' : 's'} registered</span>
                         </div>
@@ -693,7 +694,8 @@ const SSOGateway = {
                     <div>
                         <div class="flex items-center justify-between mb-2.5">
                             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                                <span>📜</span> Recent User Logs, Activities & Processes
+                                <svg class="w-4 h-4 text-slate-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <span>Recent User Logs, Activities & Processes</span>
                             </h4>
                             <span class="text-[10px] text-slate-400">${userLogs.length} recent record${userLogs.length === 1 ? '' : 's'}</span>
                         </div>

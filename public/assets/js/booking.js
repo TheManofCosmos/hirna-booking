@@ -79,18 +79,18 @@ const SavedAddressManager = {
         try {
             const saved = localStorage.getItem('hirna_saved_addresses');
             return saved ? JSON.parse(saved) : [
-                { name: "SM Fairview, Quezon City", city: "Quezon City", lat: 14.7344, lng: 121.0583, icon: "⭐", label: "Favorite SM Mall" }
+                { name: "SM Fairview, Quezon City", city: "Quezon City", lat: 14.7344, lng: 121.0583, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>', label: "Favorite SM Mall" }
             ];
         } catch (e) {
             return [
-                { name: "SM Fairview, Quezon City", city: "Quezon City", lat: 14.7344, lng: 121.0583, icon: "⭐", label: "Favorite SM Mall" }
+                { name: "SM Fairview, Quezon City", city: "Quezon City", lat: 14.7344, lng: 121.0583, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>', label: "Favorite SM Mall" }
             ];
         }
     },
     saveAddress(place, label) {
         try {
             const list = this.getSaved().filter(x => x.name !== place.name);
-            list.unshift({ ...place, icon: "⭐", label: label || place.name });
+            list.unshift({ ...place, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>', label: label || place.name });
             localStorage.setItem('hirna_saved_addresses', JSON.stringify(list.slice(0, 10)));
         } catch (e) {
             console.error("Failed to save address:", e);
@@ -112,13 +112,13 @@ const SavedAddressManager = {
                 return parsed.filter(x => x && x.name && x.name !== 'undefined' && !x.name.includes('undefined'));
             }
             return [
-                { name: "Ayala Malls Circuit, Makati", city: "Makati City", lat: 14.5758, lng: 121.0183, icon: "🕒" },
-                { name: "Bonifacio High Street, BGC", city: "Taguig", lat: 14.5517, lng: 121.0509, icon: "🕒" }
+                { name: "Ayala Malls Circuit, Makati", city: "Makati City", lat: 14.5758, lng: 121.0183, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                { name: "Bonifacio High Street, BGC", city: "Taguig", lat: 14.5517, lng: 121.0509, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
             ];
         } catch (e) {
             return [
-                { name: "Ayala Malls Circuit, Makati", city: "Makati City", lat: 14.5758, lng: 121.0183, icon: "🕒" },
-                { name: "Bonifacio High Street, BGC", city: "Taguig", lat: 14.5517, lng: 121.0509, icon: "🕒" }
+                { name: "Ayala Malls Circuit, Makati", city: "Makati City", lat: 14.5758, lng: 121.0183, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                { name: "Bonifacio High Street, BGC", city: "Taguig", lat: 14.5517, lng: 121.0509, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
             ];
         }
     },
@@ -128,7 +128,7 @@ const SavedAddressManager = {
             const placeName = place.name || place.fullName || place.main;
             if (!placeName || placeName === 'undefined' || placeName.includes('undefined')) return;
             let list = this.getRecent().filter(x => x && x.name && x.name !== placeName);
-            list.unshift({ ...place, name: placeName, icon: place.icon || "🕒" });
+            list.unshift({ ...place, name: placeName, icon: place.icon || "" });
             localStorage.setItem('hirna_recent_addresses', JSON.stringify(list.slice(0, 6)));
         } catch (e) {
             console.error("Failed to add recent address:", e);
@@ -317,7 +317,7 @@ const DeviceLocationManager = {
 
         const btn = document.getElementById('btn-allow-location');
         if (btn) {
-            btn.innerHTML = `<span class="inline-block animate-spin mr-1">⌛</span> Acquiring GPS...`;
+            btn.innerHTML = `<span class="inline-block animate-spin mr-1"></span> Acquiring GPS...`;
         }
 
         // Tier 1: High-accuracy hardware GPS
@@ -740,7 +740,7 @@ const DeviceLocationManager = {
                 lat: this.coords.lat,
                 lng: this.coords.lng,
                 accuracy: this.coords.accuracy || 10,
-                icon: '📍'
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>'
             };
         }
 
@@ -753,7 +753,7 @@ const DeviceLocationManager = {
                 lat: home.lat,
                 lng: home.lng,
                 accuracy: 5,
-                icon: '🏠'
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>'
             };
         }
 
@@ -765,7 +765,7 @@ const DeviceLocationManager = {
             lat: 14.5822,
             lng: 121.0545,
             accuracy: 5,
-            icon: '🏠'
+            icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>'
         };
     }
 };
@@ -808,13 +808,13 @@ const FoodDeliveryModule = {
                 lat: 14.5685,
                 lng: 121.0250,
                 address: "Chino Roces Ave, Makati",
-                icon: "🥟",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-c1-1', name: "Steamed Pork & Shrimp Siomai (4 pcs)", price: 145, desc: "Authentic pork and shrimp dumplings with chili garlic dip", icon: "🥟" },
-                    { id: 'm-c1-2', name: "Hakaw Crystal Dumpling (4 pcs)", price: 185, desc: "Translucent steamed wrapper filled with juicy whole shrimps", icon: "🥟" },
-                    { id: 'm-c1-3', name: "Yang Chow Wok Fried Rice", price: 240, desc: "Wok-fried jasmine rice with asado bits, shrimp, and scrambled eggs", icon: "🍚" },
-                    { id: 'm-c1-4', name: "Sweet & Sour Pork with Pineapple", price: 295, desc: "Crispy pork chunks tossed in tangy pineapple bell pepper glaze", icon: "🥘" },
-                    { id: 'm-c1-5', name: "Braised Beef Brisket Noodle Soup", price: 260, desc: "Slow-cooked tender beef brisket with egg noodles in rich broth", icon: "🍜" }
+                    { id: 'm-c1-1', name: "Steamed Pork & Shrimp Siomai (4 pcs)", price: 145, desc: "Authentic pork and shrimp dumplings with chili garlic dip", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c1-2', name: "Hakaw Crystal Dumpling (4 pcs)", price: 185, desc: "Translucent steamed wrapper filled with juicy whole shrimps", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c1-3', name: "Yang Chow Wok Fried Rice", price: 240, desc: "Wok-fried jasmine rice with asado bits, shrimp, and scrambled eggs", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c1-4', name: "Sweet & Sour Pork with Pineapple", price: 295, desc: "Crispy pork chunks tossed in tangy pineapple bell pepper glaze", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c1-5', name: "Braised Beef Brisket Noodle Soup", price: 260, desc: "Slow-cooked tender beef brisket with egg noodles in rich broth", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -830,12 +830,12 @@ const FoodDeliveryModule = {
                 lat: 14.5570,
                 lng: 121.0200,
                 address: "Makati Cinema Square, Makati",
-                icon: "🥢",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-c2-1', name: "Asado Siopao (2 pcs)", price: 150, desc: "Fluffy steamed buns stuffed with sweet savory roasted pork", icon: "🥟" },
-                    { id: 'm-c2-2', name: "Crispy Fried Wonton (6 pcs)", price: 165, desc: "Golden fried wontons served with sweet & sour dip", icon: "🥟" },
-                    { id: 'm-c2-3', name: "Cantonese Fried Noodles", price: 280, desc: "Crispy egg noodles topped with mixed seafood, pork, and greens", icon: "🍜" },
-                    { id: 'm-c2-4', name: "Hototay Traditional Soup", price: 230, desc: "Hearty egg-drop broth with chicken strips, liver, and fresh greens", icon: "🍲" }
+                    { id: 'm-c2-1', name: "Asado Siopao (2 pcs)", price: 150, desc: "Fluffy steamed buns stuffed with sweet savory roasted pork", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c2-2', name: "Crispy Fried Wonton (6 pcs)", price: 165, desc: "Golden fried wontons served with sweet & sour dip", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c2-3', name: "Cantonese Fried Noodles", price: 280, desc: "Crispy egg noodles topped with mixed seafood, pork, and greens", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c2-4', name: "Hototay Traditional Soup", price: 230, desc: "Hearty egg-drop broth with chicken strips, liver, and fresh greens", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -851,12 +851,12 @@ const FoodDeliveryModule = {
                 lat: 14.5505,
                 lng: 121.0330,
                 address: "Perea St, Legazpi Village, Makati",
-                icon: "🥠",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-c3-1', name: "Xiao Long Bao Soup Dumplings (6 pcs)", price: 210, desc: "Steamed dumplings bursting with flavorful pork broth", icon: "🥟" },
-                    { id: 'm-c3-2', name: "Steamed Spareribs with Taosi", price: 185, desc: "Pork spareribs steamed in fermented salted black bean sauce", icon: "🍖" },
-                    { id: 'm-c3-3', name: "Braised Beef Shank Rice Bowl", price: 220, desc: "Five-spice tender beef shank served over fragrant jasmine rice", icon: "🍚" },
-                    { id: 'm-c3-4', name: "Pan-Fried Radish Cake (3 pcs)", price: 140, desc: "Crispy daikon radish cake with dried shrimp bits and scallions", icon: "🥢" }
+                    { id: 'm-c3-1', name: "Xiao Long Bao Soup Dumplings (6 pcs)", price: 210, desc: "Steamed dumplings bursting with flavorful pork broth", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c3-2', name: "Steamed Spareribs with Taosi", price: 185, desc: "Pork spareribs steamed in fermented salted black bean sauce", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c3-3', name: "Braised Beef Shank Rice Bowl", price: 220, desc: "Five-spice tender beef shank served over fragrant jasmine rice", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c3-4', name: "Pan-Fried Radish Cake (3 pcs)", price: 140, desc: "Crispy daikon radish cake with dried shrimp bits and scallions", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -872,12 +872,12 @@ const FoodDeliveryModule = {
                 lat: 14.5750,
                 lng: 121.0180,
                 address: "Circuit Makati, Makati",
-                icon: "🥡",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-c4-1', name: "Chao Fan with Pork Siomai", price: 155, desc: "Signature wok-style fried rice topped with fried pork siomai", icon: "🍚" },
-                    { id: 'm-c4-2', name: "Sweet & Sour Chicken Lauriat", price: 235, desc: "Complete meal: chicken, chao fan, siomai, buchi, and chicharap", icon: "🍱" },
-                    { id: 'm-c4-3', name: "Halo-Halo Supreme", price: 115, desc: "Shaved ice with sweetened beans, leche flan, ube, and ice cream", icon: "🍧" },
-                    { id: 'm-c4-4', name: "Pork Wanton Mami", price: 145, desc: "Comforting egg noodles in clear broth with pork wontons", icon: "🍜" }
+                    { id: 'm-c4-1', name: "Chao Fan with Pork Siomai", price: 155, desc: "Signature wok-style fried rice topped with fried pork siomai", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c4-2', name: "Sweet & Sour Chicken Lauriat", price: 235, desc: "Complete meal: chicken, chao fan, siomai, buchi, and chicharap", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c4-3', name: "Halo-Halo Supreme", price: 115, desc: "Shaved ice with sweetened beans, leche flan, ube, and ice cream", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-c4-4', name: "Pork Wanton Mami", price: 145, desc: "Comforting egg noodles in clear broth with pork wontons", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             }
         ],
@@ -895,12 +895,12 @@ const FoodDeliveryModule = {
                 lat: 14.5590,
                 lng: 121.0195,
                 address: "Dela Rosa St, Makati",
-                icon: "☕",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-cf1-1', name: "Philippine Highland Brewed Coffee", price: 140, desc: "Single-origin Arabica from Mt. Apo & Sagada mountains", icon: "☕" },
-                    { id: 'm-cf1-2', name: "Iced Spanish Latte", price: 175, desc: "Fresh espresso with sweetened condensed milk and cold whole milk", icon: "🧊" },
-                    { id: 'm-cf1-3', name: "Froccino Mocha Blast", price: 195, desc: "Blended iced coffee with rich dark chocolate and whipped cream", icon: "🥤" },
-                    { id: 'm-cf1-4', name: "Blueberry Cheesecake Slice", price: 180, desc: "Creamy New York cheesecake topped with whole blueberry compote", icon: "🍰" }
+                    { id: 'm-cf1-1', name: "Philippine Highland Brewed Coffee", price: 140, desc: "Single-origin Arabica from Mt. Apo & Sagada mountains", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf1-2', name: "Iced Spanish Latte", price: 175, desc: "Fresh espresso with sweetened condensed milk and cold whole milk", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf1-3', name: "Froccino Mocha Blast", price: 195, desc: "Blended iced coffee with rich dark chocolate and whipped cream", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf1-4', name: "Blueberry Cheesecake Slice", price: 180, desc: "Creamy New York cheesecake topped with whole blueberry compote", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -916,12 +916,12 @@ const FoodDeliveryModule = {
                 lat: 14.5540,
                 lng: 121.0280,
                 address: "Salcedo Village, Makati",
-                icon: "☕",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-cf2-1', name: "Phin Drip Iced Coffee with Condensed Milk", price: 135, desc: "Slow-drip traditional bold coffee with sweetened milk", icon: "☕" },
-                    { id: 'm-cf2-2', name: "Caramel Macchiato", price: 170, desc: "Espresso layered with steamed milk and rich vanilla-caramel drizzle", icon: "☕" },
-                    { id: 'm-cf2-3', name: "Matcha Green Tea Freeze", price: 190, desc: "Pure ceremonial matcha blended with cream and ice", icon: "🍵" },
-                    { id: 'm-cf2-4', name: "Banh Mi Roast Pork Sandwich", price: 160, desc: "Crispy warm baguette filled with roast pork, pate, and fresh herbs", icon: "🥖" }
+                    { id: 'm-cf2-1', name: "Phin Drip Iced Coffee with Condensed Milk", price: 135, desc: "Slow-drip traditional bold coffee with sweetened milk", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf2-2', name: "Caramel Macchiato", price: 170, desc: "Espresso layered with steamed milk and rich vanilla-caramel drizzle", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf2-3', name: "Matcha Green Tea Freeze", price: 190, desc: "Pure ceremonial matcha blended with cream and ice", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf2-4', name: "Banh Mi Roast Pork Sandwich", price: 160, desc: "Crispy warm baguette filled with roast pork, pate, and fresh herbs", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -937,12 +937,12 @@ const FoodDeliveryModule = {
                 lat: 14.5650,
                 lng: 121.0350,
                 address: "Bel-Air, Makati",
-                icon: "☕",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-cf3-1', name: "Durian Gavanccino", price: 210, desc: "Davao's signature espresso blended with sweet fresh durian puree", icon: "☕" },
-                    { id: 'm-cf3-2', name: "Hot Durian Coffee", price: 185, desc: "Smooth brewed coffee infused with aromatic real durian notes", icon: "☕" },
-                    { id: 'm-cf3-3', name: "Davao Artisan Tablea Hot Cocoa", price: 160, desc: "Pure melted Davao cacao tablea with warm fresh milk", icon: "🍫" },
-                    { id: 'm-cf3-4', name: "Durian Cheesecake", price: 195, desc: "Velvety baked cheesecake made with premium fresh durian", icon: "🍰" }
+                    { id: 'm-cf3-1', name: "Durian Gavanccino", price: 210, desc: "Davao's signature espresso blended with sweet fresh durian puree", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf3-2', name: "Hot Durian Coffee", price: 185, desc: "Smooth brewed coffee infused with aromatic real durian notes", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf3-3', name: "Davao Artisan Tablea Hot Cocoa", price: 160, desc: "Pure melted Davao cacao tablea with warm fresh milk", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf3-4', name: "Durian Cheesecake", price: 195, desc: "Velvety baked cheesecake made with premium fresh durian", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -958,12 +958,12 @@ const FoodDeliveryModule = {
                 lat: 14.5515,
                 lng: 121.0505,
                 address: "Bonifacio High Street, Taguig",
-                icon: "☕",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-cf4-1', name: "Reserve Cold Brew Float", price: 245, desc: "Small-batch cold brew with a scoop of vanilla bean ice cream", icon: "🍨" },
-                    { id: 'm-cf4-2', name: "Iced Brown Sugar Shaken Espresso", price: 220, desc: "Blonde espresso shaken with brown sugar and cinnamon, oat milk", icon: "🧊" },
-                    { id: 'm-cf4-3', name: "White Chocolate Mocha", price: 205, desc: "Espresso with white chocolate sauce, steamed milk, and cream", icon: "☕" },
-                    { id: 'm-cf4-4', name: "Classic Dark Chocolate Cake", price: 185, desc: "Moist chocolate sponge with rich fudge chocolate ganache", icon: "🍫" }
+                    { id: 'm-cf4-1', name: "Reserve Cold Brew Float", price: 245, desc: "Small-batch cold brew with a scoop of vanilla bean ice cream", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf4-2', name: "Iced Brown Sugar Shaken Espresso", price: 220, desc: "Blonde espresso shaken with brown sugar and cinnamon, oat milk", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf4-3', name: "White Chocolate Mocha", price: 205, desc: "Espresso with white chocolate sauce, steamed milk, and cream", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-cf4-4', name: "Classic Dark Chocolate Cake", price: 185, desc: "Moist chocolate sponge with rich fudge chocolate ganache", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             }
         ],
@@ -981,12 +981,12 @@ const FoodDeliveryModule = {
                 lat: 14.5740,
                 lng: 121.0190,
                 address: "Circuit Makati, Makati",
-                icon: "🍗",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-fb1-1', name: "2pc Chickenjoy with Rice & Drink", price: 199, desc: "Crispylicious, juicylicious fried chicken with signature gravy", icon: "🍗" },
-                    { id: 'm-fb1-2', name: "Jolly Spaghetti with Yumburger", price: 165, desc: "Meaty sweet spaghetti with hotdog slices and classic beef burger", icon: "🍝" },
-                    { id: 'm-fb1-3', name: "1pc Chickenjoy with Jolly Spaghetti", price: 185, desc: "Combo of crispy Chickenjoy and sweet Jolly Spaghetti", icon: "🍗" },
-                    { id: 'm-fb1-4', name: "Peach Mango Pie (2 pcs)", price: 95, desc: "Crispy golden crust filled with sweet tropical peach and mango", icon: "🥧" }
+                    { id: 'm-fb1-1', name: "2pc Chickenjoy with Rice & Drink", price: 199, desc: "Crispylicious, juicylicious fried chicken with signature gravy", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb1-2', name: "Jolly Spaghetti with Yumburger", price: 165, desc: "Meaty sweet spaghetti with hotdog slices and classic beef burger", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb1-3', name: "1pc Chickenjoy with Jolly Spaghetti", price: 185, desc: "Combo of crispy Chickenjoy and sweet Jolly Spaghetti", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb1-4', name: "Peach Mango Pie (2 pcs)", price: 95, desc: "Crispy golden crust filled with sweet tropical peach and mango", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -1002,12 +1002,12 @@ const FoodDeliveryModule = {
                 lat: 14.5600,
                 lng: 121.0240,
                 address: "Buendia Ave, Makati",
-                icon: "🍗",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-fb2-1', name: "Chicken Inasal Pecho Large with Rice", price: 195, desc: "Charcoal-grilled marinated chicken breast and wing with chicken oil", icon: "🍗" },
-                    { id: 'm-fb2-2', name: "Pork BBQ with Rice (2 sticks)", price: 155, desc: "Sweet-savory pork skewers basted in rich barbecue glaze", icon: "🍢" },
-                    { id: 'm-fb2-3', name: "Palabok Special", price: 135, desc: "Rice noodles in rich golden shrimp sauce with tinapa and chicharon", icon: "🍜" },
-                    { id: 'm-fb2-4', name: "Extra Crema Halo-Halo", price: 110, desc: "Shaved ice with leche flan, ube, sweetened banana, and creamy milk", icon: "🍨" }
+                    { id: 'm-fb2-1', name: "Chicken Inasal Pecho Large with Rice", price: 195, desc: "Charcoal-grilled marinated chicken breast and wing with chicken oil", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb2-2', name: "Pork BBQ with Rice (2 sticks)", price: 155, desc: "Sweet-savory pork skewers basted in rich barbecue glaze", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb2-3', name: "Palabok Special", price: 135, desc: "Rice noodles in rich golden shrimp sauce with tinapa and chicharon", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb2-4', name: "Extra Crema Halo-Halo", price: 110, desc: "Shaved ice with leche flan, ube, sweetened banana, and creamy milk", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -1023,12 +1023,12 @@ const FoodDeliveryModule = {
                 lat: 14.5535,
                 lng: 121.0450,
                 address: "BGC 30th, Taguig",
-                icon: "🍲",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-fb3-1', name: "Kuya J Crispy Pata (Regular)", price: 595, desc: "Deep-fried pork knuckle with crackling skin and tender meat", icon: "🍖" },
-                    { id: 'm-fb3-2', name: "Kare-Kareng Baka", price: 420, desc: "Tender beef shank in rich savory peanut sauce with native bagoong", icon: "🥘" },
-                    { id: 'm-fb3-3', name: "Sizzling Sisig with Egg", price: 260, desc: "Crisp seasoned pork cheeks and ears topped with fresh egg and chili", icon: "🍳" },
-                    { id: 'm-fb3-4', name: "Sinigang na Baboy", price: 340, desc: "Sour tamarind broth with pork belly chunks, kangkong, and radish", icon: "🍲" }
+                    { id: 'm-fb3-1', name: "Kuya J Crispy Pata (Regular)", price: 595, desc: "Deep-fried pork knuckle with crackling skin and tender meat", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb3-2', name: "Kare-Kareng Baka", price: 420, desc: "Tender beef shank in rich savory peanut sauce with native bagoong", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb3-3', name: "Sizzling Sisig with Egg", price: 260, desc: "Crisp seasoned pork cheeks and ears topped with fresh egg and chili", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb3-4', name: "Sinigang na Baboy", price: 340, desc: "Sour tamarind broth with pork belly chunks, kangkong, and radish", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -1044,12 +1044,12 @@ const FoodDeliveryModule = {
                 lat: 14.5665,
                 lng: 121.0130,
                 address: "Tejeros, Makati",
-                icon: "🍢",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-fb4-1', name: "Penong's Chicken BBQ with Rice", price: 175, desc: "Davao smoky grilled chicken marinated in native secret marinade", icon: "🍗" },
-                    { id: 'm-fb4-2', name: "Grilled Pork Liempo", price: 240, desc: "Thick-cut pork belly grilled over charcoal with calamansi dip", icon: "🥩" },
-                    { id: 'm-fb4-3', name: "Kinilaw na Tuna Special", price: 260, desc: "Fresh raw yellowfin tuna in spiced vinegar, ginger, and coconut cream", icon: "🐟" },
-                    { id: 'm-fb4-4', name: "Sizzling Garlic Bangus", price: 295, desc: "Boneless milkfish topped with generous golden toasted garlic", icon: "🐟" }
+                    { id: 'm-fb4-1', name: "Penong's Chicken BBQ with Rice", price: 175, desc: "Davao smoky grilled chicken marinated in native secret marinade", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb4-2', name: "Grilled Pork Liempo", price: 240, desc: "Thick-cut pork belly grilled over charcoal with calamansi dip", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb4-3', name: "Kinilaw na Tuna Special", price: 260, desc: "Fresh raw yellowfin tuna in spiced vinegar, ginger, and coconut cream", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fb4-4', name: "Sizzling Garlic Bangus", price: 295, desc: "Boneless milkfish topped with generous golden toasted garlic", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             }
         ],
@@ -1067,12 +1067,12 @@ const FoodDeliveryModule = {
                 lat: 14.5510,
                 lng: 121.0255,
                 address: "Greenbelt 5, Makati",
-                icon: "🥗",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-fs1-1', name: "Vitamin C 1000mg with Rose Hips (100 tabs)", price: 650, desc: "High-potency immune defense antioxidant supplement", icon: "💊" },
-                    { id: 'm-fs1-2', name: "Raw Organic Apple Cider Vinegar (946ml)", price: 295, desc: "Unfiltered, unpasteurized vinegar containing the natural 'Mother'", icon: "🍾" },
-                    { id: 'm-fs1-3', name: "Organic Black Chia Seeds (454g)", price: 340, desc: "Superfood seeds rich in Omega-3, dietary fiber, and protein", icon: "🌱" },
-                    { id: 'm-fs1-4', name: "Plant Protein Powder Chocolate (1lb)", price: 980, desc: "20g organic pea and brown rice protein per serving", icon: "🥤" }
+                    { id: 'm-fs1-1', name: "Vitamin C 1000mg with Rose Hips (100 tabs)", price: 650, desc: "High-potency immune defense antioxidant supplement", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs1-2', name: "Raw Organic Apple Cider Vinegar (946ml)", price: 295, desc: "Unfiltered, unpasteurized vinegar containing the natural 'Mother'", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs1-3', name: "Organic Black Chia Seeds (454g)", price: 340, desc: "Superfood seeds rich in Omega-3, dietary fiber, and protein", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs1-4', name: "Plant Protein Powder Chocolate (1lb)", price: 980, desc: "20g organic pea and brown rice protein per serving", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -1088,12 +1088,12 @@ const FoodDeliveryModule = {
                 lat: 14.5525,
                 lng: 121.0270,
                 address: "Glorietta 2, Makati",
-                icon: "💊",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-fs2-1', name: "Mega Men Daily Multivitamin (90 Caplets)", price: 1250, desc: "Clinically formulated multivitamin for men's vitality and health", icon: "💊" },
-                    { id: 'm-fs2-2', name: "Women's Ultra Mega Multivitamin (90 Caplets)", price: 1250, desc: "Advanced nutrition blend for women's energy, skin, and bones", icon: "💊" },
-                    { id: 'm-fs2-3', name: "Triple Strength Fish Oil 1000mg (60 Softgels)", price: 890, desc: "Purified EPA/DHA Omega-3 heart, brain, and joint support", icon: "🐟" },
-                    { id: 'm-fs2-4', name: "Melatonin 5mg Gummies (60 pcs)", price: 580, desc: "Natural strawberry sleep aid gummies for restful recovery", icon: "🍓" }
+                    { id: 'm-fs2-1', name: "Mega Men Daily Multivitamin (90 Caplets)", price: 1250, desc: "Clinically formulated multivitamin for men's vitality and health", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs2-2', name: "Women's Ultra Mega Multivitamin (90 Caplets)", price: 1250, desc: "Advanced nutrition blend for women's energy, skin, and bones", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs2-3', name: "Triple Strength Fish Oil 1000mg (60 Softgels)", price: 890, desc: "Purified EPA/DHA Omega-3 heart, brain, and joint support", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs2-4', name: "Melatonin 5mg Gummies (60 pcs)", price: 580, desc: "Natural strawberry sleep aid gummies for restful recovery", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -1109,12 +1109,12 @@ const FoodDeliveryModule = {
                 lat: 14.5580,
                 lng: 121.0320,
                 address: "Salcedo Market, Makati",
-                icon: "🥬",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-fs3-1', name: "Cold-Pressed Green Detox Juice (500ml)", price: 180, desc: "Kale, cucumber, green apple, celery, and ginger", icon: "🥤" },
-                    { id: 'm-fs3-2', name: "Immunity Booster Ginger Turmeric Shot (100ml)", price: 95, desc: "Fresh pressed native turmeric, ginger, cayenne, and lemon", icon: "🍋" },
-                    { id: 'm-fs3-3', name: "Acai Berry Superfood Smoothie Bowl", price: 280, desc: "Organic frozen acai topped with sliced banana, granola, and chia", icon: "🥣" },
-                    { id: 'm-fs3-4', name: "Wild Forest Raw Honey (350ml)", price: 320, desc: "100% pure unpasteurized wild honey from Philippine native bees", icon: "🍯" }
+                    { id: 'm-fs3-1', name: "Cold-Pressed Green Detox Juice (500ml)", price: 180, desc: "Kale, cucumber, green apple, celery, and ginger", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs3-2', name: "Immunity Booster Ginger Turmeric Shot (100ml)", price: 95, desc: "Fresh pressed native turmeric, ginger, cayenne, and lemon", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs3-3', name: "Acai Berry Superfood Smoothie Bowl", price: 280, desc: "Organic frozen acai topped with sliced banana, granola, and chia", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs3-4', name: "Wild Forest Raw Honey (350ml)", price: 320, desc: "100% pure unpasteurized wild honey from Philippine native bees", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -1130,12 +1130,12 @@ const FoodDeliveryModule = {
                 lat: 14.5530,
                 lng: 121.0480,
                 address: "Bonifacio High Street, Taguig",
-                icon: "🥗",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-fs4-1', name: "Hail Caesar Salad Bowl", price: 360, desc: "Romaine lettuce, grilled chicken breast, grated parmesan, croutons", icon: "🥗" },
-                    { id: 'm-fs4-2', name: "Oh Crab Lah! Warm Grain Bowl", price: 390, desc: "Crab sticks, vermicelli, cherry tomatoes, and Singapore chili crab dressing", icon: "🦀" },
-                    { id: 'm-fs4-3', name: "Tuna San Salad Wrap", price: 380, desc: "Seared tuna loin, romaine, avocado, mandarin oranges, and wasabi honey", icon: "🌯" },
-                    { id: 'm-fs4-4', name: "Spirulina Super Booster Smoothie", price: 210, desc: "Almond milk, banana, baby spinach, spirulina, and agave nectar", icon: "🥤" }
+                    { id: 'm-fs4-1', name: "Hail Caesar Salad Bowl", price: 360, desc: "Romaine lettuce, grilled chicken breast, grated parmesan, croutons", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs4-2', name: "Oh Crab Lah! Warm Grain Bowl", price: 390, desc: "Crab sticks, vermicelli, cherry tomatoes, and Singapore chili crab dressing", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs4-3', name: "Tuna San Salad Wrap", price: 380, desc: "Seared tuna loin, romaine, avocado, mandarin oranges, and wasabi honey", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-fs4-4', name: "Spirulina Super Booster Smoothie", price: 210, desc: "Almond milk, banana, baby spinach, spirulina, and agave nectar", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             }
         ],
@@ -1153,12 +1153,12 @@ const FoodDeliveryModule = {
                 lat: 14.5585,
                 lng: 121.0220,
                 address: "Makati Ave, Makati",
-                icon: "🥪",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-sw1-1', name: "Italian B.M.T. Sub (6-inch)", price: 195, desc: "Genoa salami, spicy pepperoni, and black forest ham on toasted bread", icon: "🥪" },
-                    { id: 'm-sw1-2', name: "Subway Club Sub (6-inch)", price: 215, desc: "Sliced turkey breast, lean roast beef, and tender ham with choice of veggies", icon: "🥪" },
-                    { id: 'm-sw1-3', name: "Tuna Sub with Melted Cheese (6-inch)", price: 180, desc: "Flaked tuna blended with creamy mayo and crisp lettuce, pickles", icon: "🐟" },
-                    { id: 'm-sw1-4', name: "Chocolate Chip Cookie (3 pcs)", price: 110, desc: "Freshly baked soft cookies loaded with rich chocolate chips", icon: "🍪" }
+                    { id: 'm-sw1-1', name: "Italian B.M.T. Sub (6-inch)", price: 195, desc: "Genoa salami, spicy pepperoni, and black forest ham on toasted bread", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw1-2', name: "Subway Club Sub (6-inch)", price: 215, desc: "Sliced turkey breast, lean roast beef, and tender ham with choice of veggies", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw1-3', name: "Tuna Sub with Melted Cheese (6-inch)", price: 180, desc: "Flaked tuna blended with creamy mayo and crisp lettuce, pickles", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw1-4', name: "Chocolate Chip Cookie (3 pcs)", price: 110, desc: "Freshly baked soft cookies loaded with rich chocolate chips", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -1174,12 +1174,12 @@ const FoodDeliveryModule = {
                 lat: 14.5610,
                 lng: 121.0160,
                 address: "Chino Roces, Makati",
-                icon: "🥪",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-sw2-1', name: "Ultimate Roast Beef Sandwich", price: 165, desc: "Tender seasoned roast beef with garlic mayo on whole wheat hexagonal toast", icon: "🥩" },
-                    { id: 'm-sw2-2', name: "Country Chicken Sandwich", price: 145, desc: "Grilled chicken breast, cheese, sliced tomatoes, and honey mustard", icon: "🍗" },
-                    { id: 'm-sw2-3', name: "Cheesy Bacon Sandwich", price: 155, desc: "Crispy smoked bacon strips, melted cheddar cheese, and fresh lettuce", icon: "🥓" },
-                    { id: 'm-sw2-4', name: "Cream of Mushroom Soup", price: 85, desc: "Warm creamy soup with chopped button mushrooms and herb croutons", icon: "🍲" }
+                    { id: 'm-sw2-1', name: "Ultimate Roast Beef Sandwich", price: 165, desc: "Tender seasoned roast beef with garlic mayo on whole wheat hexagonal toast", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw2-2', name: "Country Chicken Sandwich", price: 145, desc: "Grilled chicken breast, cheese, sliced tomatoes, and honey mustard", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw2-3', name: "Cheesy Bacon Sandwich", price: 155, desc: "Crispy smoked bacon strips, melted cheddar cheese, and fresh lettuce", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw2-4', name: "Cream of Mushroom Soup", price: 85, desc: "Warm creamy soup with chopped button mushrooms and herb croutons", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -1195,12 +1195,12 @@ const FoodDeliveryModule = {
                 lat: 14.5520,
                 lng: 121.0515,
                 address: "BGC High Street Central, Taguig",
-                icon: "🥪",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-sw3-1', name: "The Original 1762 Hot Sandwich", price: 320, desc: "Warm roast beef, sharp cheddar, and horseradish sauce on artisan loaf", icon: "🥩" },
-                    { id: 'm-sw3-2', name: "Holiday Turkey Sandwich", price: 340, desc: "Roasted turkey, cornbread stuffing, cranberry sauce, and mayonnaise", icon: "🦃" },
-                    { id: 'm-sw3-3', name: "The Full Montagu", price: 325, desc: "Roast beef, turkey, Swiss cheese, cheddar, lettuce, and Earl's mustard", icon: "🥪" },
-                    { id: 'm-sw3-4', name: "Tomato & Mozzarella Warm Panini", price: 280, desc: "Fresh mozzarella, ripe tomatoes, basil, and balsamic reduction", icon: "🍅" }
+                    { id: 'm-sw3-1', name: "The Original 1762 Hot Sandwich", price: 320, desc: "Warm roast beef, sharp cheddar, and horseradish sauce on artisan loaf", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw3-2', name: "Holiday Turkey Sandwich", price: 340, desc: "Roasted turkey, cornbread stuffing, cranberry sauce, and mayonnaise", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw3-3', name: "The Full Montagu", price: 325, desc: "Roast beef, turkey, Swiss cheese, cheddar, lettuce, and Earl's mustard", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw3-4', name: "Tomato & Mozzarella Warm Panini", price: 280, desc: "Fresh mozzarella, ripe tomatoes, basil, and balsamic reduction", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             },
             {
@@ -1216,12 +1216,12 @@ const FoodDeliveryModule = {
                 lat: 14.5720,
                 lng: 121.0210,
                 address: "Circuit Makati, Makati",
-                icon: "🍔",
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>',
                 menu: [
-                    { id: 'm-sw4-1', name: "Bully Boy Burger (Triple Patty)", price: 395, desc: "Three 100% quarter-pound beef patties with melted cheese and toasted sesame bun", icon: "🍔" },
-                    { id: 'm-sw4-2', name: "Classic Single Burger", price: 225, desc: "Quarter-pound beef patty with fresh lettuce, onions, and tomato", icon: "🍔" },
-                    { id: 'm-sw4-3', name: "Steak Burrito Special", price: 295, desc: "Tender beef steak strips, Spanish rice, refried beans, onions, and cilantro", icon: "🌯" },
-                    { id: 'm-sw4-4', name: "Freedom Fries (Crispy Shoestring)", price: 115, desc: "Signature seasoned spiral-cut shoestring French fries", icon: "🍟" }
+                    { id: 'm-sw4-1', name: "Bully Boy Burger (Triple Patty)", price: 395, desc: "Three 100% quarter-pound beef patties with melted cheese and toasted sesame bun", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw4-2', name: "Classic Single Burger", price: 225, desc: "Quarter-pound beef patty with fresh lettuce, onions, and tomato", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw4-3', name: "Steak Burrito Special", price: 295, desc: "Tender beef steak strips, Spanish rice, refried beans, onions, and cilantro", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+                    { id: 'm-sw4-4', name: "Freedom Fries (Crispy Shoestring)", price: 115, desc: "Signature seasoned spiral-cut shoestring French fries", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
                 ]
             }
         ]
@@ -1273,7 +1273,7 @@ const FoodDeliveryModule = {
         const rawStores = this.storesData[this.selectedCraving] || [];
         const anchor = (typeof DeviceLocationManager !== 'undefined')
             ? DeviceLocationManager.getActiveAnchor()
-            : { type: 'home', label: 'Home Address', name: 'Home Location, Mandaluyong City', lat: 14.5822, lng: 121.0545, icon: '🏠' };
+            : { type: 'home', label: 'Home Address', name: 'Home Location, Mandaluyong City', lat: 14.5822, lng: 121.0545, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' };
 
         // Calculate dynamic distance and delivery estimates from active anchor (Home Address or Current Location)
         rawStores.forEach(store => {
@@ -1296,10 +1296,10 @@ const FoodDeliveryModule = {
         if (hintEl) {
             if (anchor.type === 'current') {
                 const accLabel = anchor.accuracy ? ` • ±${anchor.accuracy}m GPS` : ' • GPS Live';
-                hintEl.innerHTML = `<span class="text-blue-600 font-bold">📍 Origin: Current Location</span> <span class="text-[10px] text-blue-700 font-mono font-bold">(${accLabel.replace(' • ', '')})</span> • Sorted by nearest`;
+                hintEl.innerHTML = `<span class="text-blue-600 font-bold">Origin: Current Location</span> <span class="text-[10px] text-blue-700 font-mono font-bold">(${accLabel.replace(' • ', '')})</span> • Sorted by nearest`;
             } else {
                 const shortHome = (anchor.name || "Home Location").split(',')[0].trim();
-                hintEl.innerHTML = `<span class="text-emerald-700 font-bold">🏠 Origin: Home Address</span> (${shortHome}) • Sorted by nearest`;
+                hintEl.innerHTML = `<span class="text-emerald-700 font-bold">Origin: Home Address</span> (${shortHome}) • Sorted by nearest`;
             }
         }
 
@@ -1313,13 +1313,13 @@ const FoodDeliveryModule = {
                         <div>
                             <div class="flex items-center space-x-2">
                                 <h4 class="text-xs font-black text-slate-800 group-hover:text-amber-950">${store.name}</h4>
-                                <span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">★ ${store.rating}</span>
+                                <span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">${store.rating} Rating</span>
                             </div>
                             <p class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">${store.cuisineDesc}</p>
                             <div class="flex items-center space-x-2 text-[10px] text-slate-400 mt-1">
-                                <span class="font-medium text-slate-600">⏱️ ${store.computedEtaStr}</span>
+                                <span class="font-medium text-slate-600">ETA: ${store.computedEtaStr}</span>
                                 <span>•</span>
-                                <span class="font-medium text-slate-600">📍 ${store.computedDistStr}</span>
+                                <span class="font-medium text-slate-600">${store.computedDistStr}</span>
                                 <span>•</span>
                                 <span class="font-semibold text-emerald-600">₱${store.computedFee} Base Delivery</span>
                             </div>
@@ -1353,7 +1353,7 @@ const FoodDeliveryModule = {
             const anchorPinHtml = `
                 <div class="flex flex-col items-center cursor-pointer group" style="transform: translate(-50%, -100%);">
                     <div class="w-9 h-9 rounded-full ${isGps ? 'bg-blue-600' : 'bg-emerald-600'} text-white border-2 border-white flex items-center justify-center font-black text-sm shadow-xl">
-                        ${isGps ? '📍' : '🏠'}
+                        ${isGps ? 'GPS' : 'Home'}
                     </div>
                     <div class="px-2 py-0.5 rounded-md bg-slate-900/95 text-white text-[9px] font-black whitespace-nowrap shadow-md -mt-1 border ${isGps ? 'border-blue-400' : 'border-emerald-400'}">
                         ${isGps ? `Your Location${accText}` : 'Home Address'}
@@ -1414,12 +1414,12 @@ const FoodDeliveryModule = {
                 <div class="p-1 space-y-1 text-slate-800">
                     <div class="font-black text-xs text-amber-900 flex items-center justify-between">
                         <span>${store.name}</span>
-                        <span class="text-amber-600 font-bold">★ ${store.rating}</span>
+                        <span class="text-amber-600 font-bold">${store.rating} Rating</span>
                     </div>
                     <div class="text-[10px] text-slate-500">${store.address}</div>
                     <div class="text-[10px] text-slate-600 font-medium">Est. Delivery: ${etaLabel} • ${distLabel}</div>
                     <button type="button" onclick="FoodDeliveryModule.selectStore('${store.id}')" class="mt-1.5 w-full py-1 px-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-hirna-950 font-black text-xs shadow-xs transition cursor-pointer">
-                        View Menu & Order ➔
+                        View Menu & Order
                     </button>
                 </div>
             `);
@@ -1497,7 +1497,7 @@ const FoodDeliveryModule = {
             this.clearStoreMarkers();
             const storePin = L.divIcon({
                 className: 'custom-pin',
-                html: `<div class="w-9 h-9 rounded-2xl bg-amber-500 text-hirna-950 border-2 border-white flex items-center justify-center font-black text-base shadow-xl">🏪</div>`,
+                html: `<div class="w-9 h-9 rounded-2xl bg-amber-500 text-hirna-950 border-2 border-white flex items-center justify-center font-black text-base shadow-xl"></div>`,
                 iconSize: [36, 36],
                 iconAnchor: [18, 36]
             });
@@ -1521,10 +1521,10 @@ const FoodDeliveryModule = {
         const distEl = document.getElementById('food-menu-store-distance');
 
         if (nameEl) nameEl.innerText = store.name;
-        if (ratingEl) ratingEl.innerText = `★ ${store.rating} (${store.reviews})`;
+        if (ratingEl) ratingEl.innerText = `${store.rating} Rating (${store.reviews})`;
         if (addrEl) addrEl.innerText = store.address;
-        if (etaEl) etaEl.innerText = `⏱️ ${store.computedEtaStr || store.eta}`;
-        if (distEl) distEl.innerText = `📍 ${store.computedDistStr || store.distance}`;
+        if (etaEl) etaEl.innerText = `ETA: ${store.computedEtaStr || store.eta}`;
+        if (distEl) distEl.innerText = `${store.computedDistStr || store.distance}`;
 
         const menuList = document.getElementById('food-menu-items-list');
         if (menuList) {
@@ -1532,7 +1532,7 @@ const FoodDeliveryModule = {
                 <div onclick="FoodDeliveryModule.openQuantityModal('${item.id}')" class="p-3 bg-white hover:bg-amber-50/40 border border-slate-200 hover:border-amber-400 rounded-xl transition cursor-pointer flex items-center justify-between group shadow-xs">
                     <div class="flex items-start space-x-3 pr-2 min-w-0">
                         <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-800 border border-amber-100 flex items-center justify-center text-xl flex-shrink-0 group-hover:scale-105 transition">
-                            ${item.icon || '🍽️'}
+                            ${item.icon || ''}
                         </div>
                         <div class="min-w-0">
                             <h5 class="text-xs font-black text-slate-800 group-hover:text-amber-950 truncate">${item.name}</h5>
@@ -1587,7 +1587,7 @@ const FoodDeliveryModule = {
         const subtotalEl = document.getElementById('food-modal-subtotal');
         const notesEl = document.getElementById('food-modal-notes');
 
-        if (iconEl) iconEl.innerText = item.icon || '🥟';
+        if (iconEl) iconEl.innerText = item.icon || '';
         if (titleEl) titleEl.innerText = item.name;
         if (descEl) descEl.innerText = item.desc;
         if (priceEl) priceEl.innerText = `₱${item.price.toFixed(2)} each`;
@@ -1706,7 +1706,7 @@ const FoodDeliveryModule = {
         if (this.cart.length === 0) {
             listEl.innerHTML = `
                 <div class="p-6 text-center text-xs text-slate-400 bg-white rounded-xl border border-slate-200 space-y-2">
-                    <div class="text-3xl">🛒</div>
+                    <div class="text-xs font-bold text-slate-400">Empty Cart</div>
                     <div class="font-bold text-slate-700">Your cart is empty</div>
                     <p class="text-[11px] text-slate-400">Head back to the menu to add delicious meals!</p>
                 </div>
@@ -1899,7 +1899,7 @@ const FoodDeliveryModule = {
         // 2. Place Store Marker
         const storePin = L.divIcon({
             className: 'custom-pin',
-            html: `<div class="w-8 h-8 rounded-full bg-amber-500 text-hirna-950 flex items-center justify-center font-bold text-base shadow-lg border-2 border-white">🏪</div>`,
+            html: `<div class="w-8 h-8 rounded-full bg-amber-500 text-hirna-950 flex items-center justify-center font-bold text-base shadow-lg border-2 border-white"></div>`,
             iconSize: [32, 32],
             iconAnchor: [16, 32]
         });
@@ -1909,7 +1909,7 @@ const FoodDeliveryModule = {
         // 3. Place Dropoff Marker
         const dropPin = L.divIcon({
             className: 'custom-pin',
-            html: `<div class="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-base shadow-lg border-2 border-white">🏁</div>`,
+            html: `<div class="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-base shadow-lg border-2 border-white"></div>`,
             iconSize: [32, 32],
             iconAnchor: [16, 32]
         });
@@ -2000,7 +2000,7 @@ const FoodDeliveryModule = {
             name: this.dropoffName,
             lat: this.dropoffCoords[0],
             lng: this.dropoffCoords[1],
-            icon: "📍"
+            icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>'
         });
 
         const paymentMethod = document.querySelector('input[name="food-payment-method"]:checked')?.value || "Cash on Delivery (COD)";
@@ -2119,31 +2119,32 @@ const BookingModule = {
         if (!icon) return `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
         if (typeof icon === 'string' && icon.startsWith('<')) return icon;
 
+        const defaultSvg = `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
+
         const map = {
-            '⭐': `<svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`,
-            '🏠': `<svg class="w-3.5 h-3.5 text-gold-700" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`,
-            '🕒': `<svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
-            '📍': `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`,
-            '🏁': `<svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>`,
-            '🎯': `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>`,
-            '🏬': `<svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>`,
-            '🛍️': `<svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>`,
-            '🏘️': `<svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>`,
-            '✈️': `<svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>`,
-            '🚌': `<svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
-            '🏛️': `<svg class="w-3.5 h-3.5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>`,
-            '🌳': `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>`,
-            '🎓': `<svg class="w-3.5 h-3.5 text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>`,
-            '🏥': `<svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>`,
-            '🛣️': `<svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>`,
-            '🍔': `<svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>`
+            'star': `<svg class="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`,
+            'home': `<svg class="w-3.5 h-3.5 text-gold-700" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`,
+            'time': `<svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+            'pin': defaultSvg,
+            'dropoff': `<svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>`,
+            'target': `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>`,
+            'mall': `<svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>`,
+            'residential': `<svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>`,
+            'airport': `<svg class="w-3.5 h-3.5 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>`,
+            'bus': `<svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>`,
+            'landmark': `<svg class="w-3.5 h-3.5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>`,
+            'park': `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>`,
+            'school': `<svg class="w-3.5 h-3.5 text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>`,
+            'hospital': `<svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>`,
+            'road': `<svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>`,
+            'food': `<svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>`
         };
-        return map[icon] || map['📍'];
+        return map[icon] || defaultSvg;
     },
 
     serviceOptions: {
         transport: [
-            { id: "Motorcycle (1-Passenger)", title: "Hirna Moto", desc: "1-Passenger Motorcycle", icon: `<div class="w-7 h-7 mx-auto mb-1 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-lg">🛵</div>`, default: true },
+            { id: "Motorcycle (1-Passenger)", title: "Hirna Moto", desc: "1-Passenger Motorcycle", icon: `<div class="w-7 h-7 mx-auto mb-1 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-lg"></div>`, default: true },
             { id: "Sedan (4-Seater)", title: "Hirna Taxi", desc: "4-Seater Sedan", icon: `<div class="w-7 h-7 mx-auto mb-1 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg></div>` },
             { id: "MPV (6-Seater)", title: "Hirna MPV", desc: "6-Seater Innova", icon: `<div class="w-7 h-7 mx-auto mb-1 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg></div>` }
         ],
@@ -2165,61 +2166,61 @@ const BookingModule = {
     // Comprehensive Philippine Landmark & Mall Presets for Autocomplete
     presets: [
         // SM Malls - Greater Manila, Bulacan & Key Provinces
-        { name: "SM City San Jose del Monte", city: "San Jose del Monte, Bulacan", lat: 14.7857, lng: 121.0758, icon: "🏬" },
-        { name: "SM Fairview, Quezon City", city: "Quezon City", lat: 14.7344, lng: 121.0583, icon: "🏬" },
-        { name: "SM Megamall, Ortigas, Pasig", city: "Mandaluyong / Pasig", lat: 14.5843, lng: 121.0567, icon: "🏬" },
-        { name: "SM Mall of Asia, Pasay", city: "Pasay City", lat: 14.5353, lng: 120.9829, icon: "🏬" },
-        { name: "SM North EDSA, Quezon City", city: "Quezon City", lat: 14.6565, lng: 121.0287, icon: "🏬" },
-        { name: "SM City Grand Central, Caloocan", city: "Caloocan City", lat: 14.6547, lng: 120.9839, icon: "🏬" },
-        { name: "SM City Marilao, Bulacan", city: "Marilao, Bulacan", lat: 14.7621, lng: 120.9614, icon: "🏬" },
-        { name: "SM City San Mateo, Rizal", city: "San Mateo, Rizal", lat: 14.6946, lng: 121.1215, icon: "🏬" },
-        { name: "SM City Taytay, Rizal", city: "Taytay, Rizal", lat: 14.5619, lng: 121.1342, icon: "🏬" },
-        { name: "SM City Bacoor, Cavite", city: "Bacoor, Cavite", lat: 14.4593, lng: 120.9419, icon: "🏬" },
-        { name: "SM City Dasmariñas, Cavite", city: "Dasmariñas, Cavite", lat: 14.3015, lng: 120.9575, icon: "🏬" },
-        { name: "SM City Santa Rosa, Laguna", city: "Santa Rosa, Laguna", lat: 14.3135, lng: 121.0978, icon: "🏬" },
-        { name: "SM City Clark, Pampanga", city: "Angeles City, Pampanga", lat: 15.1685, lng: 120.5794, icon: "🏬" },
-        { name: "SM City Baguio, Benguet", city: "Baguio City", lat: 16.4087, lng: 120.5997, icon: "🏬" },
-        { name: "SM City Davao, Ecoland", city: "Davao City", lat: 7.0504, lng: 125.5947, icon: "🏬" },
-        { name: "SM Lanang Premier, Davao", city: "Davao City", lat: 7.0988, lng: 125.6322, icon: "🏬" },
-        { name: "SM Seaside City Cebu", city: "Cebu City", lat: 10.2818, lng: 123.8812, icon: "🏬" },
-        { name: "SM City Cebu, North Reclamation", city: "Cebu City", lat: 10.3117, lng: 123.9184, icon: "🏬" },
-        { name: "SM CDO Downtown Premier", city: "Cagayan de Oro", lat: 8.4842, lng: 124.6517, icon: "🏬" },
-        { name: "SM Aura Premier, BGC, Taguig", city: "Taguig", lat: 14.5469, lng: 121.0543, icon: "🏬" },
-        { name: "SM City Manila, Ermita", city: "Manila", lat: 14.5902, lng: 120.9832, icon: "🏬" },
-        { name: "SM Southmall, Las Piñas", city: "Las Piñas", lat: 14.4343, lng: 121.0108, icon: "🏬" },
-        { name: "SM San Lazaro, Sta. Cruz", city: "Manila", lat: 14.6190, lng: 120.9866, icon: "🏬" },
-        { name: "SM Marikina, Marcos Highway", city: "Marikina City", lat: 14.6267, lng: 121.0847, icon: "🏬" },
+        { name: "SM City San Jose del Monte", city: "San Jose del Monte, Bulacan", lat: 14.7857, lng: 121.0758, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM Fairview, Quezon City", city: "Quezon City", lat: 14.7344, lng: 121.0583, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM Megamall, Ortigas, Pasig", city: "Mandaluyong / Pasig", lat: 14.5843, lng: 121.0567, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM Mall of Asia, Pasay", city: "Pasay City", lat: 14.5353, lng: 120.9829, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM North EDSA, Quezon City", city: "Quezon City", lat: 14.6565, lng: 121.0287, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Grand Central, Caloocan", city: "Caloocan City", lat: 14.6547, lng: 120.9839, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Marilao, Bulacan", city: "Marilao, Bulacan", lat: 14.7621, lng: 120.9614, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City San Mateo, Rizal", city: "San Mateo, Rizal", lat: 14.6946, lng: 121.1215, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Taytay, Rizal", city: "Taytay, Rizal", lat: 14.5619, lng: 121.1342, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Bacoor, Cavite", city: "Bacoor, Cavite", lat: 14.4593, lng: 120.9419, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Dasmariñas, Cavite", city: "Dasmariñas, Cavite", lat: 14.3015, lng: 120.9575, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Santa Rosa, Laguna", city: "Santa Rosa, Laguna", lat: 14.3135, lng: 121.0978, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Clark, Pampanga", city: "Angeles City, Pampanga", lat: 15.1685, lng: 120.5794, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Baguio, Benguet", city: "Baguio City", lat: 16.4087, lng: 120.5997, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Davao, Ecoland", city: "Davao City", lat: 7.0504, lng: 125.5947, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM Lanang Premier, Davao", city: "Davao City", lat: 7.0988, lng: 125.6322, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM Seaside City Cebu", city: "Cebu City", lat: 10.2818, lng: 123.8812, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Cebu, North Reclamation", city: "Cebu City", lat: 10.3117, lng: 123.9184, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM CDO Downtown Premier", city: "Cagayan de Oro", lat: 8.4842, lng: 124.6517, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM Aura Premier, BGC, Taguig", city: "Taguig", lat: 14.5469, lng: 121.0543, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM City Manila, Ermita", city: "Manila", lat: 14.5902, lng: 120.9832, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM Southmall, Las Piñas", city: "Las Piñas", lat: 14.4343, lng: 121.0108, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM San Lazaro, Sta. Cruz", city: "Manila", lat: 14.6190, lng: 120.9866, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "SM Marikina, Marcos Highway", city: "Marikina City", lat: 14.6267, lng: 121.0847, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
 
         // Commercial Centers & Bulacan / Metro Hubs
-        { name: "Starmall San Jose Del Monte", city: "San Jose del Monte, Bulacan", lat: 14.7937, lng: 121.0792, icon: "🏬" },
-        { name: "Tungkong Mangga (Tungko), SJDM", city: "San Jose del Monte, Bulacan", lat: 14.7865, lng: 121.0745, icon: "🏘️" },
-        { name: "Ayala Malls Circuit, Makati", city: "Makati City", lat: 14.5758, lng: 121.0183, icon: "🛍️" },
-        { name: "Bonifacio High Street, BGC", city: "Taguig", lat: 14.5517, lng: 121.0509, icon: "🛍️" },
-        { name: "Greenbelt 5, Ayala Center, Makati", city: "Makati City", lat: 14.5524, lng: 121.0205, icon: "🛍️" },
-        { name: "Glorietta, Ayala Center, Makati", city: "Makati City", lat: 14.5508, lng: 121.0261, icon: "🛍️" },
-        { name: "Trinoma Mall, North Avenue, QC", city: "Quezon City", lat: 14.6534, lng: 121.0336, icon: "🛍️" },
-        { name: "Eastwood Mall, Libis, QC", city: "Quezon City", lat: 14.6105, lng: 121.0805, icon: "🛍️" },
-        { name: "Venice Grand Canal Mall, McKinley Hill", city: "Taguig", lat: 14.5350, lng: 121.0514, icon: "🛍️" },
-        { name: "Robinsons Galleria, Ortigas", city: "Quezon City", lat: 14.5901, lng: 121.0594, icon: "🛍️" },
+        { name: "Starmall San Jose Del Monte", city: "San Jose del Monte, Bulacan", lat: 14.7937, lng: 121.0792, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "Tungkong Mangga (Tungko), SJDM", city: "San Jose del Monte, Bulacan", lat: 14.7865, lng: 121.0745, icon: "️" },
+        { name: "Ayala Malls Circuit, Makati", city: "Makati City", lat: 14.5758, lng: 121.0183, icon: "️" },
+        { name: "Bonifacio High Street, BGC", city: "Taguig", lat: 14.5517, lng: 121.0509, icon: "️" },
+        { name: "Greenbelt 5, Ayala Center, Makati", city: "Makati City", lat: 14.5524, lng: 121.0205, icon: "️" },
+        { name: "Glorietta, Ayala Center, Makati", city: "Makati City", lat: 14.5508, lng: 121.0261, icon: "️" },
+        { name: "Trinoma Mall, North Avenue, QC", city: "Quezon City", lat: 14.6534, lng: 121.0336, icon: "️" },
+        { name: "Eastwood Mall, Libis, QC", city: "Quezon City", lat: 14.6105, lng: 121.0805, icon: "️" },
+        { name: "Venice Grand Canal Mall, McKinley Hill", city: "Taguig", lat: 14.5350, lng: 121.0514, icon: "️" },
+        { name: "Robinsons Galleria, Ortigas", city: "Quezon City", lat: 14.5901, lng: 121.0594, icon: "️" },
 
         // Airports & Terminals
-        { name: "NAIA Terminal 3, Pasay", city: "Pasay City", lat: 14.5202, lng: 121.0156, icon: "✈️" },
-        { name: "NAIA Terminal 1, Pasay", city: "Parañaque", lat: 14.5097, lng: 121.0003, icon: "✈️" },
-        { name: "NAIA Terminal 2, Pasay", city: "Pasay City", lat: 14.5123, lng: 121.0045, icon: "✈️" },
-        { name: "Francisco Bangoy International Airport, Davao", city: "Davao City", lat: 7.1253, lng: 125.6456, icon: "✈️" },
-        { name: "PITX - Parañaque Integrated Terminal Exchange", city: "Parañaque", lat: 14.5106, lng: 120.9912, icon: "🚌" },
-        { name: "Araneta Center Bus Station, Cubao", city: "Quezon City", lat: 14.6219, lng: 121.0528, icon: "🚌" },
+        { name: "NAIA Terminal 3, Pasay", city: "Pasay City", lat: 14.5202, lng: 121.0156, icon: "️" },
+        { name: "NAIA Terminal 1, Pasay", city: "Parañaque", lat: 14.5097, lng: 121.0003, icon: "️" },
+        { name: "NAIA Terminal 2, Pasay", city: "Pasay City", lat: 14.5123, lng: 121.0045, icon: "️" },
+        { name: "Francisco Bangoy International Airport, Davao", city: "Davao City", lat: 7.1253, lng: 125.6456, icon: "️" },
+        { name: "PITX - Parañaque Integrated Terminal Exchange", city: "Parañaque", lat: 14.5106, lng: 120.9912, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "Araneta Center Bus Station, Cubao", city: "Quezon City", lat: 14.6219, lng: 121.0528, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
 
         // Civic & Academic Hubs
-        { name: "Quezon Memorial Circle, QC", city: "Quezon City", lat: 14.6507, lng: 121.0494, icon: "🏛️" },
-        { name: "Davao City Hall, San Pedro St", city: "Davao City", lat: 7.0644, lng: 125.6092, icon: "🏛️" },
-        { name: "People's Park, Davao City", city: "Davao City", lat: 7.0683, lng: 125.6083, icon: "🌳" },
-        { name: "Rizal Park, Luneta, Manila", city: "Manila", lat: 14.5831, lng: 120.9794, icon: "🌳" },
-        { name: "UP Diliman, Quezon City", city: "Quezon City", lat: 14.6538, lng: 121.0685, icon: "🎓" },
-        { name: "Ateneo de Manila University, QC", city: "Quezon City", lat: 14.6394, lng: 121.0779, icon: "🎓" },
-        { name: "UST - University of Santo Tomas, Manila", city: "Manila", lat: 14.6095, lng: 120.9899, icon: "🎓" },
-        { name: "De La Salle University, Taft Ave, Manila", city: "Manila", lat: 14.5647, lng: 120.9932, icon: "🎓" },
-        { name: "St. Luke's Medical Center, Global City", city: "Taguig", lat: 14.5540, lng: 121.0487, icon: "🏥" }
+        { name: "Quezon Memorial Circle, QC", city: "Quezon City", lat: 14.6507, lng: 121.0494, icon: "️" },
+        { name: "Davao City Hall, San Pedro St", city: "Davao City", lat: 7.0644, lng: 125.6092, icon: "️" },
+        { name: "People's Park, Davao City", city: "Davao City", lat: 7.0683, lng: 125.6083, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "Rizal Park, Luneta, Manila", city: "Manila", lat: 14.5831, lng: 120.9794, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "UP Diliman, Quezon City", city: "Quezon City", lat: 14.6538, lng: 121.0685, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "Ateneo de Manila University, QC", city: "Quezon City", lat: 14.6394, lng: 121.0779, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "UST - University of Santo Tomas, Manila", city: "Manila", lat: 14.6095, lng: 120.9899, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "De La Salle University, Taft Ave, Manila", city: "Manila", lat: 14.5647, lng: 120.9932, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
+        { name: "St. Luke's Medical Center, Global City", city: "Taguig", lat: 14.5540, lng: 121.0487, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }
     ],
 
     init() {
@@ -2434,7 +2435,7 @@ const BookingModule = {
                         FoodDeliveryModule.setFoodDropoff(e.latlng.lat, e.latlng.lng, initialName);
                         this.deactivateMapClickMode();
                         if (nearestPreset) {
-                            SavedAddressManager.addRecent({ name: nearestPreset.name, lat: nearestPreset.lat, lng: nearestPreset.lng, icon: nearestPreset.icon || "📍" });
+                            SavedAddressManager.addRecent({ name: nearestPreset.name, lat: nearestPreset.lat, lng: nearestPreset.lng, icon: nearestPreset.icon || "" });
                             if (typeof App !== 'undefined') {
                                 App.showToast(`Landmark selected: "${nearestPreset.name}"`, "success");
                             }
@@ -2445,7 +2446,7 @@ const BookingModule = {
                                     this.updateClearBtnVisibility(targetInputId);
                                 }
                                 FoodDeliveryModule.setFoodDropoff(e.latlng.lat, e.latlng.lng, resolvedLandmark);
-                                SavedAddressManager.addRecent({ name: resolvedLandmark, lat: e.latlng.lat, lng: e.latlng.lng, icon: "📍" });
+                                SavedAddressManager.addRecent({ name: resolvedLandmark, lat: e.latlng.lat, lng: e.latlng.lng, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' });
                                 if (typeof App !== 'undefined') {
                                     App.showToast(`Landmark identified: "${resolvedLandmark}"`, "success");
                                 }
@@ -2473,7 +2474,7 @@ const BookingModule = {
 
                     // If exact preset matched, finalize immediately
                     if (nearestPreset) {
-                        SavedAddressManager.addRecent({ name: nearestPreset.name, lat: nearestPreset.lat, lng: nearestPreset.lng, icon: nearestPreset.icon || "📍" });
+                        SavedAddressManager.addRecent({ name: nearestPreset.name, lat: nearestPreset.lat, lng: nearestPreset.lng, icon: nearestPreset.icon || "" });
                         if (typeof App !== 'undefined') {
                             App.showToast(`Landmark selected: "${nearestPreset.name}"`, "success");
                         }
@@ -2505,7 +2506,7 @@ const BookingModule = {
                                 }
                             }
 
-                            SavedAddressManager.addRecent({ name: resolvedLandmark, lat: e.latlng.lat, lng: e.latlng.lng, icon: "📍" });
+                            SavedAddressManager.addRecent({ name: resolvedLandmark, lat: e.latlng.lat, lng: e.latlng.lng, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' });
                             this.checkBothAddressesFilled();
 
                             if (typeof App !== 'undefined') {
@@ -2543,29 +2544,29 @@ const BookingModule = {
             const type = item.type || '';
             const addrType = item.addresstype || '';
 
-            if (cls === 'highway' || type === 'road' || addrType === 'road') return '🛣️';
-            if (cls === 'boundary' || addrType === 'suburb' || addrType === 'quarter' || addrType === 'village' || addrType === 'neighbourhood' || addrType === 'borough') return '🏘️';
-            if (cls === 'shop' || type === 'mall' || type === 'department_store' || type === 'supermarket') return '🏬';
-            if (cls === 'amenity' && (type === 'school' || type === 'university' || type === 'college')) return '🎓';
-            if (cls === 'amenity' && (type === 'hospital' || type === 'clinic' || type === 'pharmacy')) return '🏥';
-            if (cls === 'aeroway' || type === 'aerodrome' || type === 'terminal') return '✈️';
-            if (cls === 'tourism' || cls === 'leisure' || type === 'park') return '🏛️';
-            if (cls === 'amenity' && (type === 'restaurant' || type === 'fast_food' || type === 'cafe')) return '🍔';
-            return '📍';
+            if (cls === 'highway' || type === 'road' || addrType === 'road') return 'road';
+            if (cls === 'boundary' || addrType === 'suburb' || addrType === 'quarter' || addrType === 'village' || addrType === 'neighbourhood' || addrType === 'borough') return 'residential';
+            if (cls === 'shop' || type === 'mall' || type === 'department_store' || type === 'supermarket') return 'mall';
+            if (cls === 'amenity' && (type === 'school' || type === 'university' || type === 'college')) return 'school';
+            if (cls === 'amenity' && (type === 'hospital' || type === 'clinic' || type === 'pharmacy')) return 'hospital';
+            if (cls === 'aeroway' || type === 'aerodrome' || type === 'terminal') return 'airport';
+            if (cls === 'tourism' || cls === 'leisure' || type === 'park') return '️';
+            if (cls === 'amenity' && (type === 'restaurant' || type === 'fast_food' || type === 'cafe')) return 'food';
+            return 'pin';
         };
 
         const getPhotonIcon = (p) => {
             const key = p.osm_key || '';
             const val = p.osm_value || '';
-            if (key === 'highway' || val === 'road' || val === 'residential') return '🛣️';
-            if (key === 'boundary' || val === 'administrative' || p.district || p.locality) return '🏘️';
-            if (key === 'shop' || val === 'mall' || val === 'supermarket' || val === 'department_store') return '🏬';
-            if (key === 'amenity' && (val === 'school' || val === 'university' || val === 'college')) return '🎓';
-            if (key === 'amenity' && (val === 'hospital' || val === 'clinic' || val === 'pharmacy')) return '🏥';
-            if (key === 'aeroway' || val === 'aerodrome') return '✈️';
-            if (key === 'tourism' || key === 'leisure' || val === 'park') return '🏛️';
-            if (key === 'amenity' && (val === 'restaurant' || val === 'fast_food' || val === 'cafe')) return '🍔';
-            return '📍';
+            if (key === 'highway' || val === 'road' || val === 'residential') return 'road';
+            if (key === 'boundary' || val === 'administrative' || p.district || p.locality) return 'residential';
+            if (key === 'shop' || val === 'mall' || val === 'supermarket' || val === 'department_store') return 'mall';
+            if (key === 'amenity' && (val === 'school' || val === 'university' || val === 'college')) return 'school';
+            if (key === 'amenity' && (val === 'hospital' || val === 'clinic' || val === 'pharmacy')) return 'hospital';
+            if (key === 'aeroway' || val === 'aerodrome') return 'airport';
+            if (key === 'tourism' || key === 'leisure' || val === 'park') return '️';
+            if (key === 'amenity' && (val === 'restaurant' || val === 'fast_food' || val === 'cafe')) return 'food';
+            return 'pin';
         };
 
         const formatOsmItem = (item) => {
@@ -2635,7 +2636,7 @@ const BookingModule = {
 
             // For single-location inputs (Food dropoff, Parcel sender, Parcel dropoff),
             // show ONLY single locations (Home + Saved favorite places) and remove Transport 2-location routes!
-            const singleSavedPlaces = (home ? [{ ...home, label: "Home Address", icon: "🏠", isHome: true }] : []).concat(savedAddrs);
+            const singleSavedPlaces = (home ? [{ ...home, label: "Home Address", icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>', isHome: true }] : []).concat(savedAddrs);
             const totalSaved = isSingleLocationInput ? singleSavedPlaces.length : (savedRoutes.length + savedAddrs.length);
 
             let html = `
@@ -2683,7 +2684,7 @@ const BookingModule = {
                             <div class="autocomplete-saved-place-opt p-2.5 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/70 cursor-pointer transition flex items-center justify-between group shadow-sm bg-white" data-single-idx="${sIdx}">
                                 <div class="flex items-center space-x-2.5 flex-1 min-w-0 pr-2">
                                     <div class="w-8 h-8 rounded-lg bg-amber-100 group-hover:bg-amber-400 text-amber-900 flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-sm transition">
-                                        ${place.icon || "⭐"}
+                                        ${place.icon || ""}
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <div class="text-xs font-bold text-slate-800 group-hover:text-amber-950 truncate">${place.label || place.name}</div>
@@ -2742,7 +2743,7 @@ const BookingModule = {
                                 <div class="autocomplete-saved-place-opt p-2 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/70 cursor-pointer transition flex items-center justify-between group shadow-sm bg-white" data-saved-idx="${sIdx}">
                                     <div class="flex items-center space-x-2.5 flex-1 min-w-0 pr-2">
                                         <div class="w-7 h-7 rounded-lg bg-amber-100 group-hover:bg-amber-400 text-amber-900 flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-sm transition">
-                                            ${place.icon || "⭐"}
+                                            ${place.icon || ""}
                                         </div>
                                         <div class="flex-1 min-w-0">
                                             <div class="text-xs font-bold text-slate-800 group-hover:text-amber-950 truncate">${place.label || place.name}</div>
@@ -3074,7 +3075,7 @@ const BookingModule = {
                 this.updateClearBtnVisibility(inputId);
                 dropdown.classList.add('hidden');
                 const center = this.map ? this.map.getCenter() : { lat: 14.5547, lng: 121.0244 };
-                const customPlace = { lat: center.lat, lng: center.lng, name: query, icon: "📍" };
+                const customPlace = { lat: center.lat, lng: center.lng, name: query, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' };
                 SavedAddressManager.addRecent(customPlace);
                 onSelectCallback(customPlace);
                 this.checkBothAddressesFilled();
@@ -3612,21 +3613,21 @@ const BookingModule = {
             city: 'Philippines',
             lat: pLat,
             lng: pLng,
-            icon: "📍"
+            icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>'
         };
         const dropoffObj = {
             name: dName,
             city: 'Philippines',
             lat: dLat,
             lng: dLng,
-            icon: "🏁"
+            icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>'
         };
 
         const savedRoute = SavedAddressManager.saveRoute(pickupObj, dropoffObj);
 
         // Also save to individual favorites
-        SavedAddressManager.saveAddress({ ...pickupObj, icon: "⭐" }, pName);
-        SavedAddressManager.saveAddress({ ...dropoffObj, icon: "⭐" }, dName);
+        SavedAddressManager.saveAddress({ ...pickupObj, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }, pName);
+        SavedAddressManager.saveAddress({ ...dropoffObj, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' }, dName);
 
         this.updateSaveTripButtonState();
 
@@ -3664,7 +3665,7 @@ const BookingModule = {
                 city: 'Philippines',
                 lat: cLat,
                 lng: cLng,
-                icon: "⭐"
+                icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>'
             }, customLabel || name);
 
             if (typeof App !== 'undefined') {
@@ -3985,7 +3986,7 @@ const BookingModule = {
             // Handled in home modal
         }
 
-        SavedAddressManager.addRecent({ name, lat, lng, icon: "📍" });
+        SavedAddressManager.addRecent({ name, lat, lng, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' });
         this.checkBothAddressesFilled();
 
         // Update map live marker and pan to the current location
@@ -4050,7 +4051,7 @@ const BookingModule = {
             city: match ? match.city : "Philippines",
             lat: coords[0] || 14.5547,
             lng: coords[1] || 121.0244,
-            icon: "🏠"
+            icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>'
         };
 
         const isEdit = SavedAddressManager.hasHome();
@@ -4429,7 +4430,7 @@ const BookingModule = {
                     const bName = document.getElementById('parcel-booker-name')?.value || this.bookerName || 'Sender';
                     const bPhone = document.getElementById('parcel-booker-phone')?.value || this.bookerPhone || '';
                     const bAddr = document.getElementById('parcel-booker-address')?.value || this.pickupName || 'Pickup Location';
-                    const schedStr = this.isParcelScheduled ? ` • 🕒 ${this.parcelScheduledTimeStr || 'Scheduled'}` : ' • ⚡ Immediate Dispatch';
+                    const schedStr = this.isParcelScheduled ? ` •  ${this.parcelScheduledTimeStr || 'Scheduled'}` : ' •  Immediate Dispatch';
                     senderSummary.innerText = `Sender: ${bName} (${bPhone}) • Address: ${bAddr}${schedStr}`;
                 }
             }
@@ -4840,7 +4841,7 @@ const BookingModule = {
     getDropoffIcon(distText) {
         const badgeHtml = distText ? `
             <div class="absolute -top-8 whitespace-nowrap bg-slate-900/95 text-white px-2 py-0.5 rounded-lg border border-amber-400 shadow-2xl flex items-center space-x-1 text-[11px] font-black pointer-events-none z-20">
-                <span class="text-amber-400 text-xs leading-none">🏁</span>
+                <span class="text-amber-400 text-xs leading-none"></span>
                 <span class="text-white font-mono font-bold" id="dropoff-pin-dist-badge">${distText}</span>
                 <div class="absolute -bottom-1 left-1/2 -translate-x-1/2" style="width: 0; height: 0; border-left: 3px solid transparent; border-right: 3px solid transparent; border-top: 4px solid #fbbf24;"></div>
             </div>
@@ -4862,14 +4863,14 @@ const BookingModule = {
     },
 
     getVehicleIcon(booking) {
-        if (!booking) return '🚗';
+        if (!booking) return '';
         const model = (booking.vehicle_model || '').toLowerCase();
         const vClass = (booking.vehicle_class || '').toLowerCase();
         const service = (booking.service_type || '').toLowerCase();
 
         // 1. Cargo Van / MPV (for cargo crates >10kg)
         if (vClass.includes('cargo') || vClass.includes('crate') || model.includes('van') || model.includes('l300') || (service === 'parcel' && vClass.includes('heavy'))) {
-            return '🚐';
+            return '';
         }
 
         // 2. Motorcycle Couriers (Scooters & Manuals 125cc-175cc for Food & Parcel <10kg)
@@ -4883,11 +4884,11 @@ const BookingModule = {
 
         if (isMotorcycle) {
             const isScooter = model.includes('scooter') || model.includes('nmax') || model.includes('click') || model.includes('aerox') || model.includes('adv') || model.includes('pcx');
-            return isScooter ? '🛵' : '🏍️';
+            return isScooter ? '' : '️';
         }
 
         // 3. Passenger Transport Cars (Sedan / MPV / Taxi)
-        return '🚗';
+        return '';
     },
 
     getDriverIcon(booking, distText, etaText) {
@@ -5546,7 +5547,7 @@ const BookingModule = {
                 <td class="px-4 py-3 font-mono font-bold text-hirna-700 text-xs">
                     ${b.booking_code}
                     ${b.service_type === 'parcel' ? '<span class="ml-1 text-[9px] bg-amber-100 text-amber-800 px-1 rounded">PARCEL</span>' : ''}
-                    ${b.is_scheduled ? `<span class="ml-1 text-[9px] bg-gold-100 text-gold-900 border border-gold-300 px-1 rounded font-bold">🕒 ${b.scheduled_time || 'SCHEDULED'}</span>` : ''}
+                    ${b.is_scheduled ? `<span class="ml-1 text-[9px] bg-gold-100 text-gold-900 border border-gold-300 px-1 rounded font-bold"> ${b.scheduled_time || 'SCHEDULED'}</span>` : ''}
                 </td>
                 <td class="px-4 py-3 text-xs text-slate-800 font-medium">
                     ${b.pickup} <br/>
@@ -5854,7 +5855,7 @@ const BookingModule = {
         // Reset step indicators
         if (step1) {
             step1.className = "flex items-center space-x-2.5";
-            step1.innerHTML = `<span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold">✓</span><span class="text-slate-300">Route & fare parameters verified</span>`;
+            step1.innerHTML = `<span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold"></span><span class="text-slate-300">Route & fare parameters verified</span>`;
         }
         if (step2) {
             step2.className = "flex items-center space-x-2.5";
@@ -5873,7 +5874,7 @@ const BookingModule = {
             if (!this.tripSimulation.active) return;
             const s2 = document.getElementById('assign-step-2');
             if (s2) {
-                s2.innerHTML = `<span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold">✓</span><span class="text-slate-300">Driver located (0.8 km from pickup)</span>`;
+                s2.innerHTML = `<span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold"></span><span class="text-slate-300">Driver located (0.8 km from pickup)</span>`;
             }
             const s3 = document.getElementById('assign-step-3');
             if (s3) {
@@ -5887,7 +5888,7 @@ const BookingModule = {
             if (!this.tripSimulation.active) return;
             const s3 = document.getElementById('assign-step-3');
             if (s3) {
-                s3.innerHTML = `<span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold">✓</span><span class="text-emerald-400 font-bold">Driver confirmed & dispatched!</span>`;
+                s3.innerHTML = `<span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold"></span><span class="text-emerald-400 font-bold">Driver confirmed & dispatched!</span>`;
             }
 
             const nameEl = document.getElementById('assign-driver-name');
@@ -5902,7 +5903,7 @@ const BookingModule = {
                                (booking.vehicle_model || '').toLowerCase().includes('honda') ||
                                (booking.vehicle_model || '').toLowerCase().includes('yamaha') ||
                                booking.service_type === 'food';
-                avatarEl.innerText = isMoto ? '🛵' : '👨‍✈️';
+                avatarEl.innerText = isMoto ? '' : '‍️';
             }
             if (preview) preview.classList.remove('hidden');
         }, 2200);
@@ -6423,11 +6424,11 @@ const BookingModule = {
             if (arrivalBar) arrivalBar.classList.add('hidden');
 
             if (labelEl) {
-                labelEl.innerHTML = `<span class="inline-flex items-center space-x-1 text-amber-300 font-bold animate-pulse"><span>🏪 Arrived at Restaurant • Picking Up & Packing Order...</span></span>`;
+                labelEl.innerHTML = `<span class="inline-flex items-center space-x-1 text-amber-300 font-bold animate-pulse"><span> Arrived at Restaurant • Picking Up & Packing Order...</span></span>`;
             }
             if (turnActionEl) turnActionEl.innerText = "Packing Order";
             if (turnDistEl) turnDistEl.innerText = "At Store";
-            if (turnIconEl) turnIconEl.innerHTML = `<span class="text-sm">🥡</span>`;
+            if (turnIconEl) turnIconEl.innerHTML = `<span class="text-sm"></span>`;
 
             // Keep HUD visible
             const hud = document.getElementById('active-trip-hud');
@@ -6444,7 +6445,7 @@ const BookingModule = {
             setTimeout(() => {
                 if (this.tripSimulation && this.tripSimulation.active && this.tripSimulation.phase === 'arrived_pickup') {
                     if (typeof App !== 'undefined' && App.showToast) {
-                        App.showToast("Order packed! Courier departing to your delivery address 🛵", "success");
+                        App.showToast("Order packed! Courier departing to your delivery address", "success");
                     }
                     this.proceedToDropoff();
                 }
@@ -6491,7 +6492,7 @@ const BookingModule = {
         if (mDropLabel) mDropLabel.innerText = isParcel ? "Recipient Destination" : "Next Stop: Dropoff Destination";
         if (mBtnText) mBtnText.innerText = arrivalBtnLabel;
         if (mIcon) {
-            mIcon.innerHTML = isParcel ? '<span class="text-2xl">📦</span>' : '<svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
+            mIcon.innerHTML = isParcel ? '<svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>' : '<svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>';
         }
 
         if (pDriver) pDriver.innerText = `${booking.driver_name || 'Ricardo Dalisay'} (${booking.vehicle_plate || 'TXI-5431'})`;

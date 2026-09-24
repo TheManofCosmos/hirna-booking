@@ -1023,38 +1023,161 @@ const AuthModule = {
         });
     },
 
+    renderSidebar(activeTab) {
+        const sidebar = document.getElementById('app-sidebar');
+        if (!sidebar) return;
+
+        if (!activeTab) {
+            const path = window.location.pathname.toLowerCase();
+            if (path.includes('booking')) activeTab = 'booking';
+            else if (path.includes('payments')) activeTab = 'payments';
+            else if (path.includes('crm')) activeTab = 'crm';
+            else if (path.includes('gps')) activeTab = 'gps';
+            else if (path.includes('analytics')) activeTab = 'analytics';
+            else if (path.includes('audit')) activeTab = 'audit';
+            else if (path.includes('sso')) activeTab = 'sso';
+            else if (path.includes('passenger')) activeTab = 'passenger';
+            else activeTab = 'dashboard';
+        }
+
+        const roleTitle = this.currentUser ? this.currentUser.roleTitle : 'Super Admin';
+        const isSuperAdmin = this.isSuperAdmin();
+
+        const navItemClass = (key) => {
+            const isActive = activeTab === key;
+            if (isActive) {
+                return 'sidebar-nav-item active bg-white text-red-800 font-bold shadow-md rounded-xl flex items-center space-x-3 px-3.5 py-2.5 transition';
+            }
+            return 'sidebar-nav-item text-red-100 hover:bg-red-700/60 hover:text-white rounded-xl flex items-center space-x-3 px-3.5 py-2.5 transition font-medium';
+        };
+
+        const iconColor = (key) => activeTab === key ? 'text-red-800' : 'text-red-200';
+
+        sidebar.innerHTML = `
+            <div class="p-4 space-y-6">
+                <!-- Brand / Logo Area -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3 bg-red-900/60 p-2.5 rounded-2xl border border-red-700/50 flex-1">
+                        <div class="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
+                            <img src="assets/hirna-badge.png" alt="Hirna Logo" class="w-full h-full object-contain">
+                        </div>
+                        <div class="overflow-hidden">
+                            <h1 class="text-sm font-black tracking-wider text-white uppercase leading-none">HIRNA</h1>
+                            <p id="sidebar-role-subtitle" class="text-[10px] text-red-200 font-semibold tracking-wide mt-1 truncate">${roleTitle}</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="document.getElementById('app-sidebar').classList.add('hidden')" class="lg:hidden ml-2 p-1.5 text-white/80 hover:text-white rounded-lg hover:bg-red-700/60 cursor-pointer" title="Close Menu">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="space-y-5 text-xs">
+                    <!-- MAIN MENU -->
+                    <div>
+                        <p class="px-3 text-[10px] font-black uppercase tracking-wider text-red-300/80 mb-1.5">Main Menu</p>
+                        <div class="space-y-1">
+                            <a href="main.html" data-tab="dashboard" class="${navItemClass('dashboard')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('dashboard')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="passenger.html" data-tab="passenger" class="${navItemClass('passenger')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('passenger')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                <span>Passenger Portal</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- OPERATIONS & MODULES -->
+                    <div>
+                        <p class="px-3 text-[10px] font-black uppercase tracking-wider text-red-300/80 mb-1.5">Operations</p>
+                        <div class="space-y-1">
+                            <a href="booking.html" data-tab="booking" class="${navItemClass('booking')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('booking')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>
+                                <span>1. Booking & Dispatch</span>
+                            </a>
+                            <a href="payments.html" data-tab="payments" class="${navItemClass('payments')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('payments')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                <span>2. Fare & Payments</span>
+                            </a>
+                            <a href="crm.html" data-tab="crm" class="${navItemClass('crm')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('crm')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                <span>3. Customer CRM</span>
+                            </a>
+                            <a href="gps.html" data-tab="gps" class="${navItemClass('gps')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('gps')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                <span>4. GPS Telematics</span>
+                            </a>
+                            <a href="analytics.html" data-tab="analytics" class="${navItemClass('analytics')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('analytics')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                <span>5. Fleet Analytics</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- ADMINISTRATION -->
+                    <div>
+                        <p class="px-3 text-[10px] font-black uppercase tracking-wider text-red-300/80 mb-1.5">Administration</p>
+                        <div class="space-y-1">
+                            <a href="audit.html" data-tab="audit" class="${navItemClass('audit')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('audit')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                <span>6. SOP & Audit Logs</span>
+                            </a>
+                            ${isSuperAdmin ? `
+                            <a id="tab-btn-sso-gateway" href="sso.html" data-tab="sso" class="${navItemClass('sso')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('sso')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                <span>8. SuperAdmin SSO</span>
+                            </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout Button at bottom -->
+            <div class="p-4 border-t border-red-700/60">
+                <button type="button" onclick="AuthModule.logout()" class="w-full py-2.5 px-4 rounded-xl border border-red-600/70 hover:bg-white hover:text-red-800 text-white font-bold text-xs transition flex items-center justify-center space-x-2 group cursor-pointer shadow-sm">
+                    <svg class="w-4 h-4 text-white group-hover:text-red-800 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    <span>Logout</span>
+                </button>
+            </div>
+        `;
+    },
+
     updateUI() {
         const profileContainer = document.getElementById('header-user-profile');
         const adminBannerName = document.getElementById('banner-admin-name');
         const superadminGateTab = document.getElementById('tab-btn-sso-gateway');
 
+        this.renderSidebar();
+
         if (this.currentUser) {
             if (profileContainer) {
                 profileContainer.innerHTML = `
                     <div class="relative">
-                        <button id="profile-dropdown-btn" onclick="AuthModule.toggleDropdown(event)" class="flex items-center space-x-2.5 bg-hirna-900/90 hover:bg-hirna-900 px-3.5 py-1.5 rounded-xl border border-hirna-700/80 shadow-md transition transform hover:scale-[1.02] focus:outline-none cursor-pointer">
-                            <div class="w-7 h-7 rounded-full bg-gold-500 text-hirna-950 flex items-center justify-center font-black text-xs shadow">
+                        <button id="profile-dropdown-btn" onclick="AuthModule.toggleDropdown(event)" class="flex items-center space-x-2.5 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-xs transition cursor-pointer">
+                            <div class="w-7 h-7 rounded-full bg-red-700 text-white flex items-center justify-center font-black text-xs shadow-xs">
                                 ${this.currentUser.avatar || 'SA'}
                             </div>
                             <div class="text-left hidden sm:block">
-                                <span class="text-xs font-bold text-white block leading-tight">${this.currentUser.name}</span>
-                                <span class="text-[9px] text-gold-300 font-medium block">${this.currentUser.roleTitle}</span>
+                                <span class="text-xs font-black text-slate-900 block leading-tight">${this.currentUser.name}</span>
+                                <span class="text-[10px] text-slate-500 font-medium block">${this.currentUser.roleTitle}</span>
                             </div>
-                            <svg class="w-3 h-3 text-slate-400 ml-1 transition-transform duration-200" id="profile-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <svg class="w-3.5 h-3.5 text-slate-400 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
 
-                        <!-- Sleek Dropdown Menu -->
-                        <div id="profile-dropdown-menu" class="hidden absolute right-0 mt-2 w-64 bg-slate-900/95 border border-hirna-700/80 rounded-2xl shadow-2xl backdrop-blur-xl z-50 overflow-hidden divide-y divide-slate-800">
+                        <!-- Sleek White Dropdown Menu -->
+                        <div id="profile-dropdown-menu" class="hidden absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100">
                             <!-- User Info Header in Dropdown -->
-                            <div class="p-3.5 bg-gradient-to-r from-hirna-950 to-slate-900">
+                            <div class="p-3.5 bg-slate-50">
                                 <div class="flex items-center space-x-3">
-                                    <div class="w-10 h-10 rounded-xl bg-gold-500 text-hirna-950 flex items-center justify-center font-black text-sm shadow">
+                                    <div class="w-9 h-9 rounded-xl bg-red-700 text-white flex items-center justify-center font-black text-sm shadow-xs">
                                         ${this.currentUser.avatar || 'SA'}
                                     </div>
                                     <div class="overflow-hidden">
-                                        <p class="text-xs font-black text-white truncate">${this.currentUser.name}</p>
-                                        <p class="text-[11px] text-slate-400 truncate">${this.currentUser.email || this.currentUser.phone || 'admin@hirna.ph'}</p>
-                                        <span class="inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold ${this.currentUser.badgeClass || 'bg-gold-500 text-hirna-950'}">
+                                        <p class="text-xs font-black text-slate-900 truncate">${this.currentUser.name}</p>
+                                        <p class="text-[11px] text-slate-500 truncate">${this.currentUser.email || this.currentUser.phone || 'admin@hirna.ph'}</p>
+                                        <span class="inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full font-bold bg-red-50 text-red-800 border border-red-200">
                                             ${this.currentUser.roleTitle}
                                         </span>
                                     </div>
@@ -1063,20 +1186,20 @@ const AuthModule = {
 
                             <!-- Dropdown Quick Actions -->
                             <div class="p-1.5 space-y-1">
-                                <button type="button" onclick="AuthModule.openSwitchAccountModal()" class="w-full px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white hover:bg-hirna-900/80 rounded-xl transition flex items-center space-x-2 text-left cursor-pointer">
-                                    <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                                <button type="button" onclick="AuthModule.openSwitchAccountModal()" class="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition flex items-center space-x-2 text-left cursor-pointer">
+                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
                                     <span>Switch Account</span>
                                 </button>
-                                <button type="button" onclick="AuthModule.openAccountActivityModal()" class="w-full px-3 py-2 text-xs font-semibold text-slate-200 hover:text-white hover:bg-hirna-900/80 rounded-xl transition flex items-center space-x-2 text-left cursor-pointer">
-                                    <svg class="w-3.5 h-3.5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                <button type="button" onclick="AuthModule.openAccountActivityModal()" class="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition flex items-center space-x-2 text-left cursor-pointer">
+                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                                     <span>Account Activity & Devices</span>
                                 </button>
                             </div>
 
-                            <!-- Logout Action (Red / Rose) -->
-                            <div class="p-1.5 bg-slate-950/50">
-                                <button onclick="AuthModule.logout()" class="w-full px-3 py-2.5 text-xs font-bold text-rose-400 hover:text-white hover:bg-rose-700 rounded-xl transition flex items-center space-x-2 group">
-                                    <svg class="w-3.5 h-3.5 text-rose-400 group-hover:text-white group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                            <!-- Logout Action -->
+                            <div class="p-1.5 bg-slate-50">
+                                <button onclick="AuthModule.logout()" class="w-full px-3 py-2 text-xs font-bold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl transition flex items-center space-x-2 cursor-pointer">
+                                    <svg class="w-3.5 h-3.5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
                                     <span>Log Out</span>
                                 </button>
                             </div>
@@ -1181,11 +1304,12 @@ const AuthModule = {
                 <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                     <div>
                         <h3 class="text-base font-black text-white flex items-center gap-2">
-                            <span>👥</span> Switch Account
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                            <span>Switch Account</span>
                         </h3>
                         <p class="text-xs text-slate-400">Signed-in accounts on this device only</p>
                     </div>
-                    <button onclick="AuthModule.closeSwitchAccountModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer">✕</button>
+                    <button onclick="AuthModule.closeSwitchAccountModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer font-bold">&times;</button>
                 </div>
                 
                 <div class="space-y-2.5 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
@@ -1296,7 +1420,7 @@ const AuthModule = {
                 <div class="p-3.5 bg-slate-950/80 border ${isCurrent ? 'border-emerald-500/50 bg-emerald-950/10' : 'border-slate-800'} rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
                     <div class="flex items-start space-x-3">
                         <div class="w-10 h-10 rounded-xl ${isCurrent ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-300 border border-slate-700'} flex items-center justify-center font-bold text-lg flex-shrink-0 mt-0.5">
-                            ${sess.deviceName.toLowerCase().includes('phone') || sess.deviceName.toLowerCase().includes('android') || sess.deviceName.toLowerCase().includes('apple') ? '📱' : '💻'}
+                            ${sess.deviceName.toLowerCase().includes('phone') || sess.deviceName.toLowerCase().includes('android') || sess.deviceName.toLowerCase().includes('apple') ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>' : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>'}
                         </div>
                         <div>
                             <div class="flex items-center space-x-2">
@@ -1304,12 +1428,12 @@ const AuthModule = {
                                 ${isCurrent ? '<span class="text-[9px] bg-emerald-500 text-slate-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">This Device (Current)</span>' : '<span class="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold px-2 py-0.5 rounded-full">Remote Device</span>'}
                             </div>
                             <div class="text-[11px] text-slate-400 mt-0.5 space-x-2">
-                                <span>🌐 ${sess.browser}</span>
+                                <span>Browser: ${sess.browser}</span>
                                 <span>•</span>
                                 <span class="font-mono text-slate-300">IP: ${sess.ip}</span>
                             </div>
                             <div class="text-[10px] text-slate-500 mt-1 flex items-center space-x-2">
-                                <span>📍 ${sess.location || 'Metro Manila, PH'}</span>
+                                <span>Location: ${sess.location || 'Metro Manila, PH'}</span>
                                 <span>•</span>
                                 <span>Signed in: ${new Date(sess.loginTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
@@ -1349,23 +1473,23 @@ const AuthModule = {
                 <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-gold-500 to-amber-600 text-hirna-950 flex items-center justify-center font-black text-lg shadow-md">
-                            🛡️
+                            <svg class="w-5 h-5 text-hirna-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                         </div>
                         <div>
                             <h3 class="text-base font-black text-white">Account Activity & Security Control</h3>
                             <p class="text-xs text-slate-400">Manage signed-in devices, active sessions, and audit processes for <strong>${user.email}</strong></p>
                         </div>
                     </div>
-                    <button onclick="AuthModule.closeAccountActivityModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer">✕</button>
+                    <button onclick="AuthModule.closeAccountActivityModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer font-bold">&times;</button>
                 </div>
 
                 <!-- Tab Buttons -->
                 <div class="flex space-x-2 border-b border-slate-800 pb-2">
                     <button id="tab-btn-devices" onclick="AuthModule.switchActivityTab('devices')" class="px-4 py-2 rounded-xl text-xs font-bold transition ${activeTab === 'devices' ? 'bg-gold-500 text-hirna-950' : 'bg-slate-800 text-slate-300 hover:text-white'}">
-                        📱 Active Devices & Sessions (${activeSessions.length})
+                        Active Devices & Sessions (${activeSessions.length})
                     </button>
                     <button id="tab-btn-logs" onclick="AuthModule.switchActivityTab('logs')" class="px-4 py-2 rounded-xl text-xs font-bold transition ${activeTab === 'logs' ? 'bg-gold-500 text-hirna-950' : 'bg-slate-800 text-slate-300 hover:text-white'}">
-                        📜 Activity Logs & Transactions (${userLogs.length})
+                        Activity Logs & Transactions (${userLogs.length})
                     </button>
                 </div>
 
@@ -1449,7 +1573,7 @@ const AuthModule = {
         if (window.confirm(`Sign out remote device "${deviceName}" immediately?`)) {
             const res = this.remoteSignOutSession(sessionId);
             if (res.success) {
-                alert(`✓ Device "${deviceName}" signed out remotely.`);
+                alert(`Device "${deviceName}" signed out remotely.`);
                 this.openAccountActivityModal('devices');
             } else {
                 alert(res.message);
@@ -1460,7 +1584,7 @@ const AuthModule = {
     confirmSignOutAllOtherDevices() {
         if (window.confirm("Sign out of all other devices currently logged into this account?")) {
             const res = this.signOutAllOtherDevices();
-            alert(`✓ Signed out of ${res.count} remote session(s).`);
+            alert(`Signed out of ${res.count} remote session(s).`);
             this.openAccountActivityModal('devices');
         }
     }
@@ -1489,12 +1613,12 @@ if (typeof BroadcastChannel !== 'undefined') {
                 const curDevId = AuthModule.getDeviceId();
                 const curSessId = AuthModule.getCurrentSessionId();
                 if ((data.sessionId && data.sessionId === curSessId) || (data.deviceId && data.deviceId === curDevId)) {
-                    alert("🔒 Security Notice: Your session was remotely signed out from another authorized device.");
+                    alert("Security Notice: Your session was remotely signed out from another authorized device.");
                     AuthModule.proceedLogout('remote_logout');
                 }
             } else if (data.type === 'PASSWORD_CHANGED') {
                 if (AuthModule.currentUser && AuthModule.currentUser.email.toLowerCase() === data.email.toLowerCase()) {
-                    alert("🔑 Security Notice: Your account password was recently changed. All active sessions have been signed out. Please sign in with your new password.");
+                    alert("Security Notice: Your account password was recently changed. All active sessions have been signed out. Please sign in with your new password.");
                     AuthModule.proceedLogout('password_changed');
                 }
             } else if (data.type === 'DEVICE_ACCOUNTS_UPDATE') {
@@ -1529,7 +1653,7 @@ window.addEventListener('storage', (e) => {
                 (r.deviceId && r.deviceId === curDevId)
             );
             if (isRevoked) {
-                alert("🔒 Security Notice: Your session was remotely signed out from another device.");
+                alert("Security Notice: Your session was remotely signed out from another device.");
                 AuthModule.proceedLogout('remote_logout');
             }
         } catch(err) {}
@@ -1541,7 +1665,7 @@ window.addEventListener('storage', (e) => {
                 const lastInvalidation = invalidations[currentEmail];
                 const sessionStartTime = Number(sessionStorage.getItem('hirna_session_start_time') || '0');
                 if (lastInvalidation && (!sessionStartTime || sessionStartTime < lastInvalidation)) {
-                    alert("🔑 Security Notice: Your account password was changed. Please sign in again.");
+                    alert("Security Notice: Your account password was changed. Please sign in again.");
                     AuthModule.proceedLogout('password_changed');
                 }
             } catch(err) {}

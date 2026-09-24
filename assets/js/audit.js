@@ -80,7 +80,7 @@ const AuditModule = {
                 <tr>
                     <td colspan="8" class="text-center py-8 text-xs text-slate-400">
                         <div class="flex flex-col items-center justify-center space-y-1">
-                            <span class="text-2xl">📋</span>
+                            <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                             <span class="font-semibold text-slate-600">No audit logs matching criteria</span>
                             <span class="text-[11px] text-slate-400">Try adjusting the filter or search query.</span>
                         </div>
@@ -310,8 +310,8 @@ const AuditModule = {
 
                     <div class="bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-200 space-y-1">
                         <span class="text-[10px] font-bold text-emerald-900 block uppercase">LTFRB Franchise & Safety Status</span>
-                        <div class="text-[11px] text-emerald-800 flex items-center space-x-1">
-                            <span>✓</span>
+                        <div class="text-[11px] text-emerald-800 flex items-center space-x-1.5">
+                            <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                             <span class="font-medium">${p.ltfrb_franchise || 'ACTIVE_VERIFIED_LTFRB-2026-TXI-041'}</span>
                         </div>
                     </div>
@@ -323,7 +323,7 @@ const AuditModule = {
                             <div class="flex items-center justify-between text-[11px] py-1 border-b border-slate-100">
                                 <span class="capitalize text-slate-700">${item.replace(/_/g, ' ')}</span>
                                 <span class="font-bold text-emerald-700 font-mono flex items-center space-x-1">
-                                    <span>✓</span>
+                                    <svg class="w-3.5 h-3.5 text-emerald-600 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                     <span>${status}</span>
                                 </span>
                             </div>
@@ -650,7 +650,7 @@ const AuditModule = {
         const badge = document.getElementById('archives-lock-status-badge');
         if (badge) {
             badge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 border border-emerald-500/40 text-emerald-300";
-            badge.innerText = "✓ Unlocked & Decrypted";
+            badge.innerText = "Unlocked & Decrypted";
         }
 
         // Log audit event
@@ -678,7 +678,7 @@ const AuditModule = {
         const badge = document.getElementById('archives-lock-status-badge');
         if (badge) {
             badge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-rose-500/20 border border-rose-500/40 text-rose-300";
-            badge.innerText = "🔒 Locked";
+            badge.innerText = "Locked";
         }
 
         if (typeof App !== 'undefined' && App.showToast) {
@@ -725,7 +725,7 @@ const AuditModule = {
                 <tr>
                     <td colspan="6" class="text-center py-10 text-xs text-slate-400">
                         <div class="flex flex-col items-center justify-center space-y-1">
-                            <span class="text-2xl">🗂️</span>
+                            <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
                             <span class="font-semibold text-slate-600">No archived records found</span>
                             <span class="text-[11px] text-slate-400">${query ? 'Try changing your search term.' : 'Records archived from Bookings, Payments, or CRM will appear here.'}</span>
                         </div>

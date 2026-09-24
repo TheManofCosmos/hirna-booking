@@ -5780,12 +5780,12 @@ const SupabaseBridge = {
             }
             if (res && res.ok) {
                 this.db = await res.json();
-                console.log("✅ Loaded external JSON database.");
+                console.log("[SupabaseBridge] Loaded external JSON database.");
             } else {
-                console.log("ℹ️ Using embedded in-memory database.");
+                console.log("[SupabaseBridge] Using embedded in-memory database.");
             }
         } catch (e) {
-            console.log("ℹ️ Using embedded in-memory database.");
+            console.log("[SupabaseBridge] Using embedded in-memory database.");
         }
 
         // Always load persisted audit logs and data tables across all pages

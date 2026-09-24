@@ -78,94 +78,59 @@
     </script>
     <link rel="icon" type="image/png" href="assets/hirna-badge.png">
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased">
+<body class="bg-[#f8fafc] text-slate-900 min-h-screen font-sans antialiased">
 
     <!-- HIRNA TOP BRANDING HEADER -->
-    <header class="bg-hirna-800 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="h-16 flex items-center justify-between">
-                <!-- Hirna Logo & Title -->
-                <div class="flex items-center space-x-3.5">
-                    <div class="w-11 h-11 rounded-xl border-2 border-gold-400/90 shadow-lg transform transition hover:scale-105 flex-shrink-0 overflow-hidden flex items-center justify-center">
-                        <img src="assets/hirna-badge.png" alt="Hirna Official Logo" class="w-full h-full object-cover">
-                    </div>
-                    <div>
-                        <div class="flex items-center space-x-2">
-                            <h1 class="text-base font-black tracking-wide text-white uppercase">Hirna: Transport & Delivery</h1>
-                        </div>
-                        <p class="text-[11px] text-hirna-200">Booking, Payments & Customer Experience</p>
-                    </div>
-                </div>
+    <div class="flex min-h-screen bg-[#f8fafc]">
+    <!-- SIDEBAR -->
+    <aside id="app-sidebar" class="hidden lg:flex w-64 bg-gradient-to-b from-red-800 via-red-800 to-red-900 text-white flex-shrink-0 flex flex-col justify-between min-h-screen sticky top-0 h-screen shadow-2xl z-40 overflow-y-auto">
+        <!-- Rendered by AuthModule.renderSidebar -->
+    </aside>
 
-                <!-- Status Badges & Dynamic Admin Profile with Dropdown -->
-                <div class="flex items-center space-x-2.5">
-                    <div class="relative" id="hirna-app-btn-wrapper">
-                        <button type="button" onclick="HirnaAppBridge.handleAppClick(event)" data-hirna-app-btn class="hirna-app-trigger px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-hirna-950 text-xs font-black rounded-xl shadow-md transition flex items-center space-x-1.5 transform hover:scale-105 cursor-pointer">
-                            <svg class="w-3.5 h-3.5 text-hirna-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                            <span>Download Hirna App</span>
-                        </button>
-                    </div>
-
-                    <!-- Profile with Interactive Dropdown (contains Logout & Switch) -->
-                    <div id="header-user-profile" class="relative"></div>
-                </div>
-            </div>
-
-            <!-- HIRNA NAVIGATION TABS -->
-            <!-- HIRNA NAVIGATION TABS -->
-            <nav class="flex space-x-1.5 overflow-x-auto py-2 border-t border-hirna-700/60">
-                <a href="main.html" data-tab="dashboard" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                    <span>Dashboard</span>
-                </a>
-                <a href="booking.html" data-tab="booking" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>
-                    <span>1. Booking</span>
-                </a>
-                <a href="payments.html" data-tab="payments" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-bold bg-gold-500 text-hirna-950 shadow-md transition flex items-center space-x-1.5 whitespace-nowrap">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                    <span>2. Fare & Payments</span>
-                </a>
-                <a href="crm.html" data-tab="crm" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                    <span>3. Customer-Relationship Management</span>
-                </a>
-                <a href="gps.html" data-tab="gps" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span>4. GPS & Trip Playback</span>
-                </a>
-                <a href="analytics.html" data-tab="analytics" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    <span>5. Fleet Analytics & KPI</span>
-                </a>
-                <a href="audit.html" data-tab="audit" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                    <span>6. SOP & Audit Logs</span>
-                </a>
-                <a id="tab-btn-sso-gateway" href="sso.html" data-tab="sso" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-bold bg-hirna-900 text-gold-400 hover:bg-hirna-950 transition flex items-center space-x-1.5 whitespace-nowrap border border-gold-500/50 shadow-inner">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    <span>8. SuperAdmin SSO Gateway</span>
-                </a>
-            </nav>
-            <div class="flex items-center space-x-3">
-                <span class="font-medium text-slate-200">Allow Hirna to use your device location?</span>
-                <button id="btn-allow-location" onclick="DeviceLocationManager.requestLocation()" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-hirna-950 font-black rounded-lg text-xs transition shadow-sm cursor-pointer flex items-center space-x-1.5 active:scale-95">
-                    <svg class="w-3.5 h-3.5 text-hirna-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    <span>Allow</span>
+    <!-- MAIN CONTENT WRAPPER -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#f8fafc] min-h-screen">
+        <!-- TOP APP BAR -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-xs">
+            <div class="flex items-center space-x-3 sm:space-x-4">
+                <button type="button" onclick="const sb = document.getElementById('app-sidebar'); sb.classList.toggle('hidden'); sb.classList.toggle('fixed'); sb.classList.toggle('inset-y-0'); sb.classList.toggle('left-0');" class="lg:hidden p-2 -ml-1 text-slate-700 hover:bg-slate-100 rounded-xl transition cursor-pointer" title="Toggle Navigation">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
+                <div>
+                    <h1 class="text-base font-black text-slate-900 leading-tight">2. Dynamic Fare & Automated Billing</h1>
+                    <p class="text-xs text-slate-500 font-medium">Real-time Metering, GCash/QR Ph Settlement & E-Receipts</p>
+                </div>
             </div>
-            <div class="flex items-center space-x-2">
-                <span class="text-slate-400 text-[11px] hidden sm:inline">Device Location:</span>
-                <span id="location-status-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-800 border border-slate-700 text-slate-300 flex items-center space-x-1.5">
-                    <span id="location-status-dot" class="w-2 h-2 rounded-full bg-rose-500"></span>
-                    <span id="location-status-label">Location: Disabled</span>
-                </span>
-            </div>
-        </div>
-    </div>
 
-    <!-- MAIN CONTENT CONTAINER -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            <!-- Right Controls: Location Status & User Profile -->
+            <div class="flex items-center space-x-2.5 sm:space-x-3">
+                <!-- Location Pill -->
+                <div class="hidden md:flex items-center space-x-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl text-xs">
+                    <span id="location-status-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span id="location-status-label" class="text-slate-600 font-medium">Location Active</span>
+                    <button id="btn-allow-location" onclick="DeviceLocationManager.requestLocation()" class="ml-1 text-[11px] font-bold text-red-700 hover:underline cursor-pointer">Allow</button>
+                </div>
+
+                <!-- Download Hirna App Button -->
+                <div class="relative" id="hirna-app-btn-wrapper">
+                    <button type="button" onclick="HirnaAppBridge.handleAppClick(event)" data-hirna-app-btn class="hirna-app-trigger hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        <span>Download App</span>
+                    </button>
+                </div>
+
+                <!-- Notification Bell -->
+                <button type="button" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer relative" title="Notifications">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-600 rounded-full"></span>
+                </button>
+
+                <!-- Profile with Interactive Dropdown (contains Logout & Switch) -->
+                <div id="header-user-profile" class="relative"></div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
 
 
@@ -183,7 +148,7 @@
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div class="flex items-center space-x-4">
                         <div class="w-12 h-12 rounded-2xl bg-gold-500/20 border border-gold-400/40 flex items-center justify-center text-gold-400 text-2xl shadow-inner shrink-0">
-                            👛
+                            
                         </div>
                         <div>
                             <div class="flex items-center space-x-2">
@@ -225,7 +190,7 @@
                 <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm">
                     <span class="text-xs text-slate-500 font-semibold block">Digital Payment Share</span>
                     <span class="text-2xl font-black text-emerald-600 font-mono mt-1 block">68.4% Cashless</span>
-                    <span class="text-[11px] text-slate-500">📲 QR Ph &amp; E-Wallets (31.6% Cash)</span>
+                    <span class="text-[11px] text-slate-500"> QR Ph &amp; E-Wallets (31.6% Cash)</span>
                 </div>
             </div>
 
@@ -255,7 +220,7 @@
                         <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-3">
                             <div class="space-y-2.5">
                                 <div class="flex items-start justify-between">
-                                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-xl shadow-xs">💵</div>
+                                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-xl shadow-xs"></div>
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Active • Offline Channel</span>
                                 </div>
                                 <div>
@@ -265,14 +230,14 @@
                             </div>
                             <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                                 <span>Zero Gateway Fee</span>
-                                <span class="text-emerald-600 font-bold text-xs">✓ Ready</span>
+                                <span class="text-emerald-600 font-bold text-xs">Ready</span>
                             </div>
                         </div>
 
                         <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-3">
                             <div class="space-y-2.5">
                                 <div class="flex items-start justify-between">
-                                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center text-xl shadow-xs">📱</div>
+                                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center text-xl shadow-xs"></div>
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">Active • Linked</span>
                                 </div>
                                 <div>
@@ -282,14 +247,14 @@
                             </div>
                             <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                                 <span class="font-mono text-[10px]">+63 917 •••• 999</span>
-                                <span class="text-emerald-600 font-bold text-xs">✓ Ready</span>
+                                <span class="text-emerald-600 font-bold text-xs">Ready</span>
                             </div>
                         </div>
 
                         <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-3">
                             <div class="space-y-2.5">
                                 <div class="flex items-start justify-between">
-                                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center text-xl shadow-xs">👛</div>
+                                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center text-xl shadow-xs"></div>
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Active • ₱1,450.00</span>
                                 </div>
                                 <div>
@@ -299,7 +264,7 @@
                             </div>
                             <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                                 <span>5% Loyalty Cashback</span>
-                                <span class="text-emerald-600 font-bold text-xs">✓ Ready</span>
+                                <span class="text-emerald-600 font-bold text-xs">Ready</span>
                             </div>
                         </div>
 
@@ -344,6 +309,9 @@
         <!-- TAB 3: CRM & NLP SENTIMENT (MODULE 3)                            -->
         <!-- ================================================================= -->
     </main>
+    </div>
+</div>
+
 
     <!-- HIRNA ADMIN LOGIN MODAL (FULL RBAC) -->
     <div id="hirna-login-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
@@ -532,7 +500,7 @@
             <div class="bg-gradient-to-r from-hirna-800 to-hirna-900 p-5 text-white flex items-center justify-between flex-shrink-0">
                 <div class="flex items-center space-x-2.5">
                     <div class="w-8 h-8 rounded-lg bg-gold-500/20 border border-gold-500/30 flex items-center justify-center text-gold-400 text-lg">
-                        💳
+                        
                     </div>
                     <div>
                         <h3 class="text-sm font-bold text-white">Select Payment Method</h3>
@@ -546,7 +514,7 @@
 
             <div class="p-5 space-y-3 overflow-y-auto flex-1">
                 <div class="p-3 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center space-x-2.5 text-amber-900 text-xs">
-                    <span class="text-lg">📲</span>
+                    
                     <p class="leading-tight"><strong class="font-bold">QR Payment (QR Ph):</strong> Official Bangko Sentral interoperable QR standard supported by GCash, Maya, BDO, BPI, UnionBank, and all major Philippine banking apps.</p>
                 </div>
 
@@ -801,7 +769,7 @@
             <div class="flex items-start justify-between border-b border-slate-100 pb-3">
                 <div class="flex items-center space-x-3">
                     <div id="food-modal-icon" class="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-2xl flex items-center justify-center flex-shrink-0 shadow-xs">
-                        🥟
+                        
                     </div>
                     <div>
                         <h3 id="food-modal-title" class="text-sm font-black text-slate-900 leading-tight">Item Title</h3>
@@ -866,7 +834,7 @@
                 <div class="absolute inset-2 rounded-full border border-gold-400/40 animate-pulse"></div>
                 <div class="absolute inset-6 rounded-full bg-gold-500/10 border border-gold-500/50"></div>
                 <div class="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-gold-400 to-amber-600 text-hirna-950 flex items-center justify-center shadow-lg shadow-gold-500/20 text-2xl font-black">
-                    <span id="assign-radar-icon">🚕</span>
+                    <span id="assign-radar-icon"><svg class="w-4 h-4 text-slate-700 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg></span>
                 </div>
             </div>
 
@@ -884,11 +852,11 @@
             <!-- Match stages indicator -->
             <div class="space-y-2 text-left bg-hirna-900/80 rounded-2xl p-3.5 border border-hirna-800 text-xs">
                 <div class="flex items-center space-x-2.5" id="assign-step-1">
-                    <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold">✓</span>
+                    <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold"></span>
                     <span class="text-slate-300">Route & fare parameters verified</span>
                 </div>
                 <div class="flex items-center space-x-2.5" id="assign-step-2">
-                    <span class="w-4 h-4 rounded-full bg-gold-500/20 text-gold-400 border border-gold-500/40 flex items-center justify-center text-[10px] font-bold animate-spin">⟳</span>
+                    <span class="w-4 h-4 rounded-full bg-gold-500/20 text-gold-400 border border-gold-500/40 flex items-center justify-center text-[10px] font-bold animate-spin"></span>
                     <span class="text-white font-medium" id="assign-step-2-text">Connecting to nearest active drivers...</span>
                 </div>
                 <div class="flex items-center space-x-2.5 opacity-40" id="assign-step-3">
@@ -900,12 +868,12 @@
             <!-- Driver Reveal Preview (revealed upon matching) -->
             <div id="assign-driver-preview" class="hidden bg-hirna-900 border border-gold-500/40 rounded-2xl p-3.5 text-left flex items-center space-x-3.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div class="w-12 h-12 rounded-xl bg-gold-500 text-hirna-950 flex items-center justify-center font-black text-xl shadow-md flex-shrink-0" id="assign-driver-avatar">
-                    👨‍✈️
+                    ‍️
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center justify-between">
                         <h4 class="text-sm font-black text-white truncate" id="assign-driver-name">Ricardo Dalisay</h4>
-                        <span class="text-xs font-bold text-gold-400">★ 4.9</span>
+                        <span class="text-xs font-bold text-gold-400">4.9 Rating</span>
                     </div>
                     <p class="text-xs text-slate-300 truncate" id="assign-driver-car">Toyota Vios (Silver) • TXI-5431</p>
                     <p class="text-[11px] text-emerald-400 font-bold mt-0.5">● Assigned & Heading to Pickup</p>
@@ -1033,19 +1001,19 @@
                 <div class="grid grid-cols-3 gap-2" id="pay-modal-methods-container">
                     <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition has-[:checked]:border-hirna-700 has-[:checked]:bg-hirna-50/50 has-[:checked]:ring-1 has-[:checked]:ring-hirna-700">
                         <input type="radio" name="pay-confirm-method" value="Cash" class="hidden">
-                        <span class="text-lg mb-1">💵</span>
+                        <span class="text-lg mb-1"></span>
                         <span class="text-xs font-bold text-slate-800">Cash</span>
                         <span class="text-[9px] text-slate-400">Direct to driver</span>
                     </label>
                     <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition has-[:checked]:border-hirna-700 has-[:checked]:bg-hirna-50/50 has-[:checked]:ring-1 has-[:checked]:ring-hirna-700">
                         <input type="radio" name="pay-confirm-method" value="GCash" checked class="hidden">
-                        <span class="text-lg mb-1">📱</span>
+                        <span class="text-lg mb-1"></span>
                         <span class="text-xs font-bold text-slate-800">GCash</span>
                         <span class="text-[9px] text-emerald-600 font-bold">QR / E-Wallet</span>
                     </label>
                     <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition has-[:checked]:border-hirna-700 has-[:checked]:bg-hirna-50/50 has-[:checked]:ring-1 has-[:checked]:ring-hirna-700">
                         <input type="radio" name="pay-confirm-method" value="Hirna Wallet" class="hidden">
-                        <span class="text-lg mb-1">👛</span>
+                        <span class="text-lg mb-1"></span>
                         <span class="text-xs font-bold text-slate-800">Hirna Wallet</span>
                         <span class="text-[9px] text-gold-600 font-bold">Stored Value</span>
                     </label>
@@ -1132,12 +1100,12 @@
                         <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
                             <span id="rcpt-booker-role" class="text-[9px] uppercase font-bold text-slate-400 block">Passenger / Booker</span>
                             <span id="rcpt-passenger" class="font-bold text-slate-800 block truncate">Juan Dela Cruz</span>
-                            <span id="rcpt-passenger-phone" class="text-[10px] text-slate-600 font-mono block">📞 +63 917 888 9999</span>
+                            <span id="rcpt-passenger-phone" class="text-[10px] text-slate-600 font-mono block">+63 917 888 9999</span>
                         </div>
                         <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
                             <span class="text-[9px] uppercase font-bold text-slate-400 block">Driver / Courier</span>
                             <span id="rcpt-driver" class="font-bold text-slate-800 block truncate">Ricardo Dalisay</span>
-                            <span id="rcpt-driver-phone" class="text-[10px] text-slate-600 font-mono block">📞 +63 920 555 1234</span>
+                            <span id="rcpt-driver-phone" class="text-[10px] text-slate-600 font-mono block">+63 920 555 1234</span>
                         </div>
                     </div>
                     <!-- Conditional Recipient Container for Parcel -->
@@ -1145,7 +1113,7 @@
                         <span class="text-[9px] uppercase font-bold text-amber-800 block">Parcel Recipient</span>
                         <div class="flex items-center justify-between">
                             <span id="rcpt-recipient-name" class="font-bold text-amber-950 truncate">Maria Santos</span>
-                            <span id="rcpt-recipient-phone" class="text-[10px] text-amber-900 font-mono">📞 +63 918 987 6543</span>
+                            <span id="rcpt-recipient-phone" class="text-[10px] text-amber-900 font-mono">+63 918 987 6543</span>
                         </div>
                     </div>
                 </div>
@@ -1182,7 +1150,7 @@
             <!-- Dynamic QR Ph Verification Section (Shown when paid via QR) -->
             <div id="rcpt-qr-section" class="hidden flex-col items-center justify-center p-3 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-2">
                 <div class="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
-                    <span class="text-sm">📲</span>
+                    
                     <span>QR Ph National Standard Verification</span>
                 </div>
                 <div class="bg-white p-2 rounded-xl shadow-xs border border-slate-200 inline-block">
@@ -1213,7 +1181,7 @@
         <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transform transition-all animate-in fade-in zoom-in-95">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center space-x-2.5">
-                    <div class="w-10 h-10 rounded-2xl bg-gold-500/20 text-gold-600 border border-gold-400/40 flex items-center justify-center text-xl">👛</div>
+                    <div class="w-10 h-10 rounded-2xl bg-gold-500/20 text-gold-600 border border-gold-400/40 flex items-center justify-center text-xl"></div>
                     <div>
                         <h3 class="text-sm font-bold text-hirna-900">Cash In Hirna Wallet</h3>
                         <p class="text-[11px] text-slate-500">Top-up stored-value digital balance</p>
@@ -1236,7 +1204,7 @@
                     <button type="button" onclick="document.getElementById('wallet-topup-input').value = '1000'" class="py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg cursor-pointer transition">₱1,000</button>
                 </div>
                 <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-800">
-                    💡 Simulated instant top-up via BSP QR Ph, GCash, Maya, or direct banking settlement.
+                     Simulated instant top-up via BSP QR Ph, GCash, Maya, or direct banking settlement.
                 </div>
             </div>
             <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">

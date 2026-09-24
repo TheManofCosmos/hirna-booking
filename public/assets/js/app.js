@@ -3,7 +3,7 @@
  */
 const App = {
     async init() {
-        console.log("🚀 Initializing Hirna: Transport & Delivery Platform...");
+        console.log("[Hirna] Initializing Hirna: Transport & Delivery Platform...");
         
         // 1. Initialize Supabase / Local DB safely
         try {
@@ -19,7 +19,7 @@ const App = {
             try {
                 if (typeof fn === 'function') {
                     fn();
-                    console.log(`✓ ${modName} initialized.`);
+                    console.log(`[Hirna] ${modName} initialized.`);
                 }
             } catch (err) {
                 console.error(`Error initializing ${modName}:`, err);
@@ -38,7 +38,7 @@ const App = {
 
         // 3. Bind Navigation Tabs (Guaranteed to execute)
         this.bindNavigation();
-        console.log("✅ Hirna: Transport & Delivery Platform ready!");
+        console.log("[Hirna] Hirna: Transport & Delivery Platform ready!");
     },
 
     bindNavigation() {
@@ -139,7 +139,7 @@ const App = {
         const toast = document.createElement('div');
         const bg = type === 'success' ? 'bg-emerald-600' : 'bg-slate-900';
         toast.className = `${bg} text-white px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold flex items-center space-x-2 transition-all transform duration-300 translate-y-2 opacity-0`;
-        toast.innerHTML = `<span>⚡</span><span>${message}</span>`;
+        toast.innerHTML = `<svg class="w-4 h-4 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>${message}</span>`;
         
         container.appendChild(toast);
         setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);

@@ -34,13 +34,13 @@ const CRMModule = {
                         </div>
                     </div>
                     <span class="px-2.5 py-1 rounded-full text-xs font-bold ${u.loyalty_tier === 'Gold' ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-700'}">
-                        ★ ${u.loyalty_tier} Tier
+                        ${u.loyalty_tier} Tier
                     </span>
                 </div>
                 <div class="grid grid-cols-3 gap-2 text-center text-xs py-2 bg-slate-50 rounded-lg">
                     <div><span class="text-slate-400 block text-[10px]">Points</span><b class="text-slate-800 font-bold">${u.loyalty_points}</b></div>
                     <div><span class="text-slate-400 block text-[10px]">Trips</span><b class="text-slate-800 font-bold">${u.total_trips}</b></div>
-                    <div><span class="text-slate-400 block text-[10px]">Rating</span><b class="text-slate-800 font-bold">${u.rating} ★</b></div>
+                    <div><span class="text-slate-400 block text-[10px]">Rating</span><b class="text-slate-800 font-bold">${u.rating} / 5</b></div>
                 </div>
             </div>
         `).join('');
@@ -116,16 +116,16 @@ const CRMModule = {
         if (filtered.length === 0) {
             container.innerHTML = `
                 <div class="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300 space-y-2">
-                    <div class="text-3xl">🔍</div>
+                    <svg class="w-8 h-8 text-slate-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <h5 class="text-xs font-bold text-slate-800">No Customer Reviews Found</h5>
                     <p class="text-[11px] text-slate-500 max-w-sm mx-auto">
                         No reviews match your current filters 
-                        (${this.filters.stars !== 'all' ? `Star: <b>${this.filters.stars} ★</b>, ` : ''}
+                        (${this.filters.stars !== 'all' ? `Star: <b>${this.filters.stars} Stars</b>, ` : ''}
                          Choice: <b>${this.filters.searchChoice}</b>, 
                          Query: <b>"${this.escapeHtml(this.filters.searchQuery)}"</b>).
                     </p>
                     <button type="button" onclick="CRMModule.resetFilters()" class="inline-flex items-center px-3 py-1.5 bg-hirna-700 text-white rounded-lg text-xs font-bold hover:bg-hirna-800 transition shadow-sm mt-1">
-                        ↺ Reset All Filters
+                        Reset All Filters
                     </button>
                 </div>
             `;
@@ -147,7 +147,7 @@ const CRMModule = {
             }
 
             const starCount = Math.max(1, Math.min(5, parseInt(f.rating) || 5));
-            const starsDisplay = '★'.repeat(starCount) + '☆'.repeat(5 - starCount);
+            const starsDisplay = `${starCount} / 5 Rating`;
 
             // Highlight matches if search active
             const shouldHighlightWords = query && (this.filters.searchChoice === 'words' || this.filters.searchChoice === 'all');
@@ -193,7 +193,7 @@ const CRMModule = {
                     <div class="flex flex-wrap items-center justify-between gap-1 pt-1 text-[11px]">
                         <div class="flex items-center space-x-1.5">
                             <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium text-[10px] border border-slate-200">
-                                🏷️ ${highlightedCategory}
+                                ${highlightedCategory}
                             </span>
                         <div class="flex items-center space-x-2 text-[10px] text-slate-400 font-mono">
                             <span>Classification: <span class="text-slate-600 font-semibold">${f.category || 'General'}</span></span>
@@ -293,8 +293,8 @@ const CRMModule = {
         if (this.filters.stars !== 'all') {
             tags.push(`
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gold-100 text-gold-900 font-bold border border-gold-300">
-                    ★ ${this.filters.stars} Stars
-                    <button type="button" onclick="CRMModule.setStarFilter('all')" class="ml-1 text-gold-700 hover:text-gold-900 font-black">×</button>
+                    ${this.filters.stars} Stars
+                    <button type="button" onclick="CRMModule.setStarFilter('all')" class="ml-1 text-gold-700 hover:text-gold-900 font-black">&times;</button>
                 </span>
             `);
         }
@@ -302,8 +302,8 @@ const CRMModule = {
         if (this.filters.sortDate === 'asc') {
             tags.push(`
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-semibold border border-blue-200">
-                    📅 Oldest to Newest
-                    <button type="button" onclick="CRMModule.setDateSort('desc')" class="ml-1 text-blue-700 hover:text-blue-900 font-black">×</button>
+                    Oldest to Newest
+                    <button type="button" onclick="CRMModule.setDateSort('desc')" class="ml-1 text-blue-700 hover:text-blue-900 font-black">&times;</button>
                 </span>
             `);
         }

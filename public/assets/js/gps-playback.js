@@ -200,9 +200,9 @@ const GPSModule = {
             
             let serviceBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">RIDE</span>';
             if (isParcel) {
-                serviceBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">📦 PARCEL</span>';
+                serviceBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">PARCEL</span>';
             } else if (isFood) {
-                serviceBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">🥡 FOOD</span>';
+                serviceBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">FOOD</span>';
             } else if (isPremium) {
                 serviceBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800">PREMIUM</span>';
             }
@@ -560,7 +560,7 @@ const GPSModule = {
             className: 'pickup-flag',
             html: `
                 <div class="flex items-center space-x-1 bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white">
-                    <span>🟢</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>
                     <span class="whitespace-nowrap">Pickup</span>
                 </div>
             `,
@@ -575,7 +575,7 @@ const GPSModule = {
             className: 'dropoff-flag',
             html: `
                 <div class="flex items-center space-x-1 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white">
-                    <span>🏁</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>
                     <span class="whitespace-nowrap">Dropoff</span>
                 </div>
             `,
@@ -586,7 +586,7 @@ const GPSModule = {
             .bindPopup(`<b>Destination:</b><br>${booking.dropoff}`);
 
         // Add animated vehicle marker (motorcycle for parcel courier, taxi for standard)
-        const markerAvatar = isParcel ? '🛵' : '🚗';
+        const markerAvatar = isParcel ? '<svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>' : '<svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>';
         const carIcon = L.divIcon({
             className: 'hirna-playback-car',
             html: `
@@ -723,7 +723,7 @@ const GPSModule = {
         if (alertBox) {
             if (speed > 55.0) {
                 alertBox.classList.remove('hidden');
-                alertBox.innerText = `⚠️ AI Anomaly: High speed recorded (${speed.toFixed(1)} km/h > 55 km/h)`;
+                alertBox.innerText = `AI Anomaly: High speed recorded (${speed.toFixed(1)} km/h > 55 km/h)`;
             } else {
                 alertBox.classList.add('hidden');
             }
@@ -792,7 +792,11 @@ const GPSModule = {
     updatePlayPauseButton(isPlaying) {
         const icon = document.getElementById('btn-play-pause-icon');
         const text = document.getElementById('btn-play-pause-text');
-        if (icon) icon.innerText = isPlaying ? '⏸' : '▶';
+        if (icon) {
+            icon.innerHTML = isPlaying 
+                ? '<svg class="w-4 h-4 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>' 
+                : '<svg class="w-4 h-4 inline" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+        }
         if (text) text.innerText = isPlaying ? 'Pause' : 'Play';
     }
 };
