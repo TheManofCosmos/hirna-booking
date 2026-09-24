@@ -1056,6 +1056,7 @@
             </div>
 
             <!-- Receipt Metadata Grid -->
+            <div id="booking-receipt-printable" class="space-y-3">
             <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-3 rounded-2xl border border-slate-200">
                 <div>
                     <span class="text-slate-400 block text-[10px] uppercase font-bold">Booking Code</span>
@@ -1136,11 +1137,11 @@
                 </div>
                 <p class="text-[10px] text-slate-500 font-mono">Scan or verify with any QR Ph BSP-compliant app (GCash/Maya/Bank)</p>
             </div>
-
+            </div><!-- /booking-receipt-printable -->
 
             <!-- Actions -->
             <div class="grid grid-cols-2 gap-2 pt-1">
-                <button type="button" onclick="window.print()" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                <button type="button" onclick="AuditModule.printBookingReceipt()" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition flex items-center justify-center space-x-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                     <span>Print Receipt</span>
                 </button>

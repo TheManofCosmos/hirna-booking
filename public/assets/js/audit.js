@@ -423,7 +423,92 @@ const AuditModule = {
     },
 
     printAuditReceipt() {
-        window.print();
+        const printable = document.getElementById('audit-receipt-printable');
+        if (!printable) { window.print(); return; }
+
+        // Clone only the receipt content into an isolated print popup
+        const clonedContent = printable.cloneNode(true);
+
+        // Remove scrollable overflow so the popup gets full height
+        clonedContent.style.overflow = 'visible';
+        clonedContent.style.maxHeight = 'none';
+        clonedContent.style.flex = 'none';
+
+        // Gather Tailwind CDN and local stylesheets from parent page
+        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+            .map(el => el.outerHTML)
+            .join('\n');
+
+        const printWin = window.open('', '_blank', 'width=520,height=780,toolbar=0,scrollbars=1,status=0');
+        if (!printWin) {
+            // Popup blocked fallback — @media print CSS only
+            window.print();
+            return;
+        }
+
+        printWin.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hirna Audit Receipt</title>
+    ${styles}
+    <style>
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { margin: 0; padding: 16px; font-family: sans-serif; background: #fff; }
+        @media print {
+            body { padding: 0; }
+            button { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    ${clonedContent.outerHTML}
+    <script>
+        window.onload = function() {
+            setTimeout(function() { window.print(); window.close(); }, 400);
+        };
+    <\/script>
+</body>
+</html>`);
+        printWin.document.close();
+    },
+
+    printBookingReceipt() {
+        const printable = document.getElementById('booking-receipt-printable');
+        if (!printable) { window.print(); return; }
+
+        const clonedContent = printable.cloneNode(true);
+        clonedContent.style.overflow = 'visible';
+        clonedContent.style.maxHeight = 'none';
+
+        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+            .map(el => el.outerHTML)
+            .join('\n');
+
+        const printWin = window.open('', '_blank', 'width=520,height=780,toolbar=0,scrollbars=1,status=0');
+        if (!printWin) { window.print(); return; }
+
+        printWin.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hirna Booking Receipt</title>
+    ${styles}
+    <style>
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { margin: 0; padding: 16px; font-family: sans-serif; background: #fff; }
+        @media print { body { padding: 0; } button { display: none !important; } }
+    </style>
+</head>
+<body>
+    ${clonedContent.outerHTML}
+    <script>
+        window.onload = function() { setTimeout(function() { window.print(); window.close(); }, 400); };
+    <\/script>
+</body>
+</html>`);
+        printWin.document.close();
     },
 
     copyAuditProof() {
