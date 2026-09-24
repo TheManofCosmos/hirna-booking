@@ -11,7 +11,7 @@ const AuthModule = {
             pin: "1234",
             name: "Edgar Adovas (SuperAdmin)",
             role: "superadmin",
-            roleTitle: "SuperAdmin (Full Access & Role Control)",
+            roleTitle: "SuperAdmin",
             badgeClass: "bg-gold-500 text-hirna-950 font-black",
             avatar: "EA"
         },
@@ -21,7 +21,7 @@ const AuthModule = {
             pin: null,
             name: "SuperAdmin Hirna",
             role: "superadmin",
-            roleTitle: "SuperAdmin (Full Access)",
+            roleTitle: "SuperAdmin",
             badgeClass: "bg-gold-500 text-hirna-950 font-black",
             avatar: "SA"
         },
@@ -198,7 +198,7 @@ const AuthModule = {
         const cleanName = (accountData.name || cleanEmail).trim();
 
         const roleTitles = {
-            superadmin: "SuperAdmin (Full Access & Role Control)",
+            superadmin: "SuperAdmin",
             admin: "Operations Administrator",
             passenger: "Verified Passenger"
         };
@@ -493,7 +493,7 @@ const AuthModule = {
                 email: "edgaradovas50@gmail.com",
                 name: "Edgar Adovas",
                 role: "superadmin",
-                roleTitle: "SuperAdmin (Full Access & Control)",
+                roleTitle: "SuperAdmin",
                 avatar: "EA",
                 badgeClass: "bg-gold-500 text-hirna-950 font-black",
                 lastLogin: new Date().toISOString()
@@ -1040,7 +1040,8 @@ const AuthModule = {
             else activeTab = 'dashboard';
         }
 
-        const roleTitle = this.currentUser ? this.currentUser.roleTitle : 'Super Admin';
+        let roleTitle = this.currentUser ? (this.currentUser.roleTitle || 'Superadmin') : 'Superadmin';
+        roleTitle = roleTitle.replace(/\s*\([^)]*\)/g, '').trim();
         const isSuperAdmin = this.isSuperAdmin();
 
         const navItemClass = (key) => {
@@ -1094,23 +1095,23 @@ const AuthModule = {
                         <div class="space-y-1">
                             <a href="booking.html" data-tab="booking" class="${navItemClass('booking')}">
                                 <svg class="w-4 h-4 flex-shrink-0 ${iconColor('booking')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>
-                                <span>1. Booking & Dispatch</span>
+                                <span>Booking & Dispatch</span>
                             </a>
                             <a href="payments.html" data-tab="payments" class="${navItemClass('payments')}">
                                 <svg class="w-4 h-4 flex-shrink-0 ${iconColor('payments')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                                <span>2. Fare & Payments</span>
+                                <span>Fare & Payments</span>
                             </a>
                             <a href="crm.html" data-tab="crm" class="${navItemClass('crm')}">
                                 <svg class="w-4 h-4 flex-shrink-0 ${iconColor('crm')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                <span>3. Customer CRM</span>
+                                <span>Customer CRM</span>
                             </a>
                             <a href="gps.html" data-tab="gps" class="${navItemClass('gps')}">
                                 <svg class="w-4 h-4 flex-shrink-0 ${iconColor('gps')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                <span>4. GPS Telematics</span>
+                                <span>GPS Telematics</span>
                             </a>
                             <a href="analytics.html" data-tab="analytics" class="${navItemClass('analytics')}">
                                 <svg class="w-4 h-4 flex-shrink-0 ${iconColor('analytics')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                                <span>5. Fleet Analytics</span>
+                                <span>Fleet Analytics</span>
                             </a>
                         </div>
                     </div>
@@ -1121,12 +1122,12 @@ const AuthModule = {
                         <div class="space-y-1">
                             <a href="audit.html" data-tab="audit" class="${navItemClass('audit')}">
                                 <svg class="w-4 h-4 flex-shrink-0 ${iconColor('audit')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                                <span>6. SOP & Audit Logs</span>
+                                <span>SOP & Audit Logs</span>
                             </a>
                             ${isSuperAdmin ? `
                             <a id="tab-btn-sso-gateway" href="sso.html" data-tab="sso" class="${navItemClass('sso')}">
                                 <svg class="w-4 h-4 flex-shrink-0 ${iconColor('sso')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                                <span>8. SuperAdmin SSO</span>
+                                <span>SuperAdmin SSO</span>
                             </a>
                             ` : ''}
                         </div>

@@ -1053,6 +1053,61 @@ const PaymentsModule = {
         }
     },
 
+    printReceiptDocument() {
+        const receiptCard = document.querySelector('#receipt-modal .receipt-printable-card');
+        if (!receiptCard) {
+            window.print();
+            return;
+        }
+
+        const clone = receiptCard.cloneNode(true);
+        // Remove action buttons from clone
+        const actions = clone.querySelectorAll('.receipt-actions, button, .no-print');
+        actions.forEach(el => el.remove());
+
+        // Gather Tailwind and stylesheets
+        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+            .map(el => el.outerHTML)
+            .join('\n');
+
+        const printWin = window.open('', '_blank', 'width=520,height=760,toolbar=0,scrollbars=1,status=0');
+        if (!printWin) {
+            window.print();
+            return;
+        }
+
+        printWin.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hirna Official Trip Receipt</title>
+    ${styles}
+    <style>
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
+        body { margin: 0; padding: 20px; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #ffffff; display: flex; justify-content: center; }
+        .receipt-printable-card { box-shadow: none !important; border: 1px solid #e2e8f0 !important; width: 100% !important; max-width: 440px !important; margin: 0 auto !important; }
+        @media print {
+            body { padding: 0; }
+            button, .receipt-actions, .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    ${clone.outerHTML}
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                window.print();
+                window.close();
+            }, 350);
+        };
+    <\/script>
+</body>
+</html>`);
+        printWin.document.close();
+    },
+
     bindEvents() {
         document.getElementById('btn-close-pay-modal')?.addEventListener('click', () => this.closePaymentModal());
     }

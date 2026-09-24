@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hirna: Transport & Delivery - 4. GPS & Trip Playback</title>
+    <title>Hirna: Transport & Delivery - GPS & Trip Playback</title>
     <!-- Immediate Authentication Guard: ensure app starts on login screen if not authenticated -->
     <script>
         (function() {
@@ -96,7 +96,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
                 <div>
-                    <h1 class="text-base font-black text-slate-900 leading-tight">4. GPS Telematics & Trip Playback</h1>
+                    <h1 class="text-base font-black text-slate-900 leading-tight">GPS Telematics & Trip Playback</h1>
                     <p class="text-xs text-slate-500 font-medium">Real-time Route Tracking, HUD Telemetry & Playback Simulation</p>
                 </div>
             </div>
@@ -932,110 +932,19 @@
                 </div>
             </div>
 
-            <!-- Driver Reveal Preview (revealed upon matching) -->
+                        <!-- Driver Reveal Preview (revealed upon matching) -->
             <div id="assign-driver-preview" class="hidden bg-hirna-900 border border-gold-500/40 rounded-2xl p-3.5 text-left flex items-center space-x-3.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div class="w-14 h-14 rounded-2xl border-2 border-gold-400 mx-auto flex items-center justify-center shadow-lg overflow-hidden">
-                    <img src="assets/hirna-badge.png" alt="Hirna Official Logo" class="w-full h-full object-cover">
+                <div class="w-12 h-12 rounded-xl bg-gold-500 text-hirna-950 flex items-center justify-center font-black text-xl shadow-md flex-shrink-0" id="assign-driver-avatar">
+                    <svg class="w-6 h-6 text-hirna-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 </div>
-                </div>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    PAID & SETTLED
-                </span>
-            </div>
-
-            <!-- Receipt Metadata Grid -->
-            <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-3 rounded-2xl border border-slate-200">
-                <div>
-                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Booking Code</span>
-                    <span id="rcpt-booking-code" class="font-mono font-bold text-slate-800">HIRNA-000000</span>
-                </div>
-                <div class="text-right">
-                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Invoice / Reference</span>
-                    <span id="rcpt-invoice-no" class="font-mono font-bold text-slate-800">INV-2026-00000</span>
-                </div>
-                <div class="pt-1">
-                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Date & Time</span>
-                    <span id="rcpt-datetime" class="text-slate-700 font-medium">2026-09-18 15:30</span>
-                </div>
-                <div class="pt-1 text-right">
-                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Settlement Via</span>
-                    <span id="rcpt-method" class="font-bold text-blue-600">GCash</span>
-                </div>
-            </div>
-
-            <!-- Trip route points -->
-            <div class="space-y-1.5 text-xs bg-white p-3 rounded-xl border border-slate-100">
-                <div class="flex items-start space-x-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 mt-1 flex-shrink-0"></span>
-                    <div class="truncate">
-                        <span class="text-[9px] uppercase font-bold text-slate-400 block">Pickup</span>
-                        <span id="rcpt-pickup" class="text-slate-800 font-semibold truncate block">Ayala Ave, Makati</span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-black text-white truncate" id="assign-driver-name">Ricardo Dalisay</h4>
+                        <span class="text-xs font-bold text-gold-400">4.9 Rating</span>
                     </div>
+                    <p class="text-xs text-slate-300 truncate" id="assign-driver-car">Toyota Vios (Silver) • TXI-5431</p>
+                    <p class="text-[11px] text-emerald-400 font-bold mt-0.5">● Assigned & Heading to Pickup</p>
                 </div>
-                <div class="flex items-start space-x-2">
-                    <span class="w-2 h-2 rounded-full bg-rose-500 mt-1 flex-shrink-0"></span>
-                    <div class="truncate">
-                        <span class="text-[9px] uppercase font-bold text-slate-400 block">Dropoff</span>
-                        <span id="rcpt-dropoff" class="text-slate-800 font-semibold truncate block">SM Megamall, Ortigas</span>
-                    </div>
-                </div>
-                <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
-                    <span id="rcpt-passenger">Passenger: Juan Dela Cruz</span>
-                    <span id="rcpt-driver" class="font-medium text-slate-800">Driver: Ricardo Dalisay</span>
-                </div>
-            </div>
-
-            <!-- Itemized Charges -->
-            <div class="space-y-1.5 text-xs border-t border-b border-slate-100 py-2.5">
-                <div class="flex justify-between text-slate-600">
-                    <span>Base Flagdown</span>
-                    <span id="rcpt-base" class="font-mono text-slate-800">₱45.00</span>
-                </div>
-                <div class="flex justify-between text-slate-600">
-                    <span>Distance Traveled</span>
-                    <span id="rcpt-dist" class="font-mono text-slate-800">₱85.00</span>
-                </div>
-                <div class="flex justify-between text-slate-600">
-                    <span>Travel Time</span>
-                    <span id="rcpt-time" class="font-mono text-slate-800">₱25.00</span>
-                </div>
-                <div class="flex justify-between text-slate-600">
-                    <span>Dynamic Surge</span>
-                    <span id="rcpt-surge" class="font-mono text-amber-700">1.0x (₱0.00)</span>
-                </div>
-                <div class="flex justify-between text-slate-400 text-[10px]">
-                    <span>VAT (12% Included)</span>
-                    <span id="rcpt-vat" class="font-mono">₱18.21</span>
-                </div>
-                <div class="pt-2 border-t border-slate-200 flex justify-between items-baseline font-black">
-                    <span class="text-sm text-slate-900">Total Amount Paid</span>
-                    <span id="rcpt-total" class="text-lg font-mono text-hirna-800">₱155.00</span>
-                </div>
-            </div>
-
-            <!-- Dynamic QR Ph Verification Section (Shown when paid via QR) -->
-            <div id="rcpt-qr-section" class="hidden flex-col items-center justify-center p-3 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-2">
-                <div class="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
-                    
-                    <span>QR Ph National Standard Verification</span>
-                </div>
-                <div class="bg-white p-2 rounded-xl shadow-xs border border-slate-200 inline-block">
-                    <img id="rcpt-qr-image" src="" alt="QR Ph Receipt Code" class="w-24 h-24 object-contain">
-                </div>
-                <p class="text-[10px] text-slate-500 font-mono">Scan or verify with any QR Ph BSP-compliant app (GCash/Maya/Bank)</p>
-            </div>
-
-
-            <!-- Actions -->
-            <div class="grid grid-cols-2 gap-2 pt-1">
-                <button type="button" onclick="window.print()" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition flex items-center justify-center space-x-1.5 cursor-pointer">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                    <span>Print Receipt</span>
-                </button>
-                <button type="button" onclick="BookingModule.closeReceipt()" class="w-full py-2.5 px-3 rounded-xl bg-hirna-700 hover:bg-hirna-800 text-white text-xs font-black shadow-lg shadow-hirna-700/20 transition flex items-center justify-center space-x-1.5 cursor-pointer">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                    <span>OK</span>
-                </button>
             </div>
         </div>
     </div>

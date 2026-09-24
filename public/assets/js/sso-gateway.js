@@ -453,7 +453,7 @@ const SSOGateway = {
         }
 
         const roleTitles = {
-            superadmin: "SuperAdmin (Full Access & Role Control)",
+            superadmin: "SuperAdmin",
             admin: "Operations Administrator",
             passenger: "Verified Passenger"
         };

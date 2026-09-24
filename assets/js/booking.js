@@ -2193,27 +2193,27 @@ const BookingModule = {
 
         // Commercial Centers & Bulacan / Metro Hubs
         { name: "Starmall San Jose Del Monte", city: "San Jose del Monte, Bulacan", lat: 14.7937, lng: 121.0792, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
-        { name: "Tungkong Mangga (Tungko), SJDM", city: "San Jose del Monte, Bulacan", lat: 14.7865, lng: 121.0745, icon: "️" },
-        { name: "Ayala Malls Circuit, Makati", city: "Makati City", lat: 14.5758, lng: 121.0183, icon: "️" },
-        { name: "Bonifacio High Street, BGC", city: "Taguig", lat: 14.5517, lng: 121.0509, icon: "️" },
-        { name: "Greenbelt 5, Ayala Center, Makati", city: "Makati City", lat: 14.5524, lng: 121.0205, icon: "️" },
-        { name: "Glorietta, Ayala Center, Makati", city: "Makati City", lat: 14.5508, lng: 121.0261, icon: "️" },
-        { name: "Trinoma Mall, North Avenue, QC", city: "Quezon City", lat: 14.6534, lng: 121.0336, icon: "️" },
-        { name: "Eastwood Mall, Libis, QC", city: "Quezon City", lat: 14.6105, lng: 121.0805, icon: "️" },
-        { name: "Venice Grand Canal Mall, McKinley Hill", city: "Taguig", lat: 14.5350, lng: 121.0514, icon: "️" },
-        { name: "Robinsons Galleria, Ortigas", city: "Quezon City", lat: 14.5901, lng: 121.0594, icon: "️" },
+        { name: "Tungkong Mangga (Tungko), SJDM", city: "San Jose del Monte, Bulacan", lat: 14.7865, lng: 121.0745, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "Ayala Malls Circuit, Makati", city: "Makati City", lat: 14.5758, lng: 121.0183, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "Bonifacio High Street, BGC", city: "Taguig", lat: 14.5517, lng: 121.0509, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "Greenbelt 5, Ayala Center, Makati", city: "Makati City", lat: 14.5524, lng: 121.0205, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "Glorietta, Ayala Center, Makati", city: "Makati City", lat: 14.5508, lng: 121.0261, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "Trinoma Mall, North Avenue, QC", city: "Quezon City", lat: 14.6534, lng: 121.0336, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "Eastwood Mall, Libis, QC", city: "Quezon City", lat: 14.6105, lng: 121.0805, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "Venice Grand Canal Mall, McKinley Hill", city: "Taguig", lat: 14.5350, lng: 121.0514, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "Robinsons Galleria, Ortigas", city: "Quezon City", lat: 14.5901, lng: 121.0594, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
 
         // Airports & Terminals
-        { name: "NAIA Terminal 3, Pasay", city: "Pasay City", lat: 14.5202, lng: 121.0156, icon: "️" },
-        { name: "NAIA Terminal 1, Pasay", city: "Parañaque", lat: 14.5097, lng: 121.0003, icon: "️" },
-        { name: "NAIA Terminal 2, Pasay", city: "Pasay City", lat: 14.5123, lng: 121.0045, icon: "️" },
-        { name: "Francisco Bangoy International Airport, Davao", city: "Davao City", lat: 7.1253, lng: 125.6456, icon: "️" },
+        { name: "NAIA Terminal 3, Pasay", city: "Pasay City", lat: 14.5202, lng: 121.0156, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "NAIA Terminal 1, Pasay", city: "Parañaque", lat: 14.5097, lng: 121.0003, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "NAIA Terminal 2, Pasay", city: "Pasay City", lat: 14.5123, lng: 121.0045, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "Francisco Bangoy International Airport, Davao", city: "Davao City", lat: 7.1253, lng: 125.6456, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
         { name: "PITX - Parañaque Integrated Terminal Exchange", city: "Parañaque", lat: 14.5106, lng: 120.9912, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
         { name: "Araneta Center Bus Station, Cubao", city: "Quezon City", lat: 14.6219, lng: 121.0528, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
 
         // Civic & Academic Hubs
-        { name: "Quezon Memorial Circle, QC", city: "Quezon City", lat: 14.6507, lng: 121.0494, icon: "️" },
-        { name: "Davao City Hall, San Pedro St", city: "Davao City", lat: 7.0644, lng: 125.6092, icon: "️" },
+        { name: "Quezon Memorial Circle, QC", city: "Quezon City", lat: 14.6507, lng: 121.0494, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
+        { name: "Davao City Hall, San Pedro St", city: "Davao City", lat: 7.0644, lng: 125.6092, icon: \'<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>\' },
         { name: "People's Park, Davao City", city: "Davao City", lat: 7.0683, lng: 125.6083, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
         { name: "Rizal Park, Luneta, Manila", city: "Manila", lat: 14.5831, lng: 120.9794, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
         { name: "UP Diliman, Quezon City", city: "Quezon City", lat: 14.6538, lng: 121.0685, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' },
@@ -2550,7 +2550,7 @@ const BookingModule = {
             if (cls === 'amenity' && (type === 'school' || type === 'university' || type === 'college')) return 'school';
             if (cls === 'amenity' && (type === 'hospital' || type === 'clinic' || type === 'pharmacy')) return 'hospital';
             if (cls === 'aeroway' || type === 'aerodrome' || type === 'terminal') return 'airport';
-            if (cls === 'tourism' || cls === 'leisure' || type === 'park') return '️';
+            if (cls === 'tourism' || cls === 'leisure' || type === 'park') return 'park';
             if (cls === 'amenity' && (type === 'restaurant' || type === 'fast_food' || type === 'cafe')) return 'food';
             return 'pin';
         };
@@ -2564,7 +2564,7 @@ const BookingModule = {
             if (key === 'amenity' && (val === 'school' || val === 'university' || val === 'college')) return 'school';
             if (key === 'amenity' && (val === 'hospital' || val === 'clinic' || val === 'pharmacy')) return 'hospital';
             if (key === 'aeroway' || val === 'aerodrome') return 'airport';
-            if (key === 'tourism' || key === 'leisure' || val === 'park') return '️';
+            if (key === 'tourism' || key === 'leisure' || val === 'park') return 'park';
             if (key === 'amenity' && (val === 'restaurant' || val === 'fast_food' || val === 'cafe')) return 'food';
             return 'pin';
         };
@@ -2679,6 +2679,22 @@ const BookingModule = {
                             <span class="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 font-bold">1-Tap Fill</span>
                         </div>
                     `;
+                    if (!home) {
+                        html += `
+                            <div class="autocomplete-add-home-opt p-2.5 rounded-xl bg-gold-50/80 hover:bg-gold-100 cursor-pointer flex items-center justify-between transition text-hirna-950 border border-gold-300 shadow-xs mb-2">
+                                <div class="flex items-center space-x-2.5 flex-1 min-w-0">
+                                    <div class="w-7 h-7 rounded-lg bg-gold-500 text-hirna-950 flex items-center justify-center shadow-sm flex-shrink-0">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-xs font-bold text-hirna-950">Add home address</div>
+                                        <div class="text-[10px] text-gold-800 truncate">Tap to input and save your primary address</div>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-lg bg-white text-[10px] font-black text-hirna-800 border border-gold-300 shadow-sm flex-shrink-0 hover:bg-gold-50">+ Add</span>
+                            </div>
+                        `;
+                    }
                     singleSavedPlaces.forEach((place, sIdx) => {
                         html += `
                             <div class="autocomplete-saved-place-opt p-2.5 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/70 cursor-pointer transition flex items-center justify-between group shadow-sm bg-white" data-single-idx="${sIdx}">
@@ -2769,6 +2785,12 @@ const BookingModule = {
                 dropdown.querySelector('.tab-btn-saved-places')?.addEventListener('click', (e) => {
                     e.stopPropagation();
                     renderSuggestions(input.value, 'saved');
+                });
+
+                // Bind Add Home in Saved Places tab
+                dropdown.querySelector('.autocomplete-add-home-opt')?.addEventListener('click', () => {
+                    dropdown.classList.add('hidden');
+                    this.openHomeAddressModal(inputId);
                 });
 
                 // Bind route selections (1-Tap Dual Fill for Transport only)
@@ -4030,7 +4052,67 @@ const BookingModule = {
     },
 
     fillHomeWithLocation() {
-        this.requestGPSPermission('home-address-input-field');
+        const inputField = document.getElementById('home-address-input-field');
+        if (typeof App !== 'undefined') App.showToast("Acquiring accurate current GPS location...", "info");
+
+        const applyFoundAddress = (resolvedName, lat, lng) => {
+            if (inputField) {
+                inputField.value = resolvedName;
+                inputField.focus();
+                this.updateClearBtnVisibility('home-address-input-field');
+            }
+            this.pickupCoords = [lat, lng];
+            if (typeof App !== 'undefined') {
+                App.showToast(`Set home address to current location: ${resolvedName}`, "success");
+            }
+        };
+
+        // Check if high-precision coordinates exist
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    const acc = Math.round(pos.coords.accuracy || 10);
+
+                    // Reverse geocode via Nominatim
+                    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+                    fetch(url, { headers: { 'Accept-Language': 'en' } })
+                        .then(res => res.json())
+                        .then(data => {
+                            let locStr = '';
+                            if (data && data.address) {
+                                const a = data.address;
+                                const landmark = data.name || a.amenity || a.building || a.shop || a.road || a.suburb;
+                                const city = a.city || a.town || a.municipality || a.city_district || 'Caloocan City';
+                                const state = a.state || a.region || 'Metro Manila';
+                                if (landmark) {
+                                    locStr = `${landmark}, ${city}, ${state}`;
+                                } else if (data.display_name) {
+                                    locStr = data.display_name.split(',').slice(0, 3).map(s => s.trim()).join(', ');
+                                }
+                            }
+                            if (!locStr) {
+                                locStr = localStorage.getItem('hirna_user_gps_location') || "Caloocan City, Metro Manila, Philippines";
+                            }
+                            applyFoundAddress(locStr, lat, lng);
+                        })
+                        .catch(() => {
+                            const fallback = localStorage.getItem('hirna_user_gps_location') || "Caloocan City, Metro Manila, Philippines";
+                            applyFoundAddress(fallback, lat, lng);
+                        });
+                },
+                (err) => {
+                    console.warn("GPS lookup failed:", err);
+                    const savedLoc = localStorage.getItem('hirna_user_gps_location') || "Caloocan City, Metro Manila, Philippines";
+                    applyFoundAddress(savedLoc, 14.6548, 120.9840);
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        } else {
+            const savedLoc = localStorage.getItem('hirna_user_gps_location') || "Caloocan City, Metro Manila, Philippines";
+            applyFoundAddress(savedLoc, 14.6548, 120.9840);
+        }
     },
 
     saveHomeAddress() {
@@ -4863,14 +4945,14 @@ const BookingModule = {
     },
 
     getVehicleIcon(booking) {
-        if (!booking) return '';
+        if (!booking) return '<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>';
         const model = (booking.vehicle_model || '').toLowerCase();
         const vClass = (booking.vehicle_class || '').toLowerCase();
         const service = (booking.service_type || '').toLowerCase();
 
         // 1. Cargo Van / MPV (for cargo crates >10kg)
         if (vClass.includes('cargo') || vClass.includes('crate') || model.includes('van') || model.includes('l300') || (service === 'parcel' && vClass.includes('heavy'))) {
-            return '';
+            return '<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>';
         }
 
         // 2. Motorcycle Couriers (Scooters & Manuals 125cc-175cc for Food & Parcel <10kg)
@@ -4884,11 +4966,11 @@ const BookingModule = {
 
         if (isMotorcycle) {
             const isScooter = model.includes('scooter') || model.includes('nmax') || model.includes('click') || model.includes('aerox') || model.includes('adv') || model.includes('pcx');
-            return isScooter ? '' : '️';
+            return '<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="6" cy="18" r="3" stroke-width="2"/><circle cx="18" cy="18" r="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18h6m-4-8l2 5m-2-5l-3 5m3-5V6l3 2"/></svg>';
         }
 
         // 3. Passenger Transport Cars (Sedan / MPV / Taxi)
-        return '';
+        return '<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>';
     },
 
     getDriverIcon(booking, distText, etaText) {
@@ -5903,7 +5985,7 @@ const BookingModule = {
                                (booking.vehicle_model || '').toLowerCase().includes('honda') ||
                                (booking.vehicle_model || '').toLowerCase().includes('yamaha') ||
                                booking.service_type === 'food';
-                avatarEl.innerText = isMoto ? '' : '‍️';
+                avatarEl.innerHTML = '<svg class="w-6 h-6 text-hirna-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
             }
             if (preview) preview.classList.remove('hidden');
         }, 2200);
