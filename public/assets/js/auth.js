@@ -18,7 +18,7 @@ const AuthModule = {
         {
             email: "superadmin@hirna.ph",
             password: "superadmin",
-            pin: "1234",
+            pin: null,
             name: "SuperAdmin Hirna",
             role: "superadmin",
             roleTitle: "SuperAdmin (Full Access)",
@@ -28,7 +28,7 @@ const AuthModule = {
         {
             email: "admin@hirna.ph",
             password: "admin",
-            pin: "1234",
+            pin: null,
             name: "Operations Admin",
             role: "admin",
             roleTitle: "Operations Administrator",
@@ -38,7 +38,7 @@ const AuthModule = {
         {
             email: "adovasjayvincent@gmail.com",
             password: "admin",
-            pin: "1234",
+            pin: null,
             name: "Jay Vincent Adovas",
             role: "admin",
             roleTitle: "Operations Administrator",
@@ -48,7 +48,7 @@ const AuthModule = {
         {
             email: "passenger@hirna.ph",
             password: "passenger",
-            pin: "1234",
+            pin: null,
             name: "Verified Passenger",
             role: "passenger",
             roleTitle: "Verified Passenger",
@@ -58,7 +58,7 @@ const AuthModule = {
         {
             email: "customer@hirna.ph",
             password: "passenger",
-            pin: "1234",
+            pin: null,
             name: "Verified Passenger",
             role: "passenger",
             roleTitle: "Verified Passenger",
@@ -82,8 +82,9 @@ const AuthModule = {
                             if (acc.email === 'customer@hirna.ph') acc.email = 'passenger@hirna.ph';
                             updated = true;
                         }
-                        if (!acc.pin) {
-                            acc.pin = "1234";
+                        // Remove demo pin "1234" if it was automatically set before
+                        if (acc.pin === "1234") {
+                            acc.pin = null;
                             updated = true;
                         }
                         return acc;
@@ -105,7 +106,6 @@ const AuthModule = {
     addOrUpdateAccount(accountData) {
         let current = [...this.accounts];
         const idx = current.findIndex(a => a.email.toLowerCase() === accountData.email.toLowerCase());
-        if (!accountData.pin) accountData.pin = "1234";
         if (idx >= 0) {
             current[idx] = { ...current[idx], ...accountData };
         } else {
@@ -113,6 +113,24 @@ const AuthModule = {
         }
         this.saveAccounts(current);
         return current;
+    },
+
+    setAccountPin(email, newPin) {
+        let current = [...this.accounts];
+        const idx = current.findIndex(a => a.email.toLowerCase() === email.toLowerCase());
+        if (idx === -1) {
+            return { success: false, message: "Account not found." };
+        }
+        current[idx].pin = newPin;
+        this.saveAccounts(current);
+        
+        if (typeof SupabaseBridge !== 'undefined') {
+            SupabaseBridge.logAudit("Authentication", "PIN_UPDATE_SUCCESS", email, email, {
+                target_user: email,
+                timestamp: new Date().toISOString()
+            });
+        }
+        return { success: true, message: `4-Digit PIN updated successfully for ${email}` };
     },
 
     deleteAccount(email) {

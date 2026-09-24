@@ -18,6 +18,12 @@ def send_real_email_otp(recipient_email, otp_code, purpose="login"):
             purpose_title = "Password Reset Request"
             purpose_desc = "You requested to reset your password for"
             badge_text = "Your Password Reset OTP"
+        elif purpose in ["pin_setup", "pin_reset"]:
+            action = "create" if purpose == "pin_setup" else "reset"
+            msg["Subject"] = f"🔢 Your Hirna 4-Digit PIN Security Code: {otp_code}"
+            purpose_title = "4-Digit PIN Security Setup" if purpose == "pin_setup" else "4-Digit PIN Reset"
+            purpose_desc = f"You requested to {action} your 4-digit security PIN for"
+            badge_text = "Your 4-Digit PIN Verification Code"
         else:
             msg["Subject"] = f"🔐 Your Hirna Security Verification Code: {otp_code}"
             purpose_title = "Identity & Two-Factor Authentication"

@@ -22,11 +22,30 @@ from email.mime.text import MIMEText
 GMAIL_SENDER = os.environ.get("GMAIL_SENDER", "hirnasecurity@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "mukfvbhuiepcocoq")
 
-def send_real_email_otp(recipient_email, otp_code):
+def send_real_email_otp(recipient_email, otp_code, purpose="login"):
     """Send real OTP email to Gmail inbox using Google App Password."""
     try:
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"🔐 Your Hirna Security Verification Code: {otp_code}"
+        is_reset = purpose == "reset"
+        is_pin = purpose in ["pin_setup", "pin_reset"]
+        if is_reset:
+            subject_title = "Password Reset Passkey"
+            badge_title = "PASSWORD RESET PASSKEY"
+            box_label = "Password Reset Passkey"
+            action_desc = "reset your account password"
+        elif is_pin:
+            action_word = "create" if purpose == "pin_setup" else "reset"
+            subject_title = "4-Digit PIN Security Code"
+            badge_title = "4-DIGIT PIN SECURITY GATEWAY"
+            box_label = "4-Digit PIN Verification Code"
+            action_desc = f"{action_word} your 4-digit security PIN"
+        else:
+            subject_title = "Security Verification Code"
+            badge_title = "IDENTITY & TWO-FACTOR AUTHENTICATION"
+            box_label = "Your One-Time Passkey (OTP)"
+            action_desc = "verify identity login"
+        
+        msg["Subject"] = f"🔐 Your Hirna {subject_title}: {otp_code}"
         msg["From"] = f"Hirna TNVS Security <{GMAIL_SENDER}>"
         msg["To"] = recipient_email
 
@@ -34,7 +53,8 @@ def send_real_email_otp(recipient_email, otp_code):
 ----------------------------------------
 Your One-Time Passkey (OTP) is: {otp_code}
 
-This verification code was requested for {recipient_email}.
+Purpose: {subject_title}
+This verification code was requested for {recipient_email} to {action_desc}.
 It is valid for 5 minutes. Do NOT share this code with anyone.
 
 Hirna: Transport & Delivery System (Team 10)
@@ -48,17 +68,17 @@ Hirna: Transport & Delivery System (Team 10)
         <div style="text-align: center; margin-bottom: 24px;">
             <div style="display: inline-block; width: 50px; height: 50px; line-height: 50px; background: #f59e0b; border-radius: 14px; font-size: 24px; color: #020617; font-weight: 900;">🚕</div>
             <h2 style="color: #ffffff; margin: 12px 0 4px 0; font-size: 20px; font-weight: 800; letter-spacing: 0.5px;">HIRNA TNVS SECURITY</h2>
-            <p style="color: #94a3b8; margin: 0; font-size: 12px;">Identity & Two-Factor Authentication</p>
+            <p style="color: #94a3b8; margin: 0; font-size: 12px;">{badge_title}</p>
         </div>
 
         <div style="background: #1e293b; border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 24px; border: 1px solid #334155;">
-            <p style="color: #cbd5e1; margin: 0 0 10px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Your One-Time Passkey (OTP)</p>
+            <p style="color: #cbd5e1; margin: 0 0 10px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">{box_label}</p>
             <div style="font-family: 'Consolas', 'Courier New', monospace; font-size: 34px; font-weight: 900; color: #f59e0b; letter-spacing: 8px; margin: 8px 0;">{otp_code}</div>
-            <p style="color: #64748b; margin: 8px 0 0 0; font-size: 11px;">Expires in 5 minutes • Valid for 1 single login attempt</p>
+            <p style="color: #64748b; margin: 8px 0 0 0; font-size: 11px;">Expires in 5 minutes • Valid for 1 single verification attempt</p>
         </div>
 
         <p style="color: #94a3b8; font-size: 12px; line-height: 1.6; margin: 0 0 16px 0;">
-            This security code was dispatched for <strong>{recipient_email}</strong>. If you did not request this code, please secure your Hirna account immediately.
+            This security code was dispatched for <strong>{recipient_email}</strong> to {action_desc}. If you did not request this code, please secure your Hirna account immediately.
         </p>
 
         <div style="border-top: 1px solid #1e293b; padding-top: 16px; text-align: center; color: #475569; font-size: 11px;">
@@ -76,7 +96,7 @@ Hirna: Transport & Delivery System (Team 10)
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
             server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
             server.sendmail(GMAIL_SENDER, [recipient_email], msg.as_string())
-        print(f"[✓] Real OTP email successfully delivered to: {recipient_email}")
+        print(f"[✓] Real OTP email successfully delivered to: {recipient_email} (Purpose: {purpose})")
         return True
     except Exception as e:
         print(f"[!] Gmail SMTP dispatch error to {recipient_email}: {e}")
@@ -91,11 +111,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             email = query.get('email', ['User'])[0]
             code = query.get('code', ['123456'])[0]
+            purpose = query.get('purpose', ['login'])[0]
 
             # Dispatch REAL Gmail OTP email asynchronously
             threading.Thread(
                 target=send_real_email_otp,
-                args=(email, code),
+                args=(email, code, purpose),
                 daemon=True
             ).start()
 
@@ -103,6 +124,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 'status': 'dispatched',
                 'email': email,
                 'code': code,
+                'purpose': purpose,
                 'channel': 'gmail_smtp',
                 'sender': GMAIL_SENDER,
                 'email_sent': True

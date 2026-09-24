@@ -294,35 +294,6 @@
                             <div id="service-options-container" class="grid grid-cols-3 gap-2"></div>
                         </div>
 
-                        <!-- AI Surge Simulation -->
-                        <div class="p-3 bg-hirna-50/50 rounded-xl border border-hirna-100 space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold text-hirna-900 flex items-center space-x-1.5">
-                                    <svg class="w-3.5 h-3.5 text-hirna-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
-                                    <span>Hirna AI Dynamic Surge Simulation</span>
-                                </span>
-                                <span class="text-[10px] text-gold-700 font-mono font-bold bg-gold-50 px-1.5 py-0.5 rounded border border-gold-200">ML Engine</span>
-                            </div>
-                            <div class="grid grid-cols-2 gap-3 text-xs">
-                                <div>
-                                    <label class="text-[11px] text-slate-600 block mb-1">Zone Demand Level</label>
-                                    <select id="sim-demand" class="w-full text-xs bg-white border border-slate-300 rounded-lg p-1.5 focus:ring-1 focus:ring-hirna-500">
-                                        <option value="1.0">Normal (1.0x)</option>
-                                        <option value="1.8" selected>Peak Rush (1.8x)</option>
-                                        <option value="2.6">Extreme Rush (2.5x)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="text-[11px] text-slate-600 block mb-1">Weather Condition</label>
-                                    <select id="sim-weather" class="w-full text-xs bg-white border border-slate-300 rounded-lg p-1.5 focus:ring-1 focus:ring-hirna-500">
-                                        <option value="clear" selected>Clear Skies</option>
-                                        <option value="rain">Moderate Rain</option>
-                                        <option value="storm">Heavy Downpour</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Dynamic Fare Quote Breakdown Box (Step 1) -->
                         <div class="p-4 bg-gradient-to-br from-hirna-900 via-hirna-800 to-slate-900 text-white rounded-xl shadow-xl space-y-2 border border-hirna-700">
                             <div class="flex items-center justify-between text-xs border-b border-hirna-700/80 pb-2">
@@ -334,10 +305,26 @@
                                 <span id="quote-base" class="font-mono text-white">₱0.00</span>
                             </div>
                             <div class="flex items-center justify-between text-xs">
-                                <span class="text-hirna-200">Hirna AI Dynamic Surge:</span>
-                                <span id="quote-surge-badge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gold-400 text-hirna-950 font-bold">1.00x Surge</span>
+                                <span class="text-hirna-200">Hirna AI Real-Time Surge:</span>
+                                <span id="quote-surge-badge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">1.00x Surge</span>
                             </div>
                             <p id="quote-surge-reason" class="text-[10px] text-gold-300 italic">Select pickup and dropoff to calculate route fare</p>
+                            
+                            <!-- Real-Time AI Telemetry Breakdown -->
+                            <div id="ai-telemetry-live-box" class="pt-2 pb-1 border-t border-hirna-700/60 grid grid-cols-3 gap-1.5 text-[10px] text-slate-300">
+                                <div class="bg-hirna-950/60 p-1.5 rounded-lg border border-hirna-700/40 text-center">
+                                    <span class="text-[9px] text-hirna-300 uppercase block font-semibold">Traffic Flow</span>
+                                    <span id="telemetry-traffic" class="font-bold text-white">Smooth Flow</span>
+                                </div>
+                                <div class="bg-hirna-950/60 p-1.5 rounded-lg border border-hirna-700/40 text-center">
+                                    <span class="text-[9px] text-hirna-300 uppercase block font-semibold">Weather</span>
+                                    <span id="telemetry-weather" class="font-bold text-white">Clear Skies</span>
+                                </div>
+                                <div class="bg-hirna-950/60 p-1.5 rounded-lg border border-hirna-700/40 text-center">
+                                    <span class="text-[9px] text-hirna-300 uppercase block font-semibold">Zone Demand</span>
+                                    <span id="telemetry-demand" class="font-bold text-white">Normal</span>
+                                </div>
+                            </div>
                             
                             <div class="flex items-center justify-between pt-2 border-t border-hirna-700/80">
                                 <div>
