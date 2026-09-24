@@ -182,7 +182,10 @@ const SSOGateway = {
         const tbody = document.getElementById('rbac-accounts-tbody');
         if (!tbody) return;
 
-        const isSuperAdmin = typeof AuthModule !== 'undefined' && AuthModule.isSuperAdmin();
+        const accounts = (typeof AuthModule !== 'undefined') ? AuthModule.accounts : [];
+        const isSuperAdmin = (typeof AuthModule !== 'undefined') && AuthModule.isSuperAdmin();
+        const isAdmin = (typeof AuthModule !== 'undefined') && AuthModule.currentUser && (AuthModule.currentUser.role === 'admin' || AuthModule.currentUser.role === 'superadmin');
+
         const addBtn = document.getElementById('btn-add-rbac-account');
         if (addBtn) {
             if (isSuperAdmin) {
@@ -191,10 +194,6 @@ const SSOGateway = {
                 addBtn.classList.add('hidden');
             }
         }
-
-        const accounts = (typeof AuthModule !== 'undefined') ? AuthModule.accounts : [];
-        const isSuperAdmin = (typeof AuthModule !== 'undefined') && AuthModule.isSuperAdmin();
-        const isAdmin = (typeof AuthModule !== 'undefined') && AuthModule.currentUser && (AuthModule.currentUser.role === 'admin' || AuthModule.currentUser.role === 'superadmin');
 
         tbody.innerHTML = accounts.map((a, idx) => {
             const isMe = AuthModule.currentUser && AuthModule.currentUser.email.toLowerCase() === a.email.toLowerCase();
