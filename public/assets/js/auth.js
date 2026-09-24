@@ -70,71 +70,94 @@ const AuthModule = {
     get accounts() {
         try {
             const saved = localStorage.getItem('hirna_custom_accounts');
+            let list = JSON.parse(JSON.stringify(this.defaultAccounts));
             if (saved) {
                 let parsed = JSON.parse(saved);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    let updated = false;
-                    parsed = parsed.map(acc => {
-                        if (acc.role === 'customer') {
-                            acc.role = 'passenger';
-                            acc.roleTitle = 'Verified Passenger';
-                            if (acc.password === 'customer') acc.password = 'passenger';
-                            if (acc.email === 'customer@hirna.ph') acc.email = 'passenger@hirna.ph';
-                            updated = true;
+                    parsed.forEach(p => {
+                        const cleanP = { ...p, email: (p.email || '').trim().toLowerCase() };
+                        const idx = list.findIndex(d => d.email.toLowerCase() === cleanP.email);
+                        if (idx >= 0) {
+                            list[idx] = { ...list[idx], ...cleanP };
+                        } else {
+                            list.push(cleanP);
                         }
-                        // Remove demo pin "1234" if it was automatically set before
-                        if (acc.pin === "1234") {
-                            acc.pin = null;
-                            updated = true;
-                        }
-                        return acc;
                     });
-                    if (updated) {
-                        localStorage.setItem('hirna_custom_accounts', JSON.stringify(parsed));
-                    }
-                    return parsed;
                 }
             }
+            return list.map(acc => {
+                if (acc.role === 'customer') {
+                    acc.role = 'passenger';
+                    acc.roleTitle = 'Verified Passenger';
+                    if (acc.password === 'customer') acc.password = 'passenger';
+                    if (acc.email === 'customer@hirna.ph') acc.email = 'passenger@hirna.ph';
+                }
+                if (acc.pin === "1234") {
+                    acc.pin = null;
+                }
+                acc.email = (acc.email || '').trim().toLowerCase();
+                acc.password = (acc.password || '').trim();
+                return acc;
+            });
         } catch (e) {}
         return this.defaultAccounts;
     },
 
     saveAccounts(newList) {
         localStorage.setItem('hirna_custom_accounts', JSON.stringify(newList));
+        try {
+            window.dispatchEvent(new CustomEvent('hirna:accounts_updated', { detail: newList }));
+        } catch(e) {}
+        if (typeof BroadcastChannel !== 'undefined') {
+            try {
+                const bc = new BroadcastChannel('hirna_sync');
+                bc.postMessage({ type: 'ACCOUNTS_UPDATE', accounts: newList });
+            } catch(e) {}
+        }
     },
 
     addOrUpdateAccount(accountData) {
+        const cleanEmail = (accountData.email || '').trim().toLowerCase();
+        const cleanPassword = (accountData.password || '').trim();
+        const cleanData = {
+            ...accountData,
+            email: cleanEmail,
+            password: cleanPassword,
+            pin: accountData.pin ? String(accountData.pin).trim() : null
+        };
         let current = [...this.accounts];
-        const idx = current.findIndex(a => a.email.toLowerCase() === accountData.email.toLowerCase());
+        const idx = current.findIndex(a => a.email.toLowerCase() === cleanEmail);
         if (idx >= 0) {
-            current[idx] = { ...current[idx], ...accountData };
+            current[idx] = { ...current[idx], ...cleanData };
         } else {
-            current.push(accountData);
+            current.push(cleanData);
         }
         this.saveAccounts(current);
         return current;
     },
 
     setAccountPin(email, newPin) {
+        const cleanEmail = (email || '').trim().toLowerCase();
         let current = [...this.accounts];
-        const idx = current.findIndex(a => a.email.toLowerCase() === email.toLowerCase());
+        const idx = current.findIndex(a => a.email.toLowerCase() === cleanEmail);
         if (idx === -1) {
             return { success: false, message: "Account not found." };
         }
-        current[idx].pin = newPin;
+        current[idx].pin = newPin ? String(newPin).trim() : null;
         this.saveAccounts(current);
         
         if (typeof SupabaseBridge !== 'undefined') {
-            SupabaseBridge.logAudit("Authentication", "PIN_UPDATE_SUCCESS", email, email, {
-                target_user: email,
+            SupabaseBridge.logAudit("Authentication", "PIN_UPDATE_SUCCESS", cleanEmail, cleanEmail, {
+                target_user: cleanEmail,
                 timestamp: new Date().toISOString()
             });
         }
-        return { success: true, message: `4-Digit PIN updated successfully for ${email}` };
+        return { success: true, message: `4-Digit PIN updated successfully for ${cleanEmail}` };
     },
 
     deleteAccount(email) {
-        let current = this.accounts.filter(a => a.email.toLowerCase() !== email.toLowerCase());
+        const cleanEmail = (email || '').trim().toLowerCase();
+        let current = this.accounts.filter(a => a.email.toLowerCase() !== cleanEmail);
         this.saveAccounts(current);
         return current;
     },
@@ -451,3 +474,38 @@ const AuthModule = {
 window.addEventListener('DOMContentLoaded', () => {
     AuthModule.init();
 });
+
+// Multi-Tab Accounts & Session Synchronization
+if (typeof BroadcastChannel !== 'undefined') {
+    try {
+        const authBc = new BroadcastChannel('hirna_sync');
+        authBc.onmessage = (event) => {
+            const data = event.data;
+            if (!data) return;
+            if (data.type === 'ACCOUNTS_UPDATE') {
+                if (typeof SSOGateway !== 'undefined' && SSOGateway.renderAccountsTable) {
+                    SSOGateway.renderAccountsTable();
+                }
+            } else if (data.type === 'SESSION_UPDATE') {
+                AuthModule.loadSession();
+                AuthModule.updateUI();
+            }
+        };
+    } catch(e) {}
+}
+
+window.addEventListener('storage', (e) => {
+    if (!e.key) return;
+    if (e.key === 'hirna_custom_accounts') {
+        if (typeof SSOGateway !== 'undefined' && SSOGateway.renderAccountsTable) {
+            SSOGateway.renderAccountsTable();
+        }
+        try {
+            window.dispatchEvent(new CustomEvent('hirna:accounts_updated'));
+        } catch(err) {}
+    } else if (e.key === 'hirna_auth_user') {
+        AuthModule.loadSession();
+        AuthModule.updateUI();
+    }
+});
+

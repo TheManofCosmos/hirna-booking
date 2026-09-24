@@ -198,7 +198,7 @@ const CRMModule = {
                         <div class="flex items-center space-x-2 text-[10px] text-slate-400 font-mono">
                             <span>Classification: <span class="text-slate-600 font-semibold">${f.category || 'General'}</span></span>
                             ${(typeof AuthModule !== 'undefined' && AuthModule.isSuperAdmin()) ? `
-                                <button onclick="CRMModule.deleteFeedback('${f.id}')" class="text-rose-600 hover:text-rose-800 font-sans font-bold underline cursor-pointer ml-2">Delete Record</button>
+                                <button onclick="CRMModule.archiveFeedback('${f.id}')" class="text-amber-700 hover:text-amber-900 font-sans font-bold underline cursor-pointer ml-2">Archive Record</button>
                             ` : ''}
                         </div>
                     </div>
@@ -384,8 +384,9 @@ const CRMModule = {
                 </td>
                 ${isSuperAdmin ? `
                     <td class="px-4 py-3 text-right">
-                        <button onclick="CRMModule.deleteTicket('${t.id}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-[10px] font-bold cursor-pointer">
-                            Delete
+                        <button onclick="CRMModule.archiveTicket('${t.id}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded text-[10px] font-bold cursor-pointer inline-flex items-center space-x-1" title="Archive Ticket">
+                            <svg class="w-3 h-3 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                            <span>Archive</span>
                         </button>
                     </td>
                 ` : ''}
@@ -393,28 +394,36 @@ const CRMModule = {
         `).join('');
     },
 
-    deleteTicket(id) {
+    archiveTicket(id) {
         if (typeof AuthModule !== 'undefined' && !AuthModule.canDeleteRecords()) {
-            if (typeof App !== 'undefined') App.showToast("Permission Denied: Only SuperAdmin can delete ticket records.", "error");
+            if (typeof App !== 'undefined') App.showToast("Permission Denied: Only SuperAdmin can archive ticket records.", "error");
             return;
         }
-        if (confirm(`SuperAdmin Action: Are you sure you want to delete support ticket ${id}?`)) {
-            SupabaseBridge.delete('support_tickets', id);
+        if (confirm(`SuperAdmin Action: Are you sure you want to archive support ticket ${id}? It will be moved to Compliance Archives.`)) {
+            SupabaseBridge.archive('support_tickets', id, 'Archived from CRM Support Desk');
             this.renderTickets();
-            if (typeof App !== 'undefined') App.showToast(`Support ticket ${id} deleted.`, 'info');
+            if (typeof App !== 'undefined') App.showToast(`Support ticket ${id} safely moved to Compliance Archives.`, 'success');
+        }
+    },
+
+    deleteTicket(id) {
+        this.archiveTicket(id);
+    },
+
+    archiveFeedback(id) {
+        if (typeof AuthModule !== 'undefined' && !AuthModule.canDeleteRecords()) {
+            if (typeof App !== 'undefined') App.showToast("Permission Denied: Only SuperAdmin can archive feedback records.", "error");
+            return;
+        }
+        if (confirm(`SuperAdmin Action: Are you sure you want to archive this customer feedback record? It will be moved to Compliance Archives.`)) {
+            SupabaseBridge.archive('feedback', id, 'Archived from Customer Feedback');
+            this.renderFeedback();
+            if (typeof App !== 'undefined') App.showToast(`Feedback record safely moved to Compliance Archives.`, 'success');
         }
     },
 
     deleteFeedback(id) {
-        if (typeof AuthModule !== 'undefined' && !AuthModule.canDeleteRecords()) {
-            if (typeof App !== 'undefined') App.showToast("Permission Denied: Only SuperAdmin can delete feedback records.", "error");
-            return;
-        }
-        if (confirm(`SuperAdmin Action: Are you sure you want to delete this customer feedback record?`)) {
-            SupabaseBridge.delete('feedback', id);
-            this.renderFeedback();
-            if (typeof App !== 'undefined') App.showToast(`Feedback record deleted.`, 'info');
-        }
+        this.archiveFeedback(id);
     },
 
     bindEvents() {
@@ -521,3 +530,13 @@ const CRMModule = {
         });
     }
 };
+
+// Live database sync listener for CRM
+window.addEventListener('hirna:db_updated', (e) => {
+    if (typeof CRMModule !== 'undefined') {
+        if (!e.detail || !e.detail.table || e.detail.table === 'support_tickets' || e.detail.table === 'feedback') {
+            if (CRMModule.renderTickets) CRMModule.renderTickets();
+            if (CRMModule.renderFeedback) CRMModule.renderFeedback();
+        }
+    }
+});

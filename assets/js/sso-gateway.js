@@ -335,6 +335,7 @@ const SSOGateway = {
         const newAccount = {
             email: email,
             password: password,
+            pin: null,
             name: name,
             role: role,
             roleTitle: roleTitles[role] || "Hirna Staff",
@@ -383,4 +384,10 @@ const SSOGateway = {
 window.addEventListener('DOMContentLoaded', () => {
     SSOGateway.init();
     SSOGateway.renderAccountsTable();
+});
+
+window.addEventListener('hirna:accounts_updated', () => {
+    if (typeof SSOGateway !== 'undefined' && SSOGateway.renderAccountsTable) {
+        SSOGateway.renderAccountsTable();
+    }
 });

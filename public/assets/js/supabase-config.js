@@ -5797,6 +5797,11 @@ const SupabaseBridge = {
         if (!this.db || !this.db[table]) return;
         try {
             localStorage.setItem(`hirna_db_${table}`, JSON.stringify(this.db[table]));
+            if (this.channel) {
+                try {
+                    this.channel.postMessage({ type: 'DB_UPDATE', table: table });
+                } catch(e) {}
+            }
         } catch (e) {
             console.warn(`Could not persist ${table} to localStorage:`, e);
         }
@@ -5817,7 +5822,7 @@ const SupabaseBridge = {
         }
     },
 
-    getData(table) {
+    getData(table, includeArchived = false) {
         if (table === 'audit_logs') {
             if (!this.db || !this.db.audit_logs || this.db.audit_logs.length === 0) {
                 this.loadPersistedAuditLogs();
@@ -5828,35 +5833,154 @@ const SupabaseBridge = {
         if (this.db[table] === undefined) {
             this.loadPersistedData(table);
         }
-        return this.db[table] || [];
+        const list = this.db[table] || [];
+        if (!includeArchived) {
+            return list.filter(item => !item.is_archived);
+        }
+        return list;
+    },
+
+    archive(table, idOrBookingCode, reason = "Archived by user") {
+        if (!this.db || !this.db[table]) {
+            this.loadPersistedData(table);
+        }
+        if (!this.db || !this.db[table]) return false;
+        const idStr = String(idOrBookingCode);
+        const item = this.db[table].find(i => 
+            (i.id && String(i.id) === idStr) ||
+            (i.booking_code && String(i.booking_code) === idStr) ||
+            (i.ticket_id && String(i.ticket_id) === idStr) ||
+            (i.invoice_no && String(i.invoice_no) === idStr)
+        );
+        if (!item) return false;
+
+        const userEmail = (typeof AuthModule !== 'undefined' && AuthModule.currentUser && AuthModule.currentUser.email)
+            ? AuthModule.currentUser.email
+            : "superadmin@hirna.ph";
+
+        item.is_archived = true;
+        item.archived_at = new Date().toISOString().replace('T', ' ').substring(0, 19);
+        item.archived_by = userEmail;
+        item.archive_reason = reason;
+        item._table = table;
+
+        this.savePersistedData(table);
+
+        this.logAudit("Compliance & Archival", "RECORD_ARCHIVED", idStr, userEmail, {
+            table: table,
+            archived_id: idStr,
+            reason: reason
+        });
+
+        try {
+            window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { table, action: 'archive', id: idStr } }));
+        } catch(e) {}
+
+        if (this.channel) {
+            try {
+                this.channel.postMessage({ type: 'DB_UPDATE', table: table, action: 'archive', id: idStr });
+            } catch(e) {}
+        }
+
+        this.refreshActiveModules(table);
+        return true;
+    },
+
+    unarchive(table, idOrBookingCode) {
+        if (!this.db || !this.db[table]) {
+            this.loadPersistedData(table);
+        }
+        if (!this.db || !this.db[table]) return false;
+        const idStr = String(idOrBookingCode);
+        const item = this.db[table].find(i => 
+            (i.id && String(i.id) === idStr) ||
+            (i.booking_code && String(i.booking_code) === idStr) ||
+            (i.ticket_id && String(i.ticket_id) === idStr) ||
+            (i.invoice_no && String(i.invoice_no) === idStr)
+        );
+        if (!item) return false;
+
+        const userEmail = (typeof AuthModule !== 'undefined' && AuthModule.currentUser && AuthModule.currentUser.email)
+            ? AuthModule.currentUser.email
+            : "superadmin@hirna.ph";
+
+        item.is_archived = false;
+        delete item.archived_at;
+        delete item.archived_by;
+        delete item.archive_reason;
+
+        this.savePersistedData(table);
+
+        this.logAudit("Compliance & Archival", "RECORD_RESTORED", idStr, userEmail, {
+            table: table,
+            restored_id: idStr,
+            restored_from_archive: true
+        });
+
+        try {
+            window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { table, action: 'unarchive', id: idStr } }));
+        } catch(e) {}
+
+        if (this.channel) {
+            try {
+                this.channel.postMessage({ type: 'DB_UPDATE', table: table, action: 'unarchive', id: idStr });
+            } catch(e) {}
+        }
+
+        this.refreshActiveModules(table);
+        return true;
     },
 
     delete(table, idOrBookingCode) {
-        if (!this.db || !this.db[table]) return false;
-        const initialLen = this.db[table].length;
-        const idStr = String(idOrBookingCode);
-        this.db[table] = this.db[table].filter(item => {
-            const matches = (
-                (item.id && String(item.id) === idStr) ||
-                (item.booking_code && String(item.booking_code) === idStr) ||
-                (item.ticket_id && String(item.ticket_id) === idStr) ||
-                (item.invoice_no && String(item.invoice_no) === idStr)
-            );
-            return !matches;
-        });
-        if (this.db[table].length !== initialLen) {
-            this.savePersistedData(table);
-            const userEmail = (typeof AuthModule !== 'undefined' && AuthModule.currentUser) ? AuthModule.currentUser.email : "superadmin@hirna.ph";
-            this.logAudit("Database", "RECORD_DELETED", idStr, userEmail, {
-                table: table,
-                deleted_id: idStr
+        // Replacement: Permanent deletion requests are safely preserved in regulatory archives
+        return this.archive(table, idOrBookingCode, "Archived via deletion request");
+    },
+
+    getAllArchives(filterTable = null) {
+        const knownTables = ['bookings', 'payments', 'support_tickets', 'feedback', 'users', 'drivers'];
+        const tablesToScan = (filterTable && filterTable !== 'ALL') ? [filterTable] : knownTables;
+        const archives = [];
+
+        tablesToScan.forEach(tbl => {
+            if (!this.db || this.db[tbl] === undefined) {
+                this.loadPersistedData(tbl);
+            }
+            const records = this.db[tbl] || [];
+            records.forEach(item => {
+                if (item && item.is_archived) {
+                    const idDisplay = item.id || item.booking_code || item.ticket_id || item.invoice_no || 'REC-UNKNOWN';
+                    archives.push({
+                        ...item,
+                        _table: tbl,
+                        _displayId: idDisplay
+                    });
+                }
             });
-            try {
-                window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { table, action: 'delete', id: idStr } }));
-            } catch(e) {}
-            return true;
+        });
+
+        archives.sort((a, b) => new Date(b.archived_at || 0) - new Date(a.archived_at || 0));
+        return archives;
+    },
+
+    refreshActiveModules(table) {
+        try {
+            if (table === 'bookings' || table === 'payments') {
+                if (typeof PaymentsModule !== 'undefined' && PaymentsModule.renderLedger) PaymentsModule.renderLedger();
+                if (typeof BookingModule !== 'undefined' && BookingModule.renderRecentPlaces) BookingModule.renderRecentPlaces();
+            }
+            if (table === 'support_tickets' || table === 'feedback') {
+                if (typeof CRMModule !== 'undefined') {
+                    if (CRMModule.renderTickets) CRMModule.renderTickets();
+                    if (CRMModule.renderFeedback) CRMModule.renderFeedback();
+                }
+            }
+            if (typeof AuditModule !== 'undefined') {
+                if (AuditModule.isArchivesUnlocked && AuditModule.renderArchives) AuditModule.renderArchives();
+                if (AuditModule.renderAuditLogs) AuditModule.renderAuditLogs();
+            }
+        } catch (e) {
+            console.warn("[SupabaseBridge] Module refresh notice:", e);
         }
-        return false;
     },
 
     update(table, idOrBookingCode, updates) {
@@ -5973,6 +6097,52 @@ const SupabaseBridge = {
             window.dispatchEvent(new CustomEvent('hirna:audit_logged', { detail: log }));
         } catch(e) {}
 
+        if (this.channel) {
+            try {
+                this.channel.postMessage({ type: 'AUDIT_LOG', log: log });
+            } catch(e) {}
+        }
+
         return log;
     }
 };
+
+// Multi-Tab & Cross-Module Synchronization Engine
+SupabaseBridge.channel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('hirna_sync') : null;
+
+if (SupabaseBridge.channel) {
+    SupabaseBridge.channel.onmessage = (event) => {
+        const data = event.data;
+        if (!data) return;
+        if (data.type === 'DB_UPDATE' && data.table) {
+            SupabaseBridge.loadPersistedData(data.table);
+            SupabaseBridge.refreshActiveModules(data.table);
+            try {
+                window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: data }));
+            } catch(e) {}
+        } else if (data.type === 'AUDIT_LOG') {
+            SupabaseBridge.loadPersistedAuditLogs();
+            if (typeof AuditModule !== 'undefined' && AuditModule.renderAuditLogs) {
+                AuditModule.renderAuditLogs();
+            }
+        }
+    };
+}
+
+window.addEventListener('storage', (e) => {
+    if (!e.key) return;
+    if (e.key.startsWith('hirna_db_')) {
+        const table = e.key.replace('hirna_db_', '');
+        SupabaseBridge.loadPersistedData(table);
+        SupabaseBridge.refreshActiveModules(table);
+        try {
+            window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { table, action: 'storage_sync' } }));
+        } catch(err) {}
+    } else if (e.key === 'hirna_audit_logs') {
+        SupabaseBridge.loadPersistedAuditLogs();
+        if (typeof AuditModule !== 'undefined' && AuditModule.renderAuditLogs) {
+            AuditModule.renderAuditLogs();
+        }
+    }
+});
+

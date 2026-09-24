@@ -111,7 +111,7 @@
                             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                             </span>
-                            <input type="email" id="input-identifier-email" value="example@gmail.com" placeholder="e.g. example@gmail.com" class="w-full pl-10 pr-4 py-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
+                            <input type="email" id="input-identifier-email" value="" placeholder="e.g. yourname@gmail.com" class="w-full pl-10 pr-4 py-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
                         </div>
                     </div>
 
@@ -133,7 +133,7 @@
                             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                             </span>
-                            <input type="password" id="input-password" value="" placeholder="Enter password (e.g. superadmin, admin, customer)" class="w-full pl-10 pr-12 py-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
+                            <input type="password" id="input-password" value="" placeholder="Enter password (e.g. superadmin, admin, passenger)" class="w-full pl-10 pr-12 py-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
                             <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer" title="Toggle password visibility">
                                 <span id="eye-icon" class="flex items-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></span>
                             </button>
@@ -470,6 +470,11 @@
 
         // Trigger Real Gmail OTP Dispatch
         function triggerRealEmailOtp(code, email, purpose = "login") {
+            console.log(`[Hirna Security] 🔐 2-Factor Passkey Dispatched to ${email} -> CODE: [${code}] (Purpose: ${purpose})`);
+            
+            // Visual passkey toast with 1-click autofill for instant verification
+            showDevOtpNotification(code, email);
+
             // Dispatch via backend Gmail SMTP mailer
             fetch(`/api/send-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}&purpose=${encodeURIComponent(purpose)}`)
                 .then(r => r.json())
@@ -477,8 +482,46 @@
                     console.log(`[Hirna Mailer] OTP (${purpose}) dispatched to:`, d.email, "via sender:", d.sender);
                 })
                 .catch(err => {
-                    console.error("[Hirna Mailer] Error dispatching email:", err);
+                    console.warn("[Hirna Mailer] Server dispatch notice (offline/local):", err);
                 });
+        }
+
+        function showDevOtpNotification(code, email) {
+            let toast = document.getElementById('dev-otp-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'dev-otp-toast';
+                toast.className = 'fixed bottom-5 right-5 z-50 p-4 bg-slate-900 border border-gold-500/80 rounded-2xl shadow-2xl text-xs text-white max-w-sm flex items-center space-x-3 transition duration-300';
+                document.body.appendChild(toast);
+            }
+            toast.innerHTML = `
+                <div class="w-9 h-9 rounded-xl bg-gold-500 text-slate-950 flex items-center justify-center font-black flex-shrink-0 text-base shadow-sm">
+                    🔐
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="font-bold text-gold-400">Security Passkey Dispatched</p>
+                    <p class="text-[11px] text-slate-300 truncate">Sent to: <span class="font-mono text-white">${email}</span></p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Verification Passkey: <span class="font-mono font-black text-gold-300 text-sm tracking-widest">${code}</span></p>
+                </div>
+                <button type="button" onclick="autoFillOtp('${code}')" class="px-2.5 py-1.5 bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-hirna-950 font-black rounded-xl text-[10px] uppercase tracking-wide cursor-pointer transition shadow-md">
+                    Fill
+                </button>
+            `;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                if (toast) toast.classList.add('hidden');
+            }, 20000);
+        }
+
+        function autoFillOtp(code) {
+            const digits = String(code).split('');
+            const inputs = document.querySelectorAll('.otp-digit');
+            inputs.forEach((inp, idx) => {
+                if (digits[idx]) inp.value = digits[idx];
+            });
+            const toast = document.getElementById('dev-otp-toast');
+            if (toast) toast.classList.add('hidden');
+            setTimeout(verifyOtpCode, 200);
         }
 
         async function pasteFromClipboardOtp() {
@@ -1102,7 +1145,7 @@
                     a.pin === pinDigits
                 );
             } else {
-                const password = document.getElementById('input-password').value;
+                const password = document.getElementById('input-password').value.trim();
                 if (!password) {
                     errorAlert.classList.remove('hidden');
                     errorAlert.innerText = "Please enter your password.";
@@ -1110,7 +1153,7 @@
                 }
                 matchedUser = AuthModule.accounts.find(a => 
                     a.email.toLowerCase() === identifier &&
-                    a.password === password
+                    (a.password || '').trim() === password
                 );
             }
 

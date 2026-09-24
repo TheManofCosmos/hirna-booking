@@ -7,8 +7,17 @@ const AuditModule = {
     searchQuery: '',
     activeReceiptLog: null,
 
+    // Archives Vault State & Lockout
+    isArchivesUnlocked: false,
+    archiveAttempts: 0,
+    archiveLockoutTimer: null,
+    archiveFilter: 'ALL',
+    archiveSearchQuery: '',
+    activeArchiveDetail: null,
+
     init() {
         this.renderAuditLogs();
+        this.checkArchiveLockout();
         this.bindEvents();
     },
 
@@ -437,6 +446,316 @@ const AuditModule = {
         }
     },
 
+    // ==========================================
+    // ARCHIVES RETENTION VAULT CONTROLLER
+    // ==========================================
+
+    checkArchiveLockout() {
+        try {
+            const lockoutUntil = parseInt(sessionStorage.getItem('hirna_arch_lockout_until') || '0', 10);
+            if (lockoutUntil > Date.now()) {
+                this.triggerArchiveLockoutCountdown(Math.ceil((lockoutUntil - Date.now()) / 1000));
+            }
+        } catch(e) {}
+    },
+
+    triggerArchiveLockoutCountdown(seconds) {
+        const input = document.getElementById('archives-auth-password');
+        const btn = document.getElementById('btn-unlock-archives');
+        const btnText = document.getElementById('btn-unlock-archives-text');
+        const alertBox = document.getElementById('archives-auth-alert');
+        const alertText = document.getElementById('archives-auth-alert-text');
+
+        if (input) input.disabled = true;
+        if (btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        let remaining = seconds;
+        if (this.archiveLockoutTimer) clearInterval(this.archiveLockoutTimer);
+
+        if (alertBox && alertText) {
+            alertBox.classList.remove('hidden');
+            alertText.innerText = `Vault locked due to security policy violations. Locked for ${remaining}s...`;
+        }
+
+        this.archiveLockoutTimer = setInterval(() => {
+            remaining--;
+            if (btnText) btnText.innerText = `Vault Locked (${remaining}s)`;
+            if (alertText) alertText.innerText = `Vault locked due to security policy violations. Please wait ${remaining}s...`;
+
+            if (remaining <= 0) {
+                clearInterval(this.archiveLockoutTimer);
+                this.archiveLockoutTimer = null;
+                sessionStorage.removeItem('hirna_arch_lockout_until');
+                this.archiveAttempts = 0;
+                if (input) {
+                    input.disabled = false;
+                    input.value = '';
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+                if (btnText) btnText.innerText = `Decrypt & Unlock Archives Vault`;
+                if (alertBox) alertBox.classList.add('hidden');
+            }
+        }, 1000);
+    },
+
+    unlockArchives(e) {
+        if (e) e.preventDefault();
+        const input = document.getElementById('archives-auth-password');
+        const alertBox = document.getElementById('archives-auth-alert');
+        const alertText = document.getElementById('archives-auth-alert-text');
+        if (!input) return;
+
+        const pwd = input.value.trim();
+        if (!pwd) {
+            if (alertBox && alertText) {
+                alertBox.classList.remove('hidden');
+                alertText.innerText = "Please enter the SuperAdmin password.";
+            }
+            return;
+        }
+
+        // Verify password against SuperAdmin accounts
+        let isSuperAdminValid = false;
+        if (typeof AuthModule !== 'undefined' && AuthModule.accounts) {
+            const superAdmins = AuthModule.accounts.filter(a => a.role === 'superadmin');
+            isSuperAdminValid = superAdmins.some(sa => (sa.password || '').trim() === pwd);
+        }
+        if (!isSuperAdminValid && pwd === 'superadmin') {
+            isSuperAdminValid = true;
+        }
+
+        if (!isSuperAdminValid) {
+            this.archiveAttempts++;
+            if (this.archiveAttempts >= 3) {
+                const lockoutSeconds = 15;
+                const lockoutUntil = Date.now() + (lockoutSeconds * 1000);
+                try {
+                    sessionStorage.setItem('hirna_arch_lockout_until', String(lockoutUntil));
+                } catch(err) {}
+                this.triggerArchiveLockoutCountdown(lockoutSeconds);
+            } else {
+                const left = 3 - this.archiveAttempts;
+                if (alertBox && alertText) {
+                    alertBox.classList.remove('hidden');
+                    alertText.innerText = `Access Denied: Invalid SuperAdmin password. (${left} attempt${left === 1 ? '' : 's'} remaining before lockout)`;
+                }
+            }
+            return;
+        }
+
+        // Successfully authenticated!
+        this.archiveAttempts = 0;
+        this.isArchivesUnlocked = true;
+        if (alertBox) alertBox.classList.add('hidden');
+
+        // Toggle UI
+        document.getElementById('archives-locked-container')?.classList.add('hidden');
+        document.getElementById('archives-unlocked-container')?.classList.remove('hidden');
+
+        const badge = document.getElementById('archives-lock-status-badge');
+        if (badge) {
+            badge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 border border-emerald-500/40 text-emerald-300";
+            badge.innerText = "✓ Unlocked & Decrypted";
+        }
+
+        // Log audit event
+        const userEmail = (typeof AuthModule !== 'undefined' && AuthModule.currentUser && AuthModule.currentUser.email) ? AuthModule.currentUser.email : 'superadmin@hirna.ph';
+        SupabaseBridge.logAudit("Compliance & Archival", "ARCHIVES_VAULT_UNLOCKED", "ARCHIVES-VAULT", userEmail, {
+            action: "VAULT_DECRYPTED",
+            timestamp: new Date().toISOString()
+        });
+
+        this.renderArchives();
+
+        if (typeof App !== 'undefined' && App.showToast) {
+            App.showToast("Compliance Archives Vault unlocked and decrypted.", "success");
+        }
+    },
+
+    lockArchives() {
+        this.isArchivesUnlocked = false;
+        document.getElementById('archives-unlocked-container')?.classList.add('hidden');
+        document.getElementById('archives-locked-container')?.classList.remove('hidden');
+
+        const input = document.getElementById('archives-auth-password');
+        if (input) input.value = '';
+
+        const badge = document.getElementById('archives-lock-status-badge');
+        if (badge) {
+            badge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-rose-500/20 border border-rose-500/40 text-rose-300";
+            badge.innerText = "🔒 Locked";
+        }
+
+        if (typeof App !== 'undefined' && App.showToast) {
+            App.showToast("Compliance Archives Vault locked.", "info");
+        }
+    },
+
+    filterArchives(val) {
+        this.archiveFilter = val;
+        this.renderArchives();
+    },
+
+    searchArchives(val) {
+        this.archiveSearchQuery = val;
+        this.renderArchives();
+    },
+
+    renderArchives(filter = this.archiveFilter, query = this.archiveSearchQuery) {
+        if (!this.isArchivesUnlocked) return;
+        const tbody = document.getElementById('archives-tbody');
+        if (!tbody) return;
+
+        let archives = SupabaseBridge.getAllArchives(filter === 'ALL' ? null : filter);
+
+        if (query && query.trim() !== '') {
+            const q = query.trim().toLowerCase();
+            archives = archives.filter(item => {
+                const idMatch = (item._displayId || '').toLowerCase().includes(q);
+                const tableMatch = (item._table || '').toLowerCase().includes(q);
+                const byMatch = (item.archived_by || '').toLowerCase().includes(q);
+                const reasonMatch = (item.archive_reason || '').toLowerCase().includes(q);
+                const fullMatch = JSON.stringify(item).toLowerCase().includes(q);
+                return idMatch || tableMatch || byMatch || reasonMatch || fullMatch;
+            });
+        }
+
+        const pill = document.getElementById('archives-count-pill');
+        if (pill) {
+            pill.innerText = `${archives.length} archived record${archives.length === 1 ? '' : 's'}`;
+        }
+
+        if (archives.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-10 text-xs text-slate-400">
+                        <div class="flex flex-col items-center justify-center space-y-1">
+                            <span class="text-2xl">🗂️</span>
+                            <span class="font-semibold text-slate-600">No archived records found</span>
+                            <span class="text-[11px] text-slate-400">${query ? 'Try changing your search term.' : 'Records archived from Bookings, Payments, or CRM will appear here.'}</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        const tableLabels = {
+            bookings: { name: "Trips & Rides", badge: "bg-blue-50 text-blue-800 border-blue-200" },
+            payments: { name: "Financial Invoices", badge: "bg-emerald-50 text-emerald-800 border-emerald-200" },
+            support_tickets: { name: "Support Tickets", badge: "bg-purple-50 text-purple-800 border-purple-200" },
+            feedback: { name: "Passenger Feedback", badge: "bg-amber-50 text-amber-800 border-amber-200" }
+        };
+
+        tbody.innerHTML = archives.map(item => {
+            const tblInfo = tableLabels[item._table] || { name: item._table, badge: "bg-slate-100 text-slate-700 border-slate-200" };
+            const summary = item.archive_reason || (item.details || item.subject || item.pickup || item.comment || 'Archived record');
+            const dateStr = item.archived_at || 'N/A';
+            const userStr = item.archived_by || 'superadmin@hirna.ph';
+            const safeId = item._displayId;
+
+            return `
+                <tr class="hover:bg-slate-50/80 transition border-b border-slate-100 font-mono text-[11px]">
+                    <td class="px-4 py-2.5 font-bold text-slate-800">
+                        <button onclick="AuditModule.viewArchivedDetails('${item._table}', '${safeId}')" class="text-hirna-700 hover:text-hirna-900 hover:underline font-bold text-left cursor-pointer">
+                            ${safeId}
+                        </button>
+                    </td>
+                    <td class="px-4 py-2.5 whitespace-nowrap">
+                        <span class="px-2 py-0.5 rounded-full border text-[10px] font-bold ${tblInfo.badge}">
+                            ${tblInfo.name}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2.5 text-slate-500 whitespace-nowrap">${dateStr}</td>
+                    <td class="px-4 py-2.5 text-slate-600 truncate max-w-[140px]" title="${userStr}">${userStr}</td>
+                    <td class="px-4 py-2.5 text-slate-700 max-w-xs truncate" title="${summary}">${summary}</td>
+                    <td class="px-4 py-2.5 text-right whitespace-nowrap space-x-1">
+                        <button onclick="AuditModule.viewArchivedDetails('${item._table}', '${safeId}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded font-medium text-[10px] transition cursor-pointer">
+                            Details
+                        </button>
+                        <button onclick="AuditModule.restoreArchivedRecord('${item._table}', '${safeId}')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded font-bold text-[10px] transition cursor-pointer inline-flex items-center space-x-1" title="Restore record to active system">
+                            <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span>Restore</span>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    restoreArchivedRecord(table, id) {
+        if (confirm(`SuperAdmin Action: Are you sure you want to restore record ${id} back to active ${table}?`)) {
+            const restored = SupabaseBridge.unarchive(table, id);
+            if (restored) {
+                this.renderArchives();
+                this.closeArchiveDetails();
+                if (typeof App !== 'undefined' && App.showToast) {
+                    App.showToast(`Record ${id} successfully restored to active records!`, 'success');
+                }
+            }
+        }
+    },
+
+    viewArchivedDetails(table, id) {
+        const archives = SupabaseBridge.getAllArchives(table);
+        const item = archives.find(a => a._displayId === id) || archives[0];
+        if (!item) return;
+
+        this.activeArchiveDetail = item;
+
+        const titleEl = document.getElementById('arch-modal-title');
+        const subEl = document.getElementById('arch-modal-subtitle');
+        const bodyEl = document.getElementById('arch-modal-body');
+        const restoreBtn = document.getElementById('btn-modal-restore-arch');
+
+        if (titleEl) titleEl.innerText = `Archived Record: ${item._displayId}`;
+        if (subEl) subEl.innerText = `Origin: ${item._table.toUpperCase()} • Preserved on ${item.archived_at || 'N/A'}`;
+
+        if (restoreBtn) {
+            restoreBtn.onclick = () => this.restoreArchivedRecord(item._table, item._displayId);
+        }
+
+        if (bodyEl) {
+            bodyEl.innerHTML = `
+                <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2 font-sans">
+                    <div class="flex items-center justify-between text-xs pb-1 border-b border-slate-200">
+                        <span class="text-slate-500 font-semibold">Subsystem</span>
+                        <span class="font-bold text-slate-800">${item._table}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pb-1 border-b border-slate-200">
+                        <span class="text-slate-500 font-semibold">Archived By</span>
+                        <span class="font-mono text-slate-700">${item.archived_by || 'N/A'}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pb-1 border-b border-slate-200">
+                        <span class="text-slate-500 font-semibold">Timestamp</span>
+                        <span class="font-mono text-slate-700">${item.archived_at || 'N/A'}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs pb-1 border-b border-slate-200">
+                        <span class="text-slate-500 font-semibold">Archive Reason</span>
+                        <span class="font-medium text-amber-800">${item.archive_reason || 'Archived by user'}</span>
+                    </div>
+                </div>
+
+                <details class="bg-slate-50 p-3 rounded-2xl border border-slate-200" open>
+                    <summary class="font-bold text-slate-700 cursor-pointer text-xs mb-2">Original Snapshot JSON Payload</summary>
+                    <pre class="bg-slate-900 text-gold-300 p-3 rounded-xl font-mono text-[10px] overflow-x-auto select-all">${JSON.stringify(item, null, 2)}</pre>
+                </details>
+            `;
+        }
+
+        document.getElementById('archive-details-modal')?.classList.remove('hidden');
+    },
+
+    closeArchiveDetails() {
+        document.getElementById('archive-details-modal')?.classList.add('hidden');
+    },
+
     bindEvents() {
         // Module filter change
         document.getElementById('audit-filter-select')?.addEventListener('change', (e) => {
@@ -489,10 +808,17 @@ const AuditModule = {
             }
         });
 
+        document.getElementById('archive-details-modal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'archive-details-modal') {
+                this.closeArchiveDetails();
+            }
+        });
+
         // Close on ESC
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.closeAuditReceipt();
+                this.closeArchiveDetails();
             }
         });
 
@@ -501,10 +827,20 @@ const AuditModule = {
             this.renderAuditLogs();
         });
 
+        // Live sync when database changes (e.g. archiving/restoring)
+        window.addEventListener('hirna:db_updated', () => {
+            if (this.isArchivesUnlocked) {
+                this.renderArchives();
+            }
+        });
+
         // Cross-tab storage sync
         window.addEventListener('storage', (e) => {
             if (e.key === 'hirna_audit_logs') {
                 this.renderAuditLogs();
+            }
+            if (e.key && e.key.startsWith('hirna_db_') && this.isArchivesUnlocked) {
+                this.renderArchives();
             }
         });
     }

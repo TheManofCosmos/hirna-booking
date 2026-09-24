@@ -1016,8 +1016,9 @@ const PaymentsModule = {
                         View e-Receipt
                     </button>
                     ${isSuperAdmin ? `
-                        <button onclick="PaymentsModule.deleteReceipt('${b.id || b.booking_code}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded font-medium text-xs cursor-pointer" title="SuperAdmin Delete">
-                            Delete Receipt
+                        <button onclick="PaymentsModule.archiveReceipt('${b.id || b.booking_code}')" class="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded font-bold text-xs cursor-pointer inline-flex items-center space-x-1" title="SuperAdmin Archive">
+                            <svg class="w-3 h-3 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                            <span>Archive Receipt</span>
                         </button>
                     ` : ''}
                 </td>
@@ -1025,19 +1026,23 @@ const PaymentsModule = {
         `).join('');
     },
 
-    deleteReceipt(id) {
+    archiveReceipt(id) {
         if (typeof AuthModule !== 'undefined' && !AuthModule.canDeleteRecords()) {
-            if (typeof App !== 'undefined') App.showToast("Permission Denied: Only SuperAdmin can delete receipts and financial records.", "error");
+            if (typeof App !== 'undefined') App.showToast("Permission Denied: Only SuperAdmin can archive receipts and financial records.", "error");
             return;
         }
-        if (confirm(`SuperAdmin Action: Are you sure you want to permanently delete receipt & transaction record ${id}? This cannot be undone.`)) {
-            const deleted = SupabaseBridge.delete('bookings', id);
-            if (deleted) {
+        if (confirm(`SuperAdmin Action: Are you sure you want to archive receipt & transaction record ${id}? It will be moved to Compliance Archives.`)) {
+            const archived = SupabaseBridge.archive('bookings', id, 'Archived from Payments Ledger');
+            if (archived) {
                 this.renderLedger();
                 this.closeReceiptModal();
-                if (typeof App !== 'undefined') App.showToast(`Receipt record ${id} permanently deleted.`, 'info');
+                if (typeof App !== 'undefined') App.showToast(`Receipt record ${id} safely moved to Compliance Archives.`, 'success');
             }
         }
+    },
+
+    deleteReceipt(id) {
+        this.archiveReceipt(id);
     },
 
     printReceipt(id) {
@@ -1052,6 +1057,15 @@ const PaymentsModule = {
         document.getElementById('btn-close-pay-modal')?.addEventListener('click', () => this.closePaymentModal());
     }
 };
+
+// Live database sync listener
+window.addEventListener('hirna:db_updated', (e) => {
+    if (typeof PaymentsModule !== 'undefined' && PaymentsModule.renderLedger) {
+        if (!e.detail || !e.detail.table || e.detail.table === 'bookings' || e.detail.table === 'payments') {
+            PaymentsModule.renderLedger();
+        }
+    }
+});
 
 // Auto-run wallet initialization on DOM load
 window.addEventListener('DOMContentLoaded', () => {

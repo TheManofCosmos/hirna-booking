@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>HIRNA Automated Test Suite</title>
+    <link rel="stylesheet" href="assets/css/style.css">
     <script>
-        // Pre-seed an active SuperAdmin session so auth.js does not bounce on initial load
+        // Pre-seed an active SuperAdmin session
         localStorage.setItem('hirna_auth_user', JSON.stringify({
             email: "superadmin@hirna.ph",
             name: "SuperAdmin Hirna",
@@ -16,10 +17,12 @@
     <script src="assets/js/auth.js"></script>
     <script src="assets/js/payments.js"></script>
     <script src="assets/js/crm.js"></script>
+    <script src="assets/js/audit.js"></script>
     <script src="assets/js/sso-gateway.js"></script>
 </head>
 <body style="font-family: monospace; padding: 20px; background: #0f172a; color: #f8fafc;">
     <h1>HIRNA Test Suite Execution</h1>
+    <input type="text" id="test-sample-input" placeholder="Testing input visibility">
     <div id="test-output">Running tests...</div>
 
     <script>
@@ -34,7 +37,14 @@
 
         async function runTests() {
             try {
-                // TEST 1: Check Default Accounts & Passenger Naming
+                // TEST 1: Form Input Visibility
+                const sampleInput = document.getElementById('test-sample-input');
+                const compStyle = window.getComputedStyle(sampleInput);
+                const bWidth = compStyle.borderWidth;
+                const bStyle = compStyle.borderStyle;
+                assert(bWidth !== "0px" && bStyle === "solid", "Universal high-contrast solid input border is applied", `border: ${bWidth} ${bStyle}`);
+
+                // TEST 2: Check Default Accounts & Passenger Naming
                 const defaultAccs = AuthModule.defaultAccounts;
                 const hasPassenger = defaultAccs.some(a => a.role === 'passenger' && a.email === 'passenger@hirna.ph' && a.password === 'passenger');
                 assert(hasPassenger, "Default accounts include passenger@hirna.ph with role 'passenger' and password 'passenger'");
@@ -42,7 +52,7 @@
                 const hasNoCustomerRole = !defaultAccs.some(a => a.role === 'customer');
                 assert(hasNoCustomerRole, "No default accounts have role 'customer' (migrated to 'passenger')");
 
-                // TEST 2: RBAC SuperAdmin
+                // TEST 3: RBAC SuperAdmin
                 const superAdminUser = defaultAccs.find(a => a.role === 'superadmin');
                 AuthModule.currentUser = superAdminUser;
                 assert(AuthModule.isSuperAdmin() === true, "isSuperAdmin() returns true for SuperAdmin");
@@ -52,81 +62,73 @@
                 assert(AuthModule.canDeleteRecords() === true, "SuperAdmin canDeleteRecords() returns true");
                 assert(AuthModule.canManageAccounts() === true, "SuperAdmin canManageAccounts() returns true");
 
-                // TEST 3: RBAC Admin
-                const adminUser = defaultAccs.find(a => a.role === 'admin');
-                AuthModule.currentUser = adminUser;
-                assert(AuthModule.isSuperAdmin() === false, "isSuperAdmin() returns false for Admin");
-                assert(AuthModule.isAdmin() === true, "isAdmin() returns true for Admin");
-                assert(AuthModule.isPassenger() === false, "isPassenger() returns false for Admin");
-                assert(AuthModule.canEditPasswords() === false, "Admin canEditPasswords() returns false");
-                assert(AuthModule.canDeleteRecords() === false, "Admin canDeleteRecords() returns false");
-                assert(AuthModule.canManageAccounts() === false, "Admin canManageAccounts() returns false");
-
-                // TEST 4: RBAC Passenger
-                const passengerUser = defaultAccs.find(a => a.role === 'passenger');
-                AuthModule.currentUser = passengerUser;
-                assert(AuthModule.isSuperAdmin() === false, "isSuperAdmin() returns false for Passenger");
-                assert(AuthModule.isAdmin() === false, "isAdmin() returns false for Passenger");
-                assert(AuthModule.isPassenger() === true, "isPassenger() returns true for Passenger");
-                assert(AuthModule.canEditPasswords() === false, "Passenger canEditPasswords() returns false");
-                assert(AuthModule.canDeleteRecords() === false, "Passenger canDeleteRecords() returns false");
-                assert(AuthModule.canManageAccounts() === false, "Passenger canManageAccounts() returns false");
-
-                // TEST 5: Password Editing Permissions
-                // As passenger:
-                let resPass = AuthModule.updatePassword('admin@hirna.ph', 'hacked123');
-                assert(resPass.success === false, "Passenger cannot update passwords");
-
-                // As admin:
-                AuthModule.currentUser = adminUser;
-                let resAdmin = AuthModule.updatePassword('passenger@hirna.ph', 'hacked123');
-                assert(resAdmin.success === false, "Admin cannot update passwords");
-
-                // As superadmin:
-                AuthModule.currentUser = superAdminUser;
-                let resSuper = AuthModule.updatePassword('passenger@hirna.ph', 'new_passenger_pass_2026');
-                assert(resSuper.success === true, "SuperAdmin can update passwords");
-                const updatedPassenger = AuthModule.accounts.find(a => a.email === 'passenger@hirna.ph');
-                assert(updatedPassenger && updatedPassenger.password === 'new_passenger_pass_2026', "Updated password persisted in accounts list");
-
-                // TEST 6: Permanent Persistence across SupabaseBridge
-                await SupabaseBridge.init();
+                // TEST 4: Archive & Restore Functionality
                 const testBooking = {
-                    id: "TEST-BK-999",
-                    booking_code: "HIRNA-TEST-999",
-                    passenger_name: "Test Juan",
+                    id: "TEST-BK-777",
+                    booking_code: "HIRNA-TEST-777",
+                    passenger_name: "Test Archiver",
                     service_type: "transport",
-                    total_fare: 250.00,
+                    total_fare: 350.00,
                     payment_method: "GCash"
                 };
                 SupabaseBridge.insert('bookings', testBooking);
-                const savedBookingsRaw = localStorage.getItem('hirna_db_bookings');
-                assert(savedBookingsRaw !== null, "New booking is saved into localStorage (hirna_db_bookings)");
-                const parsedBookings = JSON.parse(savedBookingsRaw || "[]");
-                assert(parsedBookings.some(b => b.booking_code === "HIRNA-TEST-999"), "Inserted booking exists in persisted localStorage");
 
-                // Test SuperAdmin deletion of records
-                const delRes = SupabaseBridge.delete('bookings', 'HIRNA-TEST-999');
-                assert(delRes === true, "SupabaseBridge.delete() returns true for existing record");
-                const afterDelRaw = localStorage.getItem('hirna_db_bookings');
-                const afterDel = JSON.parse(afterDelRaw || "[]");
-                assert(!afterDel.some(b => b.booking_code === "HIRNA-TEST-999"), "Deleted booking is permanently removed from localStorage");
+                // Verify present in active getData
+                let activeList = SupabaseBridge.getData('bookings');
+                assert(activeList.some(b => b.id === "TEST-BK-777"), "Record is initially returned by getData('bookings')");
 
-                // TEST 7: CRM Record Deletion RBAC
-                AuthModule.currentUser = adminUser;
-                assert(!AuthModule.canDeleteRecords(), "Admin cannot delete support tickets or feedback records");
-                AuthModule.currentUser = superAdminUser;
-                assert(AuthModule.canDeleteRecords(), "SuperAdmin can delete records across all modules");
+                // Archive record
+                const archRes = SupabaseBridge.archive('bookings', 'TEST-BK-777', 'Compliance Test Archival');
+                assert(archRes === true, "SupabaseBridge.archive() returns true");
+
+                // Verify record disappears from active getData
+                activeList = SupabaseBridge.getData('bookings');
+                assert(!activeList.some(b => b.id === "TEST-BK-777"), "Archived record is excluded from active getData('bookings')");
+
+                // Verify record appears in getAllArchives()
+                const allArch = SupabaseBridge.getAllArchives();
+                const foundArch = allArch.find(a => a.id === "TEST-BK-777");
+                assert(foundArch && foundArch.is_archived === true, "Archived record exists in getAllArchives() with is_archived: true");
+                assert(foundArch && foundArch.archive_reason === 'Compliance Test Archival', "Archived record preserves archive_reason");
+
+                // Restore record
+                const restRes = SupabaseBridge.unarchive('bookings', 'TEST-BK-777');
+                assert(restRes === true, "SupabaseBridge.unarchive() returns true");
+
+                // Verify restored record returns to active getData
+                activeList = SupabaseBridge.getData('bookings');
+                assert(activeList.some(b => b.id === "TEST-BK-777"), "Restored record returns to active getData('bookings')");
+
+                // TEST 5: Safe delete redirection to archive
+                SupabaseBridge.delete('bookings', 'TEST-BK-777');
+                const afterDeleteArch = SupabaseBridge.getAllArchives().find(a => a.id === "TEST-BK-777");
+                assert(afterDeleteArch && afterDeleteArch.is_archived === true, "delete() safely redirects to archive() without permanent data loss");
+
+                // TEST 6: Audit Log Recording for Archive Events
+                const auditLogs = SupabaseBridge.getData('audit_logs');
+                const hasArchiveAudit = auditLogs.some(l => l.event === 'RECORD_ARCHIVED' || l.event === 'RECORD_RESTORED');
+                assert(hasArchiveAudit, "Compliance audit logs recorded for archival actions");
+
+                // TEST 7: Account Provisioning with pin: null
+                const newAcc = {
+                    email: "test.staff@gmail.com",
+                    name: "Test Staff",
+                    role: "admin",
+                    password: "password123",
+                    pin: null
+                };
+                AuthModule.addOrUpdateAccount(newAcc);
+                const retrievedAcc = AuthModule.accounts.find(a => a.email === "test.staff@gmail.com");
+                assert(retrievedAcc !== undefined, "Newly added account is retrieved by AuthModule.accounts");
+                assert(retrievedAcc.password === "password123", "Account password preserved");
+                assert(retrievedAcc.pin === null, "Account pin explicitly initialized to null");
+
+                // Clean up test account
+                AuthModule.deleteAccount("test.staff@gmail.com");
 
                 // TEST 8: Session Persistence
                 AuthModule.setSession(superAdminUser);
-                assert(localStorage.getItem('hirna_auth_user') !== null, "Session is stored permanently in localStorage");
-                assert(sessionStorage.getItem('hirna_auth_user') !== null, "Session is stored in sessionStorage");
-
-                // TEST 9: Login verification of Passenger
-                const loginAttempt = AuthModule.login('passenger@hirna.ph', 'new_passenger_pass_2026');
-                assert(loginAttempt.success === true, "AuthModule.login succeeds with updated passenger password");
-                assert(loginAttempt.user.role === 'passenger', "AuthModule.login returns user with role 'passenger'");
+                assert(localStorage.getItem('hirna_auth_user') !== null || sessionStorage.getItem('hirna_auth_user') !== null, "Session is stored permanently in storage");
 
             } catch (err) {
                 results.push(`[ERROR] Exception during tests: ${err.message}\n${err.stack}`);

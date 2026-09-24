@@ -71,3 +71,91 @@ input[type="number"] {
     -moz-appearance: textfield !important;
     appearance: textfield !important;
 }
+
+/* ==========================================================================
+   HIGH-VISIBILITY FORM CONTROLS (Universal Input, Select, Textarea Styling)
+   Fixes invisible borders across light and dark backgrounds on all monitors
+   ========================================================================== */
+
+/* Universal Light Theme Inputs (Default) */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):not(.sr-only),
+textarea,
+select {
+    border: 1.5px solid #94a3b8 !important; /* High-contrast Slate-400 border */
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* Light Theme Placeholders */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):not(.sr-only)::placeholder,
+textarea::placeholder {
+    color: #64748b !important; /* Visible Slate-500 placeholder */
+    opacity: 1 !important;
+}
+
+/* Light Theme Hover & Focus */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):not(.sr-only):hover,
+textarea:hover,
+select:hover {
+    border-color: #64748b !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):not(.sr-only):focus,
+textarea:focus,
+select:focus {
+    border-color: #d97706 !important; /* Amber-600 active border */
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25) !important; /* Amber focus glow */
+    outline: none !important;
+    background-color: #ffffff !important;
+}
+
+/* Select dropdown styling */
+select {
+    cursor: pointer;
+}
+
+/* Dark Containers & Dark Pages (e.g. Login Page, Dark Modals) */
+body.bg-slate-950 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):not(.sr-only),
+body.bg-slate-950 textarea,
+body.bg-slate-950 select,
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):not(.sr-only),
+.dark textarea,
+.dark select {
+    border: 1.5px solid #475569 !important; /* Slate-600 high contrast on dark bg */
+    background-color: #0b1120 !important; /* Deep dark slate fill */
+    color: #f8fafc !important;
+}
+
+body.bg-slate-950 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):not(.sr-only)::placeholder,
+body.bg-slate-950 textarea::placeholder,
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1 !important;
+}
+
+body.bg-slate-950 input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):not(.sr-only):focus,
+body.bg-slate-950 textarea:focus,
+body.bg-slate-950 select:focus,
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3) !important;
+    background-color: #020617 !important;
+    outline: none !important;
+}
+
+/* PIN & OTP Digit Boxes */
+.pin-digit, .otp-digit, .new-pin-digit, .confirm-pin-digit {
+    border: 2px solid #64748b !important;
+    background-color: #020617 !important;
+    color: #fbbf24 !important;
+}
+
+.pin-digit:focus, .otp-digit:focus, .new-pin-digit:focus, .confirm-pin-digit:focus {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35) !important;
+}
+
