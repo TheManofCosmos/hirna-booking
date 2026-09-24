@@ -118,10 +118,7 @@
                             EA
                         </div>
                         <div class="overflow-hidden">
-                            <div class="flex items-center space-x-2">
-                                <span id="switched-card-name" class="text-xs font-bold text-white truncate block">Edgar Adovas</span>
-                                <span id="switched-card-badge" class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-gold-500 text-hirna-950 flex-shrink-0">SuperAdmin</span>
-                            </div>
+                            <span id="switched-card-name" class="text-xs font-bold text-white truncate block">Edgar Adovas</span>
                             <span id="switched-card-email" class="text-[11px] text-gold-400 font-mono block truncate">edgaradovas50@gmail.com</span>
                         </div>
                     </div>
@@ -1197,11 +1194,6 @@
                 document.getElementById('switched-card-avatar').innerText = matchedUser.avatar || 'HU';
                 document.getElementById('switched-card-name').innerText = matchedUser.name;
                 document.getElementById('switched-card-email').innerText = matchedUser.email;
-                const badge = document.getElementById('switched-card-badge');
-                if (badge) {
-                    badge.innerText = matchedUser.roleTitle || matchedUser.role;
-                    badge.className = `text-[9px] px-2 py-0.5 rounded-full font-bold ${matchedUser.badgeClass || 'bg-gold-500 text-hirna-950'}`;
-                }
                 card.classList.remove('hidden');
             }
 

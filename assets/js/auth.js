@@ -55,16 +55,6 @@ const AuthModule = {
             badgeClass: "bg-emerald-600 text-white",
             avatar: "PA"
         },
-        {
-            email: "customer@hirna.ph",
-            password: "passenger",
-            pin: null,
-            name: "Verified Passenger",
-            role: "passenger",
-            roleTitle: "Verified Passenger",
-            badgeClass: "bg-emerald-600 text-white",
-            avatar: "PA"
-        }
     ],
 
     get accounts() {
@@ -85,33 +75,48 @@ const AuthModule = {
                     });
                 }
             }
-            return list.map(acc => {
+            
+            // Deduplicate by normalized lowercase email
+            const uniqueMap = new Map();
+            list.forEach(acc => {
+                let email = (acc.email || '').trim().toLowerCase();
+                if (!email) return;
                 if (acc.role === 'customer') {
                     acc.role = 'passenger';
                     acc.roleTitle = 'Verified Passenger';
                     if (acc.password === 'customer') acc.password = 'passenger';
                     if (acc.email === 'customer@hirna.ph') acc.email = 'passenger@hirna.ph';
+                    email = acc.email.toLowerCase();
                 }
                 if (acc.pin === "1234") {
                     acc.pin = null;
                 }
-                acc.email = (acc.email || '').trim().toLowerCase();
+                acc.email = email;
                 acc.password = (acc.password || '').trim();
-                return acc;
+                uniqueMap.set(email, acc);
             });
+            return Array.from(uniqueMap.values());
         } catch (e) {}
         return this.defaultAccounts;
     },
 
     saveAccounts(newList) {
-        localStorage.setItem('hirna_custom_accounts', JSON.stringify(newList));
+        // Ensure distinct entries by email
+        const uniqueMap = new Map();
+        (newList || []).forEach(acc => {
+            const email = (acc.email || '').trim().toLowerCase();
+            if (email) uniqueMap.set(email, acc);
+        });
+        const deduplicated = Array.from(uniqueMap.values());
+
+        localStorage.setItem('hirna_custom_accounts', JSON.stringify(deduplicated));
         try {
-            window.dispatchEvent(new CustomEvent('hirna:accounts_updated', { detail: newList }));
+            window.dispatchEvent(new CustomEvent('hirna:accounts_updated', { detail: deduplicated }));
         } catch(e) {}
         if (typeof BroadcastChannel !== 'undefined') {
             try {
                 const bc = new BroadcastChannel('hirna_sync');
-                bc.postMessage({ type: 'ACCOUNTS_UPDATE', accounts: newList });
+                bc.postMessage({ type: 'ACCOUNTS_UPDATE', accounts: deduplicated });
             } catch(e) {}
         }
     },
@@ -119,12 +124,33 @@ const AuthModule = {
     addOrUpdateAccount(accountData) {
         const cleanEmail = (accountData.email || '').trim().toLowerCase();
         const cleanPassword = (accountData.password || '').trim();
+        const cleanRole = (accountData.role === 'customer' ? 'passenger' : (accountData.role || 'passenger'));
+        const cleanName = (accountData.name || cleanEmail).trim();
+
+        const roleTitles = {
+            superadmin: "SuperAdmin (Full Access & Role Control)",
+            admin: "Operations Administrator",
+            passenger: "Verified Passenger"
+        };
+        const badgeClasses = {
+            superadmin: "bg-gold-500 text-hirna-950 font-black",
+            admin: "bg-blue-600 text-white",
+            passenger: "bg-emerald-600 text-white"
+        };
+        const initials = cleanName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'HU';
+
         const cleanData = {
             ...accountData,
             email: cleanEmail,
             password: cleanPassword,
+            name: cleanName,
+            role: cleanRole,
+            roleTitle: accountData.roleTitle || roleTitles[cleanRole] || "Hirna User",
+            badgeClass: accountData.badgeClass || badgeClasses[cleanRole] || "bg-slate-800 text-white",
+            avatar: accountData.avatar || initials,
             pin: accountData.pin ? String(accountData.pin).trim() : null
         };
+
         let current = [...this.accounts];
         const idx = current.findIndex(a => a.email.toLowerCase() === cleanEmail);
         if (idx >= 0) {
@@ -133,6 +159,23 @@ const AuthModule = {
             current.push(cleanData);
         }
         this.saveAccounts(current);
+
+        // Also ensure registered in device accounts for seamless switcher access
+        this.saveDeviceAccount(cleanData);
+
+        // Clear any lingering revocation or past invalidation flags so new account can sign in immediately
+        try {
+            let revoked = JSON.parse(localStorage.getItem('hirna_revoked_sessions') || '[]');
+            revoked = revoked.filter(r => !(r.email && r.email.toLowerCase() === cleanEmail));
+            localStorage.setItem('hirna_revoked_sessions', JSON.stringify(revoked));
+        } catch(e) {}
+
+        try {
+            let invalidations = JSON.parse(localStorage.getItem('hirna_password_invalidations') || '{}');
+            delete invalidations[cleanEmail];
+            localStorage.setItem('hirna_password_invalidations', JSON.stringify(invalidations));
+        } catch(e) {}
+
         return current;
     },
 
@@ -159,6 +202,7 @@ const AuthModule = {
         const cleanEmail = (email || '').trim().toLowerCase();
         let current = this.accounts.filter(a => a.email.toLowerCase() !== cleanEmail);
         this.saveAccounts(current);
+        this.removeDeviceAccount(cleanEmail);
         return current;
     },
 
@@ -610,7 +654,7 @@ const AuthModule = {
             try {
                 const invalidations = JSON.parse(localStorage.getItem('hirna_password_invalidations') || '{}');
                 const lastInvalidation = invalidations[currentEmail];
-                const sessionStartTime = Number(sessionStorage.getItem('hirna_session_start_time') || '0');
+                const sessionStartTime = Number(sessionStorage.getItem('hirna_session_start_time') || localStorage.getItem('hirna_session_start_time') || '0');
                 if (lastInvalidation && (!sessionStartTime || sessionStartTime < lastInvalidation)) {
                     this.proceedLogout('password_changed');
                     return;
@@ -657,14 +701,25 @@ const AuthModule = {
 
     setSession(user, rememberMe = false) {
         this.currentUser = user;
+        const now = Date.now() + 1000;
+
+        // Clear any previous device revocation for this user on this device
+        try {
+            let revoked = JSON.parse(localStorage.getItem('hirna_revoked_sessions') || '[]');
+            revoked = revoked.filter(r => !(r.email && r.email.toLowerCase() === user.email.toLowerCase() && r.deviceId === this.getDeviceId()));
+            localStorage.setItem('hirna_revoked_sessions', JSON.stringify(revoked));
+        } catch(e) {}
+
         // Always save in sessionStorage for the active session
         sessionStorage.setItem('hirna_auth_user', JSON.stringify(user));
+        sessionStorage.setItem('hirna_session_start_time', String(now));
         if (rememberMe) {
             localStorage.setItem('hirna_auth_user', JSON.stringify(user));
+            localStorage.setItem('hirna_session_start_time', String(now));
         } else {
             localStorage.removeItem('hirna_auth_user');
+            localStorage.removeItem('hirna_session_start_time');
         }
-        sessionStorage.setItem('hirna_session_start_time', String(Date.now()));
         
         // Save to device accounts & active sessions on this device
         this.saveDeviceAccount(user);
@@ -903,7 +958,6 @@ const AuthModule = {
                                     ${isActive ? '<span class="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full font-bold">Active</span>' : ''}
                                 </div>
                                 <span class="text-[11px] text-slate-400 font-mono block truncate">${acc.email}</span>
-                                <span class="text-[9px] text-gold-400/90 font-medium">${acc.roleTitle || acc.role}</span>
                             </div>
                         </div>
                         <div class="flex items-center space-x-2 ml-2">
