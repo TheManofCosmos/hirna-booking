@@ -124,7 +124,7 @@
                                     Use PIN instead
                                 </button>
                                 <span class="text-slate-600 text-[10px]">•</span>
-                                <a href="javascript:void(0)" onclick="openForgotPasswordFlow()" class="text-[11px] text-gold-400 hover:text-gold-300 font-semibold">Forgot Password?</a>
+                                <a href="javascript:void(0)" id="link-forgot-credential" onclick="handleForgotCredential()" class="text-[11px] text-gold-400 hover:text-gold-300 font-semibold">Forgot Password?</a>
                             </div>
                         </div>
 
@@ -140,16 +140,15 @@
                         </div>
 
                         <!-- 4-Digit PIN Input Mode (Hidden by default) -->
-                        <div id="container-pin-mode" class="hidden">
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M4 8h16M4 16h4"/></svg>
-                                </span>
-                                <input type="password" id="input-pin" maxlength="4" inputmode="numeric" placeholder="Enter 4-digit PIN (default: 1234)" class="w-full pl-10 pr-12 py-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-mono font-bold tracking-widest text-center text-base focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
+                        <div id="container-pin-mode" class="hidden space-y-2">
+                            <div class="flex justify-center items-center gap-3 max-w-xs mx-auto py-1" id="pin-input-group">
+                                <input type="password" maxlength="1" inputmode="numeric" class="pin-digit w-12 h-14 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                                <input type="password" maxlength="1" inputmode="numeric" class="pin-digit w-12 h-14 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                                <input type="password" maxlength="1" inputmode="numeric" class="pin-digit w-12 h-14 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                                <input type="password" maxlength="1" inputmode="numeric" class="pin-digit w-12 h-14 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
                             </div>
-                            <p class="text-[10px] text-slate-400 mt-1.5 flex items-center justify-between">
-                                <span>Default Demo PIN: <strong class="text-gold-400 font-mono">1234</strong></span>
-                                <span>4 numeric digits</span>
+                            <p class="text-[11px] text-slate-400 text-center font-medium">
+                                Enter your 4-digit security PIN
                             </p>
                         </div>
                     </div>
@@ -288,6 +287,73 @@
                     </div>
                 </div>
 
+                <!-- ========================================== -->
+                <!-- STEP 4: Set Up / Reset 4-Digit PIN Flow   -->
+                <!-- ========================================== -->
+                <div id="pin-setup-section" class="hidden space-y-4 text-xs">
+                    <div class="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        </div>
+                        <div>
+                            <span id="pin-setup-heading" class="text-xs font-bold text-white block">Set Up 4-Digit Security PIN</span>
+                            <span class="text-[11px] text-slate-400">A verification code has been dispatched by <code class="text-amber-300 font-mono">hirnasecurity@gmail.com</code> to verify your ownership.</span>
+                        </div>
+                    </div>
+
+                    <!-- Target Email Display -->
+                    <div class="p-3 bg-slate-950/80 border border-slate-800 rounded-2xl flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] text-slate-400 block">Account:</span>
+                            <span id="pin-setup-target-email" class="text-xs font-bold text-white font-mono">superadmin@hirna.ph</span>
+                        </div>
+                        <button type="button" id="btn-resend-pin-setup-otp" onclick="resendPinSetupOtp()" class="text-[11px] text-amber-400 hover:text-amber-300 font-bold transition cursor-pointer">
+                            Resend Code (<span id="pin-setup-countdown">30</span>s)
+                        </button>
+                    </div>
+
+                    <!-- 6-Digit Email OTP Input -->
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1.5">6-Digit Email Verification Code</label>
+                        <input type="text" id="pin-setup-input-otp" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit code received in Gmail" class="w-full px-3.5 py-3 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-mono font-bold tracking-widest text-center text-base focus:ring-2 focus:ring-amber-500 focus:outline-none transition">
+                    </div>
+
+                    <!-- 4-Digit New PIN Group -->
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1.5 text-center">Create 4-Digit PIN</label>
+                        <div class="flex justify-center items-center gap-3 max-w-xs mx-auto py-1" id="new-pin-input-group">
+                            <input type="password" maxlength="1" inputmode="numeric" class="new-pin-digit w-12 h-13 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                            <input type="password" maxlength="1" inputmode="numeric" class="new-pin-digit w-12 h-13 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                            <input type="password" maxlength="1" inputmode="numeric" class="new-pin-digit w-12 h-13 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                            <input type="password" maxlength="1" inputmode="numeric" class="new-pin-digit w-12 h-13 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                        </div>
+                    </div>
+
+                    <!-- 4-Digit Confirm PIN Group -->
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1.5 text-center">Confirm 4-Digit PIN (Type Again)</label>
+                        <div class="flex justify-center items-center gap-3 max-w-xs mx-auto py-1" id="confirm-pin-input-group">
+                            <input type="password" maxlength="1" inputmode="numeric" class="confirm-pin-digit w-12 h-13 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                            <input type="password" maxlength="1" inputmode="numeric" class="confirm-pin-digit w-12 h-13 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                            <input type="password" maxlength="1" inputmode="numeric" class="confirm-pin-digit w-12 h-13 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                            <input type="password" maxlength="1" inputmode="numeric" class="confirm-pin-digit w-12 h-13 text-center text-2xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-amber-400 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:outline-none transition shadow-inner">
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="space-y-2 pt-2">
+                        <button type="button" id="btn-save-pin-setup" onclick="confirmSavePinSetup()" class="w-full py-4 bg-gradient-to-r from-amber-500 to-gold-500 hover:from-amber-400 hover:to-gold-400 text-hirna-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center space-x-2 cursor-pointer">
+                            <span id="btn-save-pin-text">Save PIN & Enable PIN Sign-In</span>
+                            <svg class="w-4 h-4 text-hirna-950 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        </button>
+
+                        <button type="button" onclick="cancelPinSetupFlow()" class="w-full py-3 bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-2xl transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            <span>Back to Login</span>
+                        </button>
+                    </div>
+                </div>
+
             </div>
 
         </div>
@@ -305,37 +371,83 @@
         let countdownSeconds = 30;
         let isPinMode = false;
 
-        // Toggle PIN vs Password Mode
-        function togglePinMode() {
-            if (isLockedOut) return;
-            isPinMode = !isPinMode;
-            const pwdContainer = document.getElementById('container-password-mode');
-            const pinContainer = document.getElementById('container-pin-mode');
-            const labelSecret = document.getElementById('label-secret-input');
-            const toggleBtn = document.getElementById('btn-toggle-pin-mode');
-            const submitBtnText = document.getElementById('btn-submit-login-text');
+        // Mode Switching: Password vs PIN Mode
+        function setModeToPin() {
+            isPinMode = true;
+            document.getElementById('container-password-mode').classList.add('hidden');
+            document.getElementById('container-pin-mode').classList.remove('hidden');
+            document.getElementById('label-secret-input').innerText = '4-Digit PIN';
+            document.getElementById('btn-toggle-pin-mode').innerText = 'Use Password instead';
+            document.getElementById('link-forgot-credential').innerText = 'Forgot PIN?';
+            document.getElementById('btn-submit-login-text').innerText = 'Sign In with PIN';
             const errorAlert = document.getElementById('login-error-alert');
             if (errorAlert) errorAlert.classList.add('hidden');
+            
+            // Clear & focus first PIN digit box
+            document.querySelectorAll('.pin-digit').forEach(i => i.value = '');
+            const first = document.querySelector('.pin-digit');
+            if (first) setTimeout(() => first.focus(), 100);
+        }
 
+        function setModeToPassword() {
+            isPinMode = false;
+            document.getElementById('container-password-mode').classList.remove('hidden');
+            document.getElementById('container-pin-mode').classList.add('hidden');
+            document.getElementById('label-secret-input').innerText = 'Password';
+            document.getElementById('btn-toggle-pin-mode').innerText = 'Use PIN instead';
+            document.getElementById('link-forgot-credential').innerText = 'Forgot Password?';
+            document.getElementById('btn-submit-login-text').innerText = 'Sign In with Credentials';
+            const errorAlert = document.getElementById('login-error-alert');
+            if (errorAlert) errorAlert.classList.add('hidden');
+            
+            const pwdInput = document.getElementById('input-password');
+            if (pwdInput) pwdInput.focus();
+        }
+
+        function togglePinMode() {
+            if (isLockedOut) return;
+
+            // If already in PIN mode, revert to password
             if (isPinMode) {
-                pwdContainer.classList.add('hidden');
-                pinContainer.classList.remove('hidden');
-                labelSecret.innerText = '4-Digit PIN';
-                toggleBtn.innerText = 'Use Password instead';
-                submitBtnText.innerText = 'Sign In with PIN';
-                const pinInput = document.getElementById('input-pin');
-                if (pinInput) {
-                    pinInput.value = '';
-                    pinInput.focus();
-                }
+                setModeToPassword();
+                return;
+            }
+
+            // Attempting to switch to PIN mode
+            const email = document.getElementById('input-identifier-email').value.trim().toLowerCase();
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl mb-4";
+
+            if (!email || email === 'example@gmail.com') {
+                errorAlert.className = "p-3 bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-bold rounded-xl mb-4";
+                errorAlert.innerText = "Please enter your registered Hirna account email first to use PIN sign-in.";
+                errorAlert.classList.remove('hidden');
+                document.getElementById('input-identifier-email').focus();
+                return;
+            }
+
+            const matchedUser = AuthModule.accounts.find(a => a.email.toLowerCase() === email);
+            if (!matchedUser) {
+                errorAlert.innerText = "No accepted Hirna account found with this email. Please check your email address.";
+                errorAlert.classList.remove('hidden');
+                return;
+            }
+
+            // If user does not have a PIN yet, lead to OTP code input to create PIN
+            if (!matchedUser.pin || matchedUser.pin.trim() === '') {
+                openPinSetupFlow(matchedUser, 'setup');
+                return;
+            }
+
+            // User already has a PIN, switch to PIN mode
+            setModeToPin();
+        }
+
+        function handleForgotCredential() {
+            if (isPinMode) {
+                openForgotPinFlow();
             } else {
-                pwdContainer.classList.remove('hidden');
-                pinContainer.classList.add('hidden');
-                labelSecret.innerText = 'Password';
-                toggleBtn.innerText = 'Use PIN instead';
-                submitBtnText.innerText = 'Sign In with Credentials';
-                const pwdInput = document.getElementById('input-password');
-                if (pwdInput) pwdInput.focus();
+                openForgotPasswordFlow();
             }
         }
 
@@ -344,7 +456,7 @@
             const eyeIcon = document.getElementById('eye-icon');
             if (pwdInput.type === 'password') {
                 pwdInput.type = 'text';
-                eyeIcon.innerHTML = `<svg class="w-4 h-4 text-slate-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>`;
+                eyeIcon.innerHTML = `<svg class="w-4 h-4 text-slate-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>`;
             } else {
                 pwdInput.type = 'password';
                 eyeIcon.innerHTML = `<svg class="w-4 h-4 text-slate-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
@@ -384,17 +496,15 @@
                     alert("No 6-digit code found in clipboard. Please copy your OTP from Gmail.");
                 }
             } catch (err) {
-                // Clipboard permission blocked, focus first box
                 const first = document.querySelector('.otp-digit');
                 if (first) first.focus();
             }
         }
 
-        // Setup OTP Digits Auto-focus & Navigation
-        function setupOtpInputListeners() {
-            const inputs = document.querySelectorAll('.otp-digit');
+        // Reusable multi-box digit navigation handler
+        function setupDigitGroupListeners(selector, onComplete = null) {
+            const inputs = document.querySelectorAll(selector);
             inputs.forEach((input, index) => {
-                // Focus jump on character entry
                 input.addEventListener('input', (e) => {
                     const val = e.target.value;
                     if (val.length > 1) {
@@ -403,34 +513,34 @@
                     if (e.target.value && index < inputs.length - 1) {
                         inputs[index + 1].focus();
                     }
-                    // Auto-verify if all 6 digits entered
-                    const allDigits = Array.from(inputs).map(i => i.value).join('');
-                    if (allDigits.length === 6) {
-                        setTimeout(verifyOtpCode, 200);
+                    const allEntered = Array.from(inputs).every(i => i.value.trim() !== '');
+                    if (allEntered && onComplete) {
+                        setTimeout(onComplete, 150);
                     }
                 });
 
-                // Backspace jump back
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Backspace') {
                         if (!input.value && index > 0) {
                             inputs[index - 1].focus();
                         }
                     } else if (e.key === 'Enter') {
-                        verifyOtpCode();
+                        if (onComplete) onComplete();
                     }
                 });
 
-                // Paste entire 6-digit code
                 input.addEventListener('paste', (e) => {
                     e.preventDefault();
-                    const pastedData = (e.clipboardData || window.clipboardData).getData('text').trim();
-                    if (/^\d{6}$/.test(pastedData)) {
+                    const pastedData = (e.clipboardData || window.clipboardData).getData('text').trim().replace(/\D/g, '');
+                    if (pastedData) {
                         inputs.forEach((inp, i) => {
                             inp.value = pastedData[i] || '';
                         });
-                        inputs[inputs.length - 1].focus();
-                        setTimeout(verifyOtpCode, 200);
+                        const lastIndex = Math.min(pastedData.length, inputs.length) - 1;
+                        if (inputs[lastIndex]) inputs[lastIndex].focus();
+                        if (pastedData.length >= inputs.length && onComplete) {
+                            setTimeout(onComplete, 150);
+                        }
                     }
                 });
             });
@@ -462,7 +572,6 @@
             activeOtpCode = generateRandomOtp();
             triggerRealEmailOtp(activeOtpCode, pendingUser.email, "login");
             startOtpTimer();
-            // Clear previous digits
             document.querySelectorAll('.otp-digit').forEach(i => i.value = '');
             const first = document.querySelector('.otp-digit');
             if (first) first.focus();
@@ -503,7 +612,7 @@
             const resendBtn = document.getElementById('btn-resend-otp');
             const otpInputs = document.querySelectorAll('.otp-digit');
             const pwdInput = document.getElementById('input-password');
-            const pinInput = document.getElementById('input-pin');
+            const pinInputs = document.querySelectorAll('.pin-digit');
             const emailInput = document.getElementById('input-identifier-email');
 
             // Disable interactive controls during lockout
@@ -513,7 +622,7 @@
                     submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 }
                 if (pwdInput) pwdInput.disabled = true;
-                if (pinInput) pinInput.disabled = true;
+                pinInputs.forEach(i => i.disabled = true);
                 if (emailInput) emailInput.disabled = true;
             } else if (stage === 'otp') {
                 if (verifyBtn) {
@@ -551,7 +660,7 @@
                             submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                         }
                         if (pwdInput) pwdInput.disabled = false;
-                        if (pinInput) pinInput.disabled = false;
+                        pinInputs.forEach(i => i.disabled = false);
                         if (emailInput) emailInput.disabled = false;
                         errorAlert.innerText = `Lockout ended. You may now re-enter your credentials.`;
                     } else if (stage === 'otp') {
@@ -575,6 +684,7 @@
             clearInterval(countdownTimer);
             document.getElementById('otp-verification-section').classList.add('hidden');
             document.getElementById('forgot-password-section').classList.add('hidden');
+            document.getElementById('pin-setup-section').classList.add('hidden');
             document.getElementById('standalone-login-form').classList.remove('hidden');
             document.getElementById('panel-title').innerText = "Sign In to Your Account";
             document.getElementById('panel-subtitle').innerText = "Enter your email address and password";
@@ -602,12 +712,12 @@
 
             document.getElementById('standalone-login-form').classList.add('hidden');
             document.getElementById('otp-verification-section').classList.add('hidden');
+            document.getElementById('pin-setup-section').classList.add('hidden');
             document.getElementById('forgot-password-section').classList.remove('hidden');
 
             document.getElementById('panel-title').innerText = "Reset Your Password";
             document.getElementById('panel-subtitle').innerText = "Verify your account email with a code from hirnasecurity@gmail.com";
 
-            // If user typed an email on step 1, prefill it
             const currentEmail = document.getElementById('input-identifier-email').value.trim();
             if (currentEmail && currentEmail !== 'example@gmail.com') {
                 document.getElementById('reset-target-email').value = currentEmail;
@@ -627,6 +737,7 @@
             clearInterval(resetCountdownTimer);
             document.getElementById('forgot-password-section').classList.add('hidden');
             document.getElementById('otp-verification-section').classList.add('hidden');
+            document.getElementById('pin-setup-section').classList.add('hidden');
             document.getElementById('standalone-login-form').classList.remove('hidden');
 
             document.getElementById('panel-title').innerText = "Sign In to Your Account";
@@ -649,7 +760,6 @@
                 return;
             }
 
-            // Verify account exists in AuthModule.accounts
             const user = AuthModule.accounts.find(a => a.email.toLowerCase() === email);
             if (!user) {
                 errorAlert.classList.remove('hidden');
@@ -666,7 +776,6 @@
             sendBtn.disabled = true;
             sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            // Dispatch reset OTP via backend mailer
             fetch(`/api/send-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(activeResetOtp)}&purpose=reset`)
                 .then(r => r.json())
                 .then(d => {
@@ -676,7 +785,6 @@
                     console.error("[Hirna Reset Mailer] Dispatch error:", err);
                 });
 
-            // Start 30s countdown
             clearInterval(resetCountdownTimer);
             resetCountdownSeconds = 30;
             if (indicator) {
@@ -735,7 +843,6 @@
                 return;
             }
 
-            // Perform password reset in AuthModule
             const result = AuthModule.resetPassword(email, newPassword);
             if (!result.success) {
                 errorAlert.classList.remove('hidden');
@@ -743,7 +850,6 @@
                 return;
             }
 
-            // Success feedback
             errorAlert.className = "p-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold rounded-xl mb-4";
             errorAlert.innerHTML = `
                 <div class="flex items-center space-x-2">
@@ -761,13 +867,210 @@
                 cancelForgotPasswordFlow();
                 document.getElementById('input-identifier-email').value = email;
                 document.getElementById('input-password').value = newPassword;
-                if (isPinMode) togglePinMode(); // return to password mode
+                setModeToPassword();
                 errorAlert.className = "p-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold rounded-xl mb-4";
                 errorAlert.innerText = "Password updated! You can now sign in with your new password.";
                 errorAlert.classList.remove('hidden');
                 resetBtn.disabled = false;
                 resetBtn.classList.remove('opacity-70');
             }, 1500);
+        }
+
+        // ==========================================
+        // PIN SETUP & PIN RESET FLOW
+        // ==========================================
+        let pinSetupUser = null;
+        let pinSetupMode = 'setup'; // 'setup' | 'reset'
+        let activePinSetupOtp = null;
+        let pinSetupCountdownTimer = null;
+        let pinSetupCountdownSeconds = 30;
+
+        function openForgotPinFlow() {
+            const email = document.getElementById('input-identifier-email').value.trim().toLowerCase();
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl mb-4";
+
+            if (!email || email === 'example@gmail.com') {
+                errorAlert.innerText = "Please enter your registered Hirna account email first to reset your PIN.";
+                errorAlert.classList.remove('hidden');
+                document.getElementById('input-identifier-email').focus();
+                return;
+            }
+
+            const matchedUser = AuthModule.accounts.find(a => a.email.toLowerCase() === email);
+            if (!matchedUser) {
+                errorAlert.innerText = "No accepted Hirna account found with this email.";
+                errorAlert.classList.remove('hidden');
+                return;
+            }
+
+            openPinSetupFlow(matchedUser, 'reset');
+        }
+
+        function openPinSetupFlow(user, mode = 'setup') {
+            if (isLockedOut) return;
+            pinSetupUser = user;
+            pinSetupMode = mode;
+            activePinSetupOtp = generateRandomOtp();
+
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.classList.add('hidden');
+
+            document.getElementById('standalone-login-form').classList.add('hidden');
+            document.getElementById('otp-verification-section').classList.add('hidden');
+            document.getElementById('forgot-password-section').classList.add('hidden');
+            document.getElementById('pin-setup-section').classList.remove('hidden');
+
+            if (mode === 'setup') {
+                document.getElementById('panel-title').innerText = "Set Up 4-Digit Security PIN";
+                document.getElementById('panel-subtitle').innerText = "Verify your email to create a 4-digit PIN for instant sign-in";
+                document.getElementById('pin-setup-heading').innerText = "Set Up 4-Digit Security PIN";
+                document.getElementById('btn-save-pin-text').innerText = "Create PIN & Sign In";
+            } else {
+                document.getElementById('panel-title').innerText = "Reset 4-Digit Security PIN";
+                document.getElementById('panel-subtitle').innerText = "Verify your email to reset your 4-digit PIN";
+                document.getElementById('pin-setup-heading').innerText = "Reset 4-Digit Security PIN";
+                document.getElementById('btn-save-pin-text').innerText = "Update PIN & Sign In";
+            }
+
+            document.getElementById('pin-setup-target-email').innerText = user.email;
+            document.getElementById('pin-setup-input-otp').value = '';
+            document.querySelectorAll('.new-pin-digit').forEach(i => i.value = '');
+            document.querySelectorAll('.confirm-pin-digit').forEach(i => i.value = '');
+
+            // Dispatch OTP email
+            triggerRealEmailOtp(activePinSetupOtp, user.email, mode === 'setup' ? 'pin_setup' : 'pin_reset');
+            startPinSetupTimer();
+
+            const otpBox = document.getElementById('pin-setup-input-otp');
+            if (otpBox) setTimeout(() => otpBox.focus(), 100);
+        }
+
+        function cancelPinSetupFlow() {
+            clearInterval(pinSetupCountdownTimer);
+            document.getElementById('pin-setup-section').classList.add('hidden');
+            document.getElementById('forgot-password-section').classList.add('hidden');
+            document.getElementById('otp-verification-section').classList.add('hidden');
+            document.getElementById('standalone-login-form').classList.remove('hidden');
+
+            document.getElementById('panel-title').innerText = "Sign In to Your Account";
+            document.getElementById('panel-subtitle').innerText = "Enter your email address and password";
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl hidden mb-4";
+            errorAlert.classList.add('hidden');
+
+            pinSetupUser = null;
+            activePinSetupOtp = null;
+        }
+
+        function startPinSetupTimer() {
+            clearInterval(pinSetupCountdownTimer);
+            pinSetupCountdownSeconds = 30;
+            const timerEl = document.getElementById('pin-setup-countdown');
+            const resendBtn = document.getElementById('btn-resend-pin-setup-otp');
+            if (timerEl) timerEl.innerText = pinSetupCountdownSeconds;
+            if (resendBtn) resendBtn.disabled = true;
+
+            pinSetupCountdownTimer = setInterval(() => {
+                pinSetupCountdownSeconds--;
+                if (timerEl) timerEl.innerText = pinSetupCountdownSeconds;
+                if (pinSetupCountdownSeconds <= 0) {
+                    clearInterval(pinSetupCountdownTimer);
+                    if (resendBtn) {
+                        resendBtn.disabled = false;
+                        resendBtn.innerHTML = `Resend Code Now`;
+                    }
+                }
+            }, 1000);
+        }
+
+        function resendPinSetupOtp() {
+            if (!pinSetupUser) return;
+            activePinSetupOtp = generateRandomOtp();
+            triggerRealEmailOtp(activePinSetupOtp, pinSetupUser.email, pinSetupMode === 'setup' ? 'pin_setup' : 'pin_reset');
+            startPinSetupTimer();
+            document.getElementById('pin-setup-input-otp').value = '';
+            document.getElementById('pin-setup-input-otp').focus();
+        }
+
+        function confirmSavePinSetup() {
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl mb-4";
+            
+            const otpEntered = document.getElementById('pin-setup-input-otp').value.trim();
+            const newPin = Array.from(document.querySelectorAll('.new-pin-digit')).map(i => i.value).join('');
+            const confirmPin = Array.from(document.querySelectorAll('.confirm-pin-digit')).map(i => i.value).join('');
+
+            if (!activePinSetupOtp) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "Please request a verification code first.";
+                return;
+            }
+
+            if (!otpEntered || otpEntered !== activePinSetupOtp) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "Invalid verification code. Please check your Gmail inbox and try again.";
+                return;
+            }
+
+            if (newPin.length !== 4) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "Please enter all 4 digits of your new PIN.";
+                return;
+            }
+
+            if (confirmPin.length !== 4) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "Please re-type all 4 digits to confirm your PIN.";
+                return;
+            }
+
+            if (newPin !== confirmPin) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "PINs do not match. Please verify both 4-digit PIN fields.";
+                return;
+            }
+
+            // Save PIN in AuthModule
+            const result = AuthModule.setAccountPin(pinSetupUser.email, newPin);
+            if (!result.success) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = result.message || "Failed to save PIN.";
+                return;
+            }
+
+            // Success feedback
+            errorAlert.className = "p-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold rounded-xl mb-4";
+            errorAlert.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>4-Digit PIN successfully saved! Switching to PIN Sign-In...</span>
+                </div>
+            `;
+            errorAlert.classList.remove('hidden');
+
+            const saveBtn = document.getElementById('btn-save-pin-setup');
+            saveBtn.disabled = true;
+            saveBtn.classList.add('opacity-70');
+
+            setTimeout(() => {
+                const savedEmail = pinSetupUser.email;
+                cancelPinSetupFlow();
+                document.getElementById('input-identifier-email').value = savedEmail;
+                setModeToPin();
+
+                // Prefill newly created PIN digits into boxes
+                const pinInputs = document.querySelectorAll('.pin-digit');
+                pinInputs.forEach((inp, idx) => {
+                    inp.value = newPin[idx] || '';
+                });
+
+                errorAlert.className = "p-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold rounded-xl mb-4";
+                errorAlert.innerText = "PIN successfully set! Click 'Sign In with PIN' to proceed.";
+                errorAlert.classList.remove('hidden');
+                saveBtn.disabled = false;
+                saveBtn.classList.remove('opacity-70');
+            }, 1200);
         }
 
         // STEP 1: Verify Email and Password OR PIN
@@ -788,15 +1091,15 @@
             let matchedUser = null;
 
             if (isPinMode) {
-                const pin = document.getElementById('input-pin').value.trim();
-                if (!pin || pin.length !== 4) {
+                const pinDigits = Array.from(document.querySelectorAll('.pin-digit')).map(i => i.value).join('');
+                if (pinDigits.length !== 4) {
                     errorAlert.classList.remove('hidden');
-                    errorAlert.innerText = "Please enter your 4-digit PIN.";
+                    errorAlert.innerText = "Please enter all 4 digits of your PIN.";
                     return;
                 }
                 matchedUser = AuthModule.accounts.find(a => 
                     a.email.toLowerCase() === identifier &&
-                    (a.pin === pin || (!a.pin && pin === "1234"))
+                    a.pin === pinDigits
                 );
             } else {
                 const password = document.getElementById('input-password').value;
@@ -901,9 +1204,12 @@
             }
         }
 
-        // Initialize OTP digit listeners
+        // Initialize digit box listeners across the application
         window.addEventListener('DOMContentLoaded', () => {
-            setupOtpInputListeners();
+            setupDigitGroupListeners('.otp-digit', verifyOtpCode);
+            setupDigitGroupListeners('.pin-digit');
+            setupDigitGroupListeners('.new-pin-digit');
+            setupDigitGroupListeners('.confirm-pin-digit');
         });
     </script>
 </body>
