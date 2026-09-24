@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hirna: Transport & Delivery - SuperAdmin SSO Gateway</title>
+    <!-- Immediate Authentication Guard: ensure app starts on login screen if not authenticated -->
+    <script>
+        (function() {
+            try {
+                var raw = localStorage.getItem('hirna_auth_user') || sessionStorage.getItem('hirna_auth_user');
+                if (!raw) {
+                    window.location.replace('login.html');
+                    return;
+                }
+                var user = JSON.parse(raw);
+                if (user && user.role === 'passenger') {
+                    window.location.replace('passenger.html');
+                }
+            } catch (e) {
+                window.location.replace('login.html');
+            }
+        })();
+    </script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Leaflet CSS & JS for GPS Mapping -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Chart.js for KPI Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Automatic PWA Cache Purge to prevent stale browser snapshots -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+            });
+        }
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) {
+                    caches.delete(name);
+                }
+            });
+        }
+    </script>
+    <link rel="stylesheet" href="assets/css/style.css?v=20260913_rev5">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        hirna: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            300: '#fca5a5',
+                            400: '#f87171',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                            dark: '#6e1111'
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="icon" type="image/png" href="assets/hirna-badge.png">
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- HIRNA TOP BRANDING HEADER -->
+    <header class="bg-hirna-800 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="h-16 flex items-center justify-between">
+                <!-- Hirna Logo & Title -->
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-11 h-11 rounded-xl border-2 border-gold-400/90 shadow-lg transform transition hover:scale-105 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                        <img src="assets/hirna-badge.png" alt="Hirna Official Logo" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h1 class="text-base font-black tracking-wide text-white uppercase">Hirna: Transport & Delivery</h1>
+                        </div>
+                        <p class="text-[11px] text-hirna-200">Booking, Payments & Customer Experience</p>
+                    </div>
+                </div>
+
+                <!-- Status Badges & Dynamic Admin Profile with Dropdown -->
+                <div class="flex items-center space-x-2.5">
+                    <div class="relative" id="hirna-app-btn-wrapper">
+                        <button type="button" onclick="HirnaAppBridge.handleAppClick(event)" data-hirna-app-btn class="hirna-app-trigger px-3 py-1.5 bg-gold-500 hover:bg-gold-400 text-hirna-950 text-xs font-black rounded-xl shadow-md transition flex items-center space-x-1.5 transform hover:scale-105 cursor-pointer">
+                            <svg class="w-3.5 h-3.5 text-hirna-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Download Hirna App</span>
+                        </button>
+                    </div>
+
+                    <!-- Profile with Interactive Dropdown (contains Logout & Switch) -->
+                    <div id="header-user-profile" class="relative"></div>
+                </div>
+            </div>
+
+            <!-- HIRNA NAVIGATION TABS -->
+            <!-- HIRNA NAVIGATION TABS -->
+            <nav class="flex space-x-1.5 overflow-x-auto py-2 border-t border-hirna-700/60">
+                <a href="main.html" data-tab="dashboard" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="booking.html" data-tab="booking" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>
+                    <span>1. Booking</span>
+                </a>
+                <a href="payments.html" data-tab="payments" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    <span>2. Fare & Payments</span>
+                </a>
+                <a href="crm.html" data-tab="crm" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <span>3. Customer-Relationship Management</span>
+                </a>
+                <a href="gps.html" data-tab="gps" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span>4. GPS & Trip Playback</span>
+                </a>
+                <a href="analytics.html" data-tab="analytics" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    <span>5. Fleet Analytics & KPI</span>
+                </a>
+                <a href="audit.html" data-tab="audit" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-semibold text-hirna-100 hover:bg-hirna-700/70 hover:text-white transition flex items-center space-x-1.5 whitespace-nowrap">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    <span>6. SOP & Audit Logs</span>
+                </a>
+                <a id="tab-btn-sso-gateway" href="sso.html" data-tab="sso" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-bold bg-gold-500 text-hirna-950 shadow-md transition flex items-center space-x-1.5 whitespace-nowrap border border-gold-500 shadow-inner">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <span>8. SuperAdmin SSO Gateway</span>
+                </a>
+            </nav>
+            <div class="flex items-center space-x-3">
+                <span class="font-medium text-slate-200">Allow Hirna to use your device location?</span>
+                <button id="btn-allow-location" onclick="DeviceLocationManager.requestLocation()" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-hirna-950 font-black rounded-lg text-xs transition shadow-sm cursor-pointer flex items-center space-x-1.5 active:scale-95">
+                    <svg class="w-3.5 h-3.5 text-hirna-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span>Allow</span>
+                </button>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-slate-400 text-[11px] hidden sm:inline">Device Location:</span>
+                <span id="location-status-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-800 border border-slate-700 text-slate-300 flex items-center space-x-1.5">
+                    <span id="location-status-dot" class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    <span id="location-status-label">Location: Disabled</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+
+
+        <!-- ================================================================= -->
+        <!-- TAB 1: BOOKING & DISPATCH (MODULE 1)                              -->
+
+
+
+
+        <div id="tab-sso" class="tab-content-panel space-y-6 ">
+            <div class="bg-gradient-to-r from-hirna-900 via-hirna-800 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-hirna-700 space-y-2">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gold-500/20 border border-gold-400/40 flex items-center justify-center text-gold-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-black tracking-wide text-white uppercase">SuperAdmin Single Sign-On (SSO) Gateway</h2>
+                        <p class="text-xs text-hirna-200">Cross-Authenticate and navigate across all 10 TNVS Organizational Subsystems with a single master session</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUPERADMIN ROLE & ACCESS CONTROL (RBAC) MANAGER -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-md p-6 space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-slate-100 gap-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-gold-50 border border-gold-300 flex items-center justify-center text-gold-600 shadow-sm text-lg">
+                            👑
+                        </div>
+                        <div>
+                            <h3 class="text-base font-black text-slate-900 uppercase tracking-wide">SuperAdmin Access & Role Management</h3>
+                            <p class="text-xs text-slate-500">Configure allowed emails, assign roles (SuperAdmin, Admin, Customer), and manage defense credentials</p>
+                        </div>
+                    </div>
+                    <button onclick="SSOGateway.openAddAccountModal()" class="px-4 py-2.5 bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-hirna-950 font-black text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        <span>Add New Email Account</span>
+                    </button>
+                </div>
+
+                <!-- Live Accounts Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-50 text-[11px] uppercase font-bold text-slate-500 border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3">User / Name</th>
+                                <th class="px-4 py-3">Email Address (Login ID)</th>
+                                <th class="px-4 py-3">Assigned Role</th>
+                                <th class="px-4 py-3">Password Rule</th>
+                                <th class="px-4 py-3">2FA / OTP Method</th>
+                                <th class="px-4 py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rbac-accounts-tbody" class="divide-y divide-slate-100 font-medium">
+                            <!-- Populated dynamically by SSOGateway.renderAccountsTable() -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Subsystem Cards Grid (All 10 Teams) -->
+            <div id="sso-subsystems-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+        </div>
+    </main>
+
+    <!-- HIRNA ADMIN LOGIN MODAL (FULL RBAC) -->
+    <div id="hirna-login-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden border border-hirna-200 animate-in fade-in zoom-in-95 duration-200">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-hirna-800 via-hirna-900 to-slate-900 p-6 text-white text-center space-y-2 relative">
+                <button onclick="AuthModule.hideLoginModal()" class="absolute top-4 right-4 text-hirna-300 hover:text-white transition p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                <div class="w-14 h-14 rounded-2xl border-2 border-gold-400 mx-auto flex items-center justify-center shadow-lg overflow-hidden">
+                    <img src="assets/hirna-badge.png" alt="Hirna Official Logo" class="w-full h-full object-cover">
+                </div>
+                <h3 class="text-base font-black uppercase tracking-wider text-white">HIRNA Admin Authentication</h3>
+                <p class="text-xs text-hirna-200">Enter your credentials or pick a 1-click Demo Role</p>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <!-- 1-Click Quick Demo Accounts (For easy Capstone Defense) -->
+                <div class="space-y-2">
+                    <span class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">Quick 1-Click Demo Login</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" onclick="AuthModule.quickDemoLogin('superadmin')" class="p-2.5 bg-hirna-50 hover:bg-hirna-100 border border-hirna-200 rounded-xl text-left transition group cursor-pointer">
+                            <span class="text-xs font-bold text-hirna-900 flex items-center group-hover:text-hirna-700">
+                                <svg class="w-3.5 h-3.5 text-gold-600 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <span>SuperAdmin</span>
+                            </span>
+                            <span class="text-[9px] text-slate-500 font-medium">All 10 Subsystems</span>
+                        </button>
+                        <button type="button" onclick="AuthModule.quickDemoLogin('dispatch_admin')" class="p-2.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl text-left transition group cursor-pointer">
+                            <span class="text-xs font-bold text-blue-900 flex items-center group-hover:text-blue-700">
+                                <svg class="w-3.5 h-3.5 text-blue-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                                <span>Dispatch Lead</span>
+                            </span>
+                            <span class="text-[9px] text-slate-500 font-medium">Booking & Fleet</span>
+                        </button>
+                        <button type="button" onclick="AuthModule.quickDemoLogin('finance_admin')" class="p-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-left transition group cursor-pointer">
+                            <span class="text-xs font-bold text-emerald-900 flex items-center group-hover:text-emerald-700">
+                                <svg class="w-3.5 h-3.5 text-emerald-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                <span>Finance Officer</span>
+                            </span>
+                            <span class="text-[9px] text-slate-500 font-medium">Team 5 GL Sync</span>
+                        </button>
+                        <button type="button" onclick="AuthModule.quickDemoLogin('support_admin')" class="p-2.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl text-left transition group cursor-pointer">
+                            <span class="text-xs font-bold text-purple-900 flex items-center group-hover:text-purple-700">
+                                <svg class="w-3.5 h-3.5 text-purple-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                <span>CRM Lead</span>
+                            </span>
+                            <span class="text-[9px] text-slate-500 font-medium">NLP Reviews & Tickets</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative flex py-1 items-center">
+                    <div class="flex-grow border-t border-slate-200"></div>
+                    <span class="flex-shrink mx-2 text-[10px] text-slate-400 uppercase font-bold">Or Manual Credentials</span>
+                    <div class="flex-grow border-t border-slate-200"></div>
+                </div>
+
+                <!-- Form -->
+                <form id="login-form" class="space-y-3 text-xs">
+                    <div id="login-error-msg" class="p-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg hidden font-medium"></div>
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Email Address</label>
+                        <div class="relative">
+                            <input type="email" id="login-email" value="superadmin@hirna.ph" required class="w-full p-2.5 pr-8 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 text-xs" autocomplete="chrome-off" data-lpignore="true" data-form-type="other" spellcheck="false">
+                            <button type="button" id="login-email-clear-btn" onclick="BookingModule.clearInput('login-email')" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-600 hover:text-slate-900 text-[10px] font-black flex items-center justify-center transition cursor-pointer" title="Clear"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 font-semibold mb-1">Password</label>
+                        <input type="password" id="login-password" value="admin" required class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 text-xs" autocomplete="chrome-off" data-lpignore="true" data-form-type="other" spellcheck="false">
+                    </div>
+                    <button type="submit" class="w-full py-3 bg-hirna-700 hover:bg-hirna-800 text-white font-black text-xs rounded-xl shadow-lg transition">
+                        Sign In to Hirna Portal →
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SSO SIMULATION MODAL (WHEN SUPERADMIN LAUNCHES A SUBSYSTEM) -->
+    <div id="sso-launch-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white max-w-lg w-full rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div class="bg-gradient-to-r from-hirna-800 via-hirna-900 to-slate-900 p-5 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-gold-500/20 border border-gold-400/40 flex items-center justify-center text-gold-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">SSO Cross-Subsystem Handshake</h3>
+                        <p class="text-xs text-gold-400 font-bold" id="sso-modal-team">Team 1: HR Management</p>
+                    </div>
+                </div>
+                <button onclick="SSOGateway.closeSSOModal()" class="text-white hover:text-slate-200 transition p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+
+            <div class="p-6 space-y-4 text-xs">
+                <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 space-y-1">
+                    <div class="flex items-center space-x-1.5 font-bold">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span>Single Sign-On (SSO) Handshake Active</span>
+                    </div>
+                    <p class="text-[11px] text-emerald-800">You are accessing this subsystem authenticated with Master SuperAdmin privileges. No login screen will appear on the destination portal.</p>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Generated Target URL with SSO Token:</span>
+                    <div id="sso-modal-url" class="p-2.5 bg-slate-100 rounded-xl font-mono text-[10px] text-blue-700 break-all border border-slate-200"></div>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Cryptographic SSO JWT Payload:</span>
+                    <pre id="sso-modal-payload" class="p-3 bg-slate-950 text-gold-400 rounded-xl font-mono text-[10px] max-h-48 overflow-y-auto border border-slate-800"></pre>
+                </div>
+
+                <button onclick="SSOGateway.closeSSOModal()" class="w-full py-3 bg-gold-500 hover:bg-gold-400 text-hirna-950 font-black text-xs rounded-xl shadow transition">
+                    Simulate Direct Subsystem Entry →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEGACY PAYMENT & RECEIPT MODAL -->
+    <div id="legacy-payment-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white max-w-md w-full rounded-2xl shadow-2xl overflow-hidden border border-hirna-200 animate-in fade-in zoom-in-95 duration-200">
+            <div class="bg-gradient-to-r from-hirna-800 to-hirna-900 p-5 text-white flex items-center justify-between">
+                <div>
+                    <h3 class="text-sm font-bold text-white">Hirna Official e-Receipt & Payment</h3>
+                    <p class="text-xs text-hirna-200">Booking Code: <span id="legacy-pay-modal-code" class="font-mono font-bold text-gold-400">TNVS-2026-0091</span></p>
+                </div>
+                <button id="btn-close-legacy-pay-modal" onclick="document.getElementById('legacy-payment-modal')?.classList.add('hidden')" class="text-white hover:text-slate-200 transition p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+
+            <div class="p-6 space-y-4 text-xs">
+                <div class="space-y-2 pb-4 border-b border-slate-100">
+                    <div class="flex justify-between text-slate-600">
+                        <span>Base Fare:</span>
+                        <span id="legacy-pay-modal-base" class="font-mono font-semibold text-slate-800">₱45.00</span>
+                    </div>
+                    <div class="flex justify-between text-slate-600">
+                        <span>Distance Tariff:</span>
+                        <span id="legacy-pay-modal-dist" class="font-mono font-semibold text-slate-800">₱87.00</span>
+                    </div>
+                    <div class="flex justify-between text-slate-600">
+                        <span>Duration Tariff:</span>
+                        <span id="legacy-pay-modal-time" class="font-mono font-semibold text-slate-800">₱44.00</span>
+                    </div>
+                    <div class="flex justify-between text-slate-600">
+                        <span>Hirna AI Surge Multiplier:</span>
+                        <span id="legacy-pay-modal-surge" class="font-bold text-hirna-700">1.35x</span>
+                    </div>
+                    <p id="legacy-pay-modal-reason" class="text-[10px] text-hirna-600 italic text-right"></p>
+                </div>
+
+                <div class="flex justify-between items-center text-sm font-bold text-slate-900 pt-1">
+                    <span>Total Amount Due:</span>
+                    <span id="legacy-pay-modal-amount" class="text-xl font-black text-hirna-700 font-mono">₱237.60</span>
+                </div>
+
+                <div class="pt-3 space-y-2">
+                    <span class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">Select Payment Channel</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="PaymentsModule.processPayment('GCash')" class="p-3 bg-blue-50 hover:bg-blue-100 border border-blue-300 rounded-xl font-bold text-blue-800 text-xs flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            <span>GCash</span>
+                        </button>
+                        <button onclick="PaymentsModule.processPayment('Maya')" class="p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl font-bold text-emerald-800 text-xs flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            <span>Maya</span>
+                        </button>
+                        <button onclick="PaymentsModule.processPayment('Credit/Debit Card')" class="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            <span>Card</span>
+                        </button>
+                        <button onclick="PaymentsModule.processPayment('Cash')" class="p-3 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-xl font-bold text-slate-800 text-xs flex items-center justify-center space-x-2 transition cursor-pointer">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                            <span>Cash</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD PAYMENT METHOD MODAL (SELECTION CATALOG) -->
+    <div id="add-payment-method-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white max-w-lg w-full rounded-2xl shadow-2xl overflow-hidden border border-hirna-200 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div class="bg-gradient-to-r from-hirna-800 to-hirna-900 p-5 text-white flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-gold-500/20 border border-gold-500/30 flex items-center justify-center text-gold-400 text-lg">
+                        💳
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Select Payment Method</h3>
+                        <p class="text-xs text-hirna-200">Tap a payment option to add it directly to your booking checkout</p>
+                    </div>
+                </div>
+                <button type="button" onclick="PaymentsModule.closeAddMethodModal()" class="text-white/80 hover:text-white transition p-1 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-3 overflow-y-auto flex-1">
+                <div class="p-3 bg-amber-50 rounded-xl border border-amber-200/80 flex items-center space-x-2.5 text-amber-900 text-xs">
+                    <span class="text-lg">📲</span>
+                    <p class="leading-tight"><strong class="font-bold">QR Payment (QR Ph):</strong> Official Bangko Sentral interoperable QR standard supported by GCash, Maya, BDO, BPI, UnionBank, and all major Philippine banking apps.</p>
+                </div>
+
+                <div id="payment-catalog-list" class="space-y-2.5">
+                    <!-- Populated dynamically by PaymentsModule.renderCatalogModal() -->
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between flex-shrink-0 text-xs">
+                <span class="text-slate-500 text-[11px] flex items-center space-x-1">
+                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    <span>Instant booking sync • No manual card binding needed</span>
+                </span>
+                <button type="button" onclick="PaymentsModule.closeAddMethodModal()" class="py-2 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-200 transition cursor-pointer">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RBAC ACCOUNT MODAL (ADD / EDIT) -->
+    <div id="rbac-account-modal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white max-w-md w-full rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div class="bg-gradient-to-r from-hirna-900 via-hirna-800 to-slate-900 p-5 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gold-500 text-hirna-950 flex items-center justify-center font-black text-base shadow">
+                        👑
+                    </div>
+                    <div>
+                        <h3 id="rbac-modal-title" class="text-sm font-black uppercase text-white">Configure User Account</h3>
+                        <p class="text-[11px] text-hirna-200">Assign roles, email address, and authentication rule</p>
+                    </div>
+                </div>
+                <button type="button" onclick="SSOGateway.closeAccountModal()" class="text-slate-400 hover:text-white transition p-1 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <form id="rbac-account-form" onsubmit="SSOGateway.handleSaveAccount(event)" class="p-6 space-y-4 text-xs">
+                <input type="hidden" id="rbac-account-original-email" value="">
+
+                <div>
+                    <label class="block text-slate-700 font-bold mb-1">Full Name / Display Title</label>
+                    <input type="text" id="rbac-account-name" required placeholder="e.g. Master SuperAdmin" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-slate-700 font-bold mb-1">Email Address (Gmail / Corporate ID)</label>
+                    <input type="email" id="rbac-account-email" required placeholder="e.g. superadmin.official@gmail.com" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none">
+                    <p class="text-[10px] text-slate-500 mt-1">Real emails (e.g. @gmail.com) receive real 6-digit OTPs in their inbox.</p>
+                </div>
+
+                <div>
+                    <label class="block text-slate-700 font-bold mb-1">Assign Access Role</label>
+                    <select id="rbac-account-role" required onchange="SSOGateway.handleRoleChange(this.value)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold focus:ring-2 focus:ring-gold-500 focus:outline-none cursor-pointer">
+                        <option value="superadmin">👑 SuperAdmin (Full Access & All 10 Subsystems)</option>
+                        <option value="admin">💼 Operations Admin (Booking, Fleet, Payments)</option>
+                        <option value="customer">👤 Customer / Passenger (Booking & Invoices)</option>
+                    </select>
+                </div>
+
+                <div class="p-3 bg-slate-100 rounded-xl border border-slate-200 text-slate-700 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-[11px]">System Password Rule:</span>
+                        <span id="rbac-password-preview" class="font-mono font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded text-[11px]">superadmin</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500">For defense compliance, the password strictly equals the role name (e.g., password for admin is <code>admin</code>).</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5 pt-2">
+                    <button type="button" onclick="SSOGateway.closeAccountModal()" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-hirna-950 text-xs font-black shadow-md transition cursor-pointer">
+                        Save Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- LOGOUT CONFIRMATION MODAL -->
+    <div id="logout-confirm-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-sm w-full p-6 text-center space-y-4 transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto shadow-inner">
+                <svg class="w-7 h-7 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            </div>
+            <div>
+                <h3 class="text-base font-black text-slate-900">Are you sure you want to log out?</h3>
+                <p class="text-xs text-slate-500 mt-1">You will need to sign in again to access the Hirna Admin Portal.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5 pt-2">
+                <button type="button" onclick="AuthModule.cancelLogout()" class="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer">
+                    No, Stay
+                </button>
+                <button type="button" onclick="AuthModule.proceedLogout()" class="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-lg shadow-rose-600/30 transition cursor-pointer">
+                    Yes, Log Out
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- HOME ADDRESS INPUT MODAL                                          -->
+    <!-- ================================================================= -->
+    <div id="home-address-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4 transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-gold-100 text-gold-800 flex items-center justify-center shadow-inner">
+                        <svg class="w-5 h-5 text-gold-700" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    </div>
+                    <div>
+                        <h3 id="home-modal-title" class="text-sm font-black text-slate-900">Input Home Address</h3>
+                        <p class="text-[11px] text-slate-500">Save your primary residence for 1-tap bookings</p>
+                    </div>
+                </div>
+                <button type="button" onclick="BookingModule.closeHomeAddressModal()" class="text-slate-400 hover:text-slate-700 transition p-1 cursor-pointer"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700">Home Address Details</label>
+                        <button type="button" id="home-address-input-field-clear-btn" onclick="BookingModule.clearAddressInput('home-address-input-field')" class="hidden text-[10px] text-slate-400 hover:text-rose-600 font-bold transition cursor-pointer flex items-center space-x-0.5"><svg class="w-3 h-3 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg><span>Clear</span></button>
+                    </div>
+                    <textarea id="home-address-input-field" rows="3" placeholder="Enter your full home address (e.g. Unit 402, Building 3, Emerald Ave, Pasig City)" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl p-3 font-medium focus:ring-2 focus:ring-hirna-500 focus:bg-white text-slate-800 transition outline-none resize-none"></textarea>
+                </div>
+
+                <!-- Quick fill with current location -->
+                <button type="button" onclick="BookingModule.fillHomeWithLocation()" class="w-full py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-200 transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+                    <span>Use your current location as Home</span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-100">
+                <button type="button" onclick="BookingModule.closeHomeAddressModal()" class="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer">
+                    Cancel
+                </button>
+                <button type="button" id="btn-save-home-address" onclick="BookingModule.saveHomeAddress()" class="w-full py-2.5 px-4 rounded-xl bg-hirna-700 hover:bg-hirna-800 text-white text-xs font-bold shadow-lg shadow-hirna-700/30 transition cursor-pointer">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- HOME ADDRESS VIEW MODAL                                           -->
+    <!-- ================================================================= -->
+    <div id="home-address-view-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4 transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center space-x-3 border-b border-slate-100 pb-3">
+                <div class="w-10 h-10 rounded-2xl bg-gold-100 text-gold-700 flex items-center justify-center shadow-inner">
+                    <svg class="w-6 h-6 text-gold-700" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-slate-900">Your Home Address</h3>
+                    <p class="text-[11px] text-slate-500">Registered primary residence location</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Full Address</span>
+                <p id="view-home-address-text" class="text-xs font-bold text-slate-800 leading-relaxed break-words whitespace-pre-wrap select-all"></p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-100">
+                <button type="button" onclick="BookingModule.closeHomeAddressViewModal()" class="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer flex items-center justify-center space-x-1">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    <span>Back</span>
+                </button>
+                <button type="button" onclick="BookingModule.editHomeAddressFromView()" class="w-full py-2.5 px-4 rounded-xl bg-gold-500 hover:bg-gold-400 text-hirna-950 text-xs font-black shadow-lg shadow-gold-500/20 transition cursor-pointer flex items-center justify-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span>Edit</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- HOME ADDRESS CONFIRMATION MODAL ("Home Address Added")           -->
+    <!-- ================================================================= -->
+    <div id="home-address-confirmation-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-emerald-200 max-w-sm w-full p-6 text-center space-y-3 transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-inner">
+                <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div>
+                <h3 id="home-confirm-title" class="text-base font-black text-slate-900">Home Address Added</h3>
+                <p id="home-confirm-subtitle" class="text-xs text-slate-500 mt-1">Your home location is now saved and available in your address suggestions.</p>
+            </div>
+            <div class="pt-2">
+                <button type="button" onclick="BookingModule.closeHomeAddressConfirmModal()" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-lg shadow-emerald-600/30 transition cursor-pointer">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- DELETE SAVED ROUTE / PLACE CONFIRMATION MODAL                     -->
+    <!-- ================================================================= -->
+    <div id="delete-route-confirmation-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-rose-200 max-w-sm w-full p-6 text-center space-y-4 transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto shadow-inner">
+                <svg class="w-7 h-7 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <div>
+                <h3 class="text-base font-black text-slate-900" id="delete-confirm-title">Delete Saved Place?</h3>
+                <p class="text-xs text-slate-500 mt-1" id="delete-confirm-desc">Are you sure you want to delete this route from your Saved Places? This cannot be undone.</p>
+                <div id="delete-route-confirm-name" class="mt-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 break-words"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5 pt-1">
+                <button type="button" onclick="BookingModule.cancelDeleteSavedRoute()" class="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer">
+                    Cancel
+                </button>
+                <button type="button" id="btn-delete-confirm-action" onclick="BookingModule.confirmDeleteSavedRoute()" class="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-lg shadow-rose-600/25 transition cursor-pointer">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- GPS PERMISSION MODAL ("Allow Hirna to use your location?")       -->
+    <!-- ================================================================= -->
+    <div id="gps-permission-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-emerald-200 max-w-sm w-full p-6 text-center space-y-4 transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto shadow-inner">
+                <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
+            </div>
+            <div>
+                <h3 class="text-base font-black text-slate-900">Use Your Current Location?</h3>
+                <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                    Hirna requires access to your device's GPS to find your location and set your pickup point accurately.
+                </p>
+                <div class="mt-3 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 flex items-center space-x-2 text-left">
+                    <svg class="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    <span>Your browser may display a prompt saying <strong>"localhost wants to know your location"</strong>. Please click <strong>Allow</strong>.</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5 pt-1">
+                <button type="button" onclick="BookingModule.denyGPSPermission()" class="w-full py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer">
+                    Don't Allow
+                </button>
+                <button type="button" onclick="BookingModule.confirmGPSPermission()" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-lg shadow-emerald-600/25 transition cursor-pointer">
+                    Allow Location
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- WINDOWS & BROWSER LOCATION SETTINGS GUIDE MODAL                   -->
+    <!-- ================================================================= -->
+    <div id="windows-location-guide-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 text-center space-y-4 transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-inner">
+                <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+            <div>
+                <h3 class="text-base font-black text-slate-900">Enable Location in Windows & Chrome</h3>
+                <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                    Google Chrome cannot access your coordinates because Location Services are disabled in Windows Settings or blocked in browser permissions.
+                </p>
+                <div class="mt-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 text-left space-y-2.5">
+                    <div class="flex items-start space-x-2.5">
+                        <div class="w-5 h-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">1</div>
+                        <div>
+                            <strong class="text-slate-800 font-bold block">Windows: "Let Windows and apps access your location"</strong>
+                            <span class="text-slate-500 block text-[11px]">Click the button below to open Windows Settings. Turn ON <em>"Location services"</em> and <em>"Let desktop apps access your location"</em>.</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-2.5">
+                        <div class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">2</div>
+                        <div>
+                            <strong class="text-slate-800 font-bold block">Chrome: Site Location Permission</strong>
+                            <span class="text-slate-500 block text-[11px]">Click the <strong>site settings / sliders icon</strong> on the left side of Chrome's address bar, and set Location to <strong>Allow</strong>.</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-2.5 border-t border-slate-200/60 pt-2">
+                        <div class="w-5 h-5 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">3</div>
+                        <div>
+                            <strong class="text-slate-800 font-bold block">Windows Service: "Geolocation Service" (lfsvc)</strong>
+                            <span class="text-slate-500 block text-[11px]">If Location is already ON in Settings: Windows <em>"Geolocation Service" (lfsvc)</em> may be stopped/disabled. Run <code class="px-1 py-0.5 bg-slate-200 text-purple-700 rounded font-mono text-[10px]">fix-windows-location.bat</code> in the project folder, or press <kbd class="px-1 py-0.5 bg-slate-200 rounded font-mono text-[10px]">Win+R</kbd> &rarr; <code class="text-purple-700 font-mono text-[10px]">services.msc</code> &rarr; set <strong>Geolocation Service</strong> to <strong>Manual</strong> and click <strong>Start</strong>.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-2 pt-1">
+                <a href="ms-settings:privacy-location" onclick="DeviceLocationManager.openWindowsLocationSettings(event)" class="w-full py-3 px-4 rounded-xl bg-hirna-700 hover:bg-hirna-800 text-white text-xs font-bold shadow-lg shadow-hirna-700/25 transition flex items-center justify-center space-x-2 cursor-pointer">
+                    <svg class="w-4 h-4 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    <span>Open Windows Location Settings ↗</span>
+                </a>
+                <button type="button" onclick="DeviceLocationManager.enableSimulatedFallback(true, 'User selected simulated GPS.'); DeviceLocationManager.closeWindowsLocationGuideModal();" class="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-hirna-950 text-xs font-black transition shadow-xs cursor-pointer flex items-center justify-center space-x-1.5">
+                    <span>📍 Use Simulated Metro Manila GPS (Recommended for other PCs)</span>
+                </button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="DeviceLocationManager.requestLocation(); DeviceLocationManager.closeWindowsLocationGuideModal();" class="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition cursor-pointer">
+                        Retry Live GPS
+                    </button>
+                    <button type="button" onclick="DeviceLocationManager.closeWindowsLocationGuideModal()" class="w-full py-2 px-3 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- FOOD ITEM QUANTITY SELECTION MODAL                                -->
+    <!-- ================================================================= -->
+    <div id="food-quantity-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-sm w-full p-5 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-start justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center space-x-3">
+                    <div id="food-modal-icon" class="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 text-2xl flex items-center justify-center flex-shrink-0 shadow-xs">
+                        🥟
+                    </div>
+                    <div>
+                        <h3 id="food-modal-title" class="text-sm font-black text-slate-900 leading-tight">Item Title</h3>
+                        <p id="food-modal-desc" class="text-[11px] text-slate-500 mt-0.5 line-clamp-2">Description</p>
+                        <span id="food-modal-price" class="text-xs font-black text-amber-600 font-mono mt-1 block">₱0.00</span>
+                    </div>
+                </div>
+                <button type="button" onclick="FoodDeliveryModule.closeQuantityModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Quantity Selector (+, -, typed number) -->
+            <div class="space-y-1.5">
+                <label class="text-xs font-bold text-slate-700 block">Select Quantity Amount</label>
+                <div class="flex items-center justify-center space-x-3 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                    <button type="button" onclick="FoodDeliveryModule.updateModalQty(-1)" class="w-10 h-10 rounded-xl bg-white hover:bg-slate-100 active:scale-95 border border-slate-200 text-slate-800 font-black text-lg flex items-center justify-center transition shadow-xs cursor-pointer select-none">
+                        −
+                    </button>
+                    <input type="number" id="food-modal-qty" min="1" max="99" value="1" oninput="FoodDeliveryModule.handleModalQtyInput(this.value)" class="w-16 h-10 text-center font-mono font-black text-base bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-hidden text-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" autocomplete="chrome-off" data-lpignore="true" data-form-type="other">
+                    <button type="button" onclick="FoodDeliveryModule.updateModalQty(1)" class="w-10 h-10 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-hirna-950 font-black text-lg flex items-center justify-center transition shadow-xs cursor-pointer select-none">
+                        +
+                    </button>
+                </div>
+            </div>
+
+            <!-- Special Instructions -->
+            <div class="space-y-1">
+                <label class="text-[11px] font-semibold text-slate-600 block">Special Instructions (Optional)</label>
+                <div class="relative">
+                    <input type="text" id="food-modal-notes" placeholder="e.g. Less spicy, extra sauce, separate packaging..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-8 focus:ring-2 focus:ring-amber-500 focus:bg-white text-slate-800" autocomplete="chrome-off" data-lpignore="true" data-form-type="other" spellcheck="false">
+                    <button type="button" id="food-modal-notes-clear-btn" onclick="BookingModule.clearInput('food-modal-notes')" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-600 hover:text-slate-900 text-[10px] font-black flex items-center justify-center transition cursor-pointer" title="Clear"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                </div>
+            </div>
+
+            <!-- Subtotal & Actions -->
+            <div class="pt-2 flex items-center justify-between border-t border-slate-100">
+                <div>
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Item Total</span>
+                    <span id="food-modal-subtotal" class="text-base font-black text-slate-900 font-mono">₱0.00</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="FoodDeliveryModule.closeQuantityModal()" class="py-2.5 px-4 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="FoodDeliveryModule.confirmAddToCart()" class="py-2.5 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-gold-500 hover:from-amber-400 hover:to-gold-400 text-hirna-950 text-xs font-black shadow-md transition transform active:scale-95 cursor-pointer">
+                        Add to Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- DRIVER ASSIGNMENT LOADING MODAL ("Assigning driver nearby...")   -->
+    <!-- ================================================================= -->
+    <div id="driver-assignment-modal" class="hidden fixed inset-0 z-[9999] overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-hirna-950 border border-hirna-700/80 rounded-3xl shadow-2xl max-w-md w-full p-6 text-center space-y-5 text-white transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <!-- Radar sweep / pulse visual -->
+            <div class="relative w-28 h-28 mx-auto flex items-center justify-center">
+                <div class="absolute inset-0 rounded-full border-2 border-gold-500/30 animate-ping duration-1000"></div>
+                <div class="absolute inset-2 rounded-full border border-gold-400/40 animate-pulse"></div>
+                <div class="absolute inset-6 rounded-full bg-gold-500/10 border border-gold-500/50"></div>
+                <div class="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-gold-400 to-amber-600 text-hirna-950 flex items-center justify-center shadow-lg shadow-gold-500/20 text-2xl font-black">
+                    <span id="assign-radar-icon">🚕</span>
+                </div>
+            </div>
+
+            <div>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-gold-500/20 text-gold-300 border border-gold-500/40 mb-2">
+                    <span class="w-2 h-2 rounded-full bg-gold-400 animate-pulse mr-1.5"></span>
+                    Hirna Smart Dispatch
+                </span>
+                <h3 class="text-xl font-black text-white" id="assign-modal-title">Assigning driver nearby...</h3>
+                <p class="text-xs text-slate-300 mt-1.5 leading-relaxed" id="assign-modal-status">
+                    Searching for available Hirna drivers within 2.0 km radius...
+                </p>
+            </div>
+
+            <!-- Match stages indicator -->
+            <div class="space-y-2 text-left bg-hirna-900/80 rounded-2xl p-3.5 border border-hirna-800 text-xs">
+                <div class="flex items-center space-x-2.5" id="assign-step-1">
+                    <span class="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center text-[10px] font-bold">✓</span>
+                    <span class="text-slate-300">Route & fare parameters verified</span>
+                </div>
+                <div class="flex items-center space-x-2.5" id="assign-step-2">
+                    <span class="w-4 h-4 rounded-full bg-gold-500/20 text-gold-400 border border-gold-500/40 flex items-center justify-center text-[10px] font-bold animate-spin">⟳</span>
+                    <span class="text-white font-medium" id="assign-step-2-text">Connecting to nearest active drivers...</span>
+                </div>
+                <div class="flex items-center space-x-2.5 opacity-40" id="assign-step-3">
+                    <span class="w-4 h-4 rounded-full bg-slate-700 text-slate-400 flex items-center justify-center text-[10px]">3</span>
+                    <span class="text-slate-400" id="assign-step-3-text">Driver telemetry lock</span>
+                </div>
+            </div>
+
+            <!-- Driver Reveal Preview (revealed upon matching) -->
+            <div id="assign-driver-preview" class="hidden bg-hirna-900 border border-gold-500/40 rounded-2xl p-3.5 text-left flex items-center space-x-3.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div class="w-14 h-14 rounded-2xl border-2 border-gold-400 mx-auto flex items-center justify-center shadow-lg overflow-hidden">
+                    <img src="assets/hirna-badge.png" alt="Hirna Official Logo" class="w-full h-full object-cover">
+                </div>
+                </div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    PAID & SETTLED
+                </span>
+            </div>
+
+            <!-- Receipt Metadata Grid -->
+            <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Booking Code</span>
+                    <span id="rcpt-booking-code" class="font-mono font-bold text-slate-800">HIRNA-000000</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Invoice / Reference</span>
+                    <span id="rcpt-invoice-no" class="font-mono font-bold text-slate-800">INV-2026-00000</span>
+                </div>
+                <div class="pt-1">
+                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Date & Time</span>
+                    <span id="rcpt-datetime" class="text-slate-700 font-medium">2026-09-18 15:30</span>
+                </div>
+                <div class="pt-1 text-right">
+                    <span class="text-slate-400 block text-[10px] uppercase font-bold">Settlement Via</span>
+                    <span id="rcpt-method" class="font-bold text-blue-600">GCash</span>
+                </div>
+            </div>
+
+            <!-- Trip route points -->
+            <div class="space-y-1.5 text-xs bg-white p-3 rounded-xl border border-slate-100">
+                <div class="flex items-start space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 mt-1 flex-shrink-0"></span>
+                    <div class="truncate">
+                        <span class="text-[9px] uppercase font-bold text-slate-400 block">Pickup</span>
+                        <span id="rcpt-pickup" class="text-slate-800 font-semibold truncate block">Ayala Ave, Makati</span>
+                    </div>
+                </div>
+                <div class="flex items-start space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 mt-1 flex-shrink-0"></span>
+                    <div class="truncate">
+                        <span class="text-[9px] uppercase font-bold text-slate-400 block">Dropoff</span>
+                        <span id="rcpt-dropoff" class="text-slate-800 font-semibold truncate block">SM Megamall, Ortigas</span>
+                    </div>
+                </div>
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
+                    <span id="rcpt-passenger">Passenger: Juan Dela Cruz</span>
+                    <span id="rcpt-driver" class="font-medium text-slate-800">Driver: Ricardo Dalisay</span>
+                </div>
+            </div>
+
+            <!-- Itemized Charges -->
+            <div class="space-y-1.5 text-xs border-t border-b border-slate-100 py-2.5">
+                <div class="flex justify-between text-slate-600">
+                    <span>Base Flagdown</span>
+                    <span id="rcpt-base" class="font-mono text-slate-800">₱45.00</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                    <span>Distance Traveled</span>
+                    <span id="rcpt-dist" class="font-mono text-slate-800">₱85.00</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                    <span>Travel Time</span>
+                    <span id="rcpt-time" class="font-mono text-slate-800">₱25.00</span>
+                </div>
+                <div class="flex justify-between text-slate-600">
+                    <span>Dynamic Surge</span>
+                    <span id="rcpt-surge" class="font-mono text-amber-700">1.0x (₱0.00)</span>
+                </div>
+                <div class="flex justify-between text-slate-400 text-[10px]">
+                    <span>VAT (12% Included)</span>
+                    <span id="rcpt-vat" class="font-mono">₱18.21</span>
+                </div>
+                <div class="pt-2 border-t border-slate-200 flex justify-between items-baseline font-black">
+                    <span class="text-sm text-slate-900">Total Amount Paid</span>
+                    <span id="rcpt-total" class="text-lg font-mono text-hirna-800">₱155.00</span>
+                </div>
+            </div>
+
+            <!-- Dynamic QR Ph Verification Section (Shown when paid via QR) -->
+            <div id="rcpt-qr-section" class="hidden flex-col items-center justify-center p-3 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-2">
+                <div class="flex items-center space-x-1.5 text-xs font-bold text-slate-800">
+                    <span class="text-sm">📲</span>
+                    <span>QR Ph National Standard Verification</span>
+                </div>
+                <div class="bg-white p-2 rounded-xl shadow-xs border border-slate-200 inline-block">
+                    <img id="rcpt-qr-image" src="" alt="QR Ph Receipt Code" class="w-24 h-24 object-contain">
+                </div>
+                <p class="text-[10px] text-slate-500 font-mono">Scan or verify with any QR Ph BSP-compliant app (GCash/Maya/Bank)</p>
+            </div>
+
+
+            <!-- Actions -->
+            <div class="grid grid-cols-2 gap-2 pt-1">
+                <button type="button" onclick="window.print()" class="w-full py-2.5 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    <span>Print Receipt</span>
+                </button>
+                <button type="button" onclick="BookingModule.closeReceipt()" class="w-full py-2.5 px-3 rounded-xl bg-hirna-700 hover:bg-hirna-800 text-white text-xs font-black shadow-lg shadow-hirna-700/20 transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                    <span>OK</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2"></div>
+
+    <!-- JAVASCRIPT BUNDLE (Cache-Busted) -->
+    <script src="assets/js/ai-engines.js?v=20260916_rev1"></script>
+    <script src="assets/js/supabase-config.js?v=20260916_rev1"></script>
+    <script src="assets/js/auth.js?v=20260916_rev1"></script>
+    <script src="assets/js/sso-gateway.js?v=20260916_rev1"></script>
+    <script src="assets/js/booking.js?v=20260921_routefix"></script>
+    <script src="assets/js/payments.js?v=20260919_pay1"></script>
+    <script src="assets/js/crm.js?v=20260916_rev1"></script>
+    <script src="assets/js/gps-playback.js?v=20260916_rev1"></script>
+    <script src="assets/js/analytics.js?v=20260916_rev1"></script>
+    <script src="assets/js/audit.js?v=20260916_rev1"></script>
+    <script src="assets/js/integrations.js?v=20260916_rev1"></script>
+    <script src="assets/js/hirna-app-bridge.js?v=20260918_rev1"></script>
+    <script src="assets/js/app.js?v=20260916_rev1"></script>
+</body>
+</html>

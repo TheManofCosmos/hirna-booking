@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HIRNA Automated Test Suite</title>
+    <script>
+        // Pre-seed an active SuperAdmin session so auth.js does not bounce on initial load
+        localStorage.setItem('hirna_auth_user', JSON.stringify({
+            email: "superadmin@hirna.ph",
+            name: "SuperAdmin Hirna",
+            role: "superadmin",
+            roleTitle: "SuperAdmin (Full Access)"
+        }));
+    </script>
+    <script src="assets/js/supabase-config.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/payments.js"></script>
+    <script src="assets/js/crm.js"></script>
+    <script src="assets/js/sso-gateway.js"></script>
+</head>
+<body style="font-family: monospace; padding: 20px; background: #0f172a; color: #f8fafc;">
+    <h1>HIRNA Test Suite Execution</h1>
+    <div id="test-output">Running tests...</div>
+
+    <script>
+        const results = [];
+        function assert(cond, name, details = "") {
+            if (cond) {
+                results.push(`[PASS] ${name}`);
+            } else {
+                results.push(`[FAIL] ${name} ${details ? ': ' + details : ''}`);
+            }
+        }
+
+        async function runTests() {
+            try {
+                // TEST 1: Check Default Accounts & Passenger Naming
+                const defaultAccs = AuthModule.defaultAccounts;
+                const hasPassenger = defaultAccs.some(a => a.role === 'passenger' && a.email === 'passenger@hirna.ph' && a.password === 'passenger');
+                assert(hasPassenger, "Default accounts include passenger@hirna.ph with role 'passenger' and password 'passenger'");
+
+                const hasNoCustomerRole = !defaultAccs.some(a => a.role === 'customer');
+                assert(hasNoCustomerRole, "No default accounts have role 'customer' (migrated to 'passenger')");
+
+                // TEST 2: RBAC SuperAdmin
+                const superAdminUser = defaultAccs.find(a => a.role === 'superadmin');
+                AuthModule.currentUser = superAdminUser;
+                assert(AuthModule.isSuperAdmin() === true, "isSuperAdmin() returns true for SuperAdmin");
+                assert(AuthModule.isAdmin() === true, "isAdmin() returns true for SuperAdmin");
+                assert(AuthModule.isPassenger() === false, "isPassenger() returns false for SuperAdmin");
+                assert(AuthModule.canEditPasswords() === true, "SuperAdmin canEditPasswords() returns true");
+                assert(AuthModule.canDeleteRecords() === true, "SuperAdmin canDeleteRecords() returns true");
+                assert(AuthModule.canManageAccounts() === true, "SuperAdmin canManageAccounts() returns true");
+
+                // TEST 3: RBAC Admin
+                const adminUser = defaultAccs.find(a => a.role === 'admin');
+                AuthModule.currentUser = adminUser;
+                assert(AuthModule.isSuperAdmin() === false, "isSuperAdmin() returns false for Admin");
+                assert(AuthModule.isAdmin() === true, "isAdmin() returns true for Admin");
+                assert(AuthModule.isPassenger() === false, "isPassenger() returns false for Admin");
+                assert(AuthModule.canEditPasswords() === false, "Admin canEditPasswords() returns false");
+                assert(AuthModule.canDeleteRecords() === false, "Admin canDeleteRecords() returns false");
+                assert(AuthModule.canManageAccounts() === false, "Admin canManageAccounts() returns false");
+
+                // TEST 4: RBAC Passenger
+                const passengerUser = defaultAccs.find(a => a.role === 'passenger');
+                AuthModule.currentUser = passengerUser;
+                assert(AuthModule.isSuperAdmin() === false, "isSuperAdmin() returns false for Passenger");
+                assert(AuthModule.isAdmin() === false, "isAdmin() returns false for Passenger");
+                assert(AuthModule.isPassenger() === true, "isPassenger() returns true for Passenger");
+                assert(AuthModule.canEditPasswords() === false, "Passenger canEditPasswords() returns false");
+                assert(AuthModule.canDeleteRecords() === false, "Passenger canDeleteRecords() returns false");
+                assert(AuthModule.canManageAccounts() === false, "Passenger canManageAccounts() returns false");
+
+                // TEST 5: Password Editing Permissions
+                // As passenger:
+                let resPass = AuthModule.updatePassword('admin@hirna.ph', 'hacked123');
+                assert(resPass.success === false, "Passenger cannot update passwords");
+
+                // As admin:
+                AuthModule.currentUser = adminUser;
+                let resAdmin = AuthModule.updatePassword('passenger@hirna.ph', 'hacked123');
+                assert(resAdmin.success === false, "Admin cannot update passwords");
+
+                // As superadmin:
+                AuthModule.currentUser = superAdminUser;
+                let resSuper = AuthModule.updatePassword('passenger@hirna.ph', 'new_passenger_pass_2026');
+                assert(resSuper.success === true, "SuperAdmin can update passwords");
+                const updatedPassenger = AuthModule.accounts.find(a => a.email === 'passenger@hirna.ph');
+                assert(updatedPassenger && updatedPassenger.password === 'new_passenger_pass_2026', "Updated password persisted in accounts list");
+
+                // TEST 6: Permanent Persistence across SupabaseBridge
+                await SupabaseBridge.init();
+                const testBooking = {
+                    id: "TEST-BK-999",
+                    booking_code: "HIRNA-TEST-999",
+                    passenger_name: "Test Juan",
+                    service_type: "transport",
+                    total_fare: 250.00,
+                    payment_method: "GCash"
+                };
+                SupabaseBridge.insert('bookings', testBooking);
+                const savedBookingsRaw = localStorage.getItem('hirna_db_bookings');
+                assert(savedBookingsRaw !== null, "New booking is saved into localStorage (hirna_db_bookings)");
+                const parsedBookings = JSON.parse(savedBookingsRaw || "[]");
+                assert(parsedBookings.some(b => b.booking_code === "HIRNA-TEST-999"), "Inserted booking exists in persisted localStorage");
+
+                // Test SuperAdmin deletion of records
+                const delRes = SupabaseBridge.delete('bookings', 'HIRNA-TEST-999');
+                assert(delRes === true, "SupabaseBridge.delete() returns true for existing record");
+                const afterDelRaw = localStorage.getItem('hirna_db_bookings');
+                const afterDel = JSON.parse(afterDelRaw || "[]");
+                assert(!afterDel.some(b => b.booking_code === "HIRNA-TEST-999"), "Deleted booking is permanently removed from localStorage");
+
+                // TEST 7: CRM Record Deletion RBAC
+                AuthModule.currentUser = adminUser;
+                assert(!AuthModule.canDeleteRecords(), "Admin cannot delete support tickets or feedback records");
+                AuthModule.currentUser = superAdminUser;
+                assert(AuthModule.canDeleteRecords(), "SuperAdmin can delete records across all modules");
+
+                // TEST 8: Session Persistence
+                AuthModule.setSession(superAdminUser);
+                assert(localStorage.getItem('hirna_auth_user') !== null, "Session is stored permanently in localStorage");
+                assert(sessionStorage.getItem('hirna_auth_user') !== null, "Session is stored in sessionStorage");
+
+                // TEST 9: Login verification of Passenger
+                const loginAttempt = AuthModule.login('passenger@hirna.ph', 'new_passenger_pass_2026');
+                assert(loginAttempt.success === true, "AuthModule.login succeeds with updated passenger password");
+                assert(loginAttempt.user.role === 'passenger', "AuthModule.login returns user with role 'passenger'");
+
+            } catch (err) {
+                results.push(`[ERROR] Exception during tests: ${err.message}\n${err.stack}`);
+            }
+
+            const outputEl = document.getElementById('test-output');
+            outputEl.innerHTML = `<pre id="test-results">\n${results.join('\n')}\n</pre>`;
+        }
+
+        window.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>

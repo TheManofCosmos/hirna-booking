@@ -1,0 +1,73 @@
+/* Hirna Mobility Solutions - Custom Styles & Color Palette */
+
+@layer utilities {
+    .glass-card {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+}
+
+:root {
+    --hirna-red: #B91C1C;
+    --hirna-red-dark: #991B1B;
+    --hirna-gold: #F59E0B;
+    --hirna-gold-dark: #D97706;
+}
+
+.custom-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.car-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+/* Custom scrollbar matching Hirna theme */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #fdf2f2;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #fca5a5;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #ef4444;
+}
+
+/* License plate badge style from Hirna design */
+.plate-badge {
+    background-color: #0f172a;
+    color: #ffffff;
+    font-family: monospace;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #334155;
+    display: inline-block;
+}
+
+/* Remove up and down spinner arrows in quantity/number inputs to center number */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield !important;
+    appearance: textfield !important;
+}

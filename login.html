@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Hirna: Transport & Delivery</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        hirna: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            300: '#fca5a5',
+                            400: '#f87171',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                            950: '#450a0a',
+                            dark: '#6e1111'
+                        },
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="icon" type="image/png" href="assets/hirna-badge.png">
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex items-center justify-center p-4 selection:bg-gold-500 selection:text-hirna-950">
+
+    <!-- BACKGROUND GLOW DECORATIONS -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-hirna-700/30 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-gold-500/20 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- MAIN LOGIN CARD CONTAINER -->
+    <div class="relative z-10 w-full max-w-4xl bg-slate-900/90 border border-hirna-800/80 rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 backdrop-blur-xl">
+        
+        <!-- LEFT HERO PANEL (BRANDING) -->
+        <div class="lg:col-span-5 bg-gradient-to-br from-hirna-900 via-hirna-800 to-hirna-950 p-8 sm:p-10 flex flex-col justify-between items-center border-b lg:border-b-0 lg:border-r border-hirna-700/60 text-white relative overflow-hidden">
+            <!-- Background ambient glow -->
+            <div class="absolute -top-20 -left-20 w-48 h-48 bg-gold-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-20 -right-20 w-48 h-48 bg-hirna-600/30 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Top spacer for balanced vertical alignment -->
+            <div class="hidden lg:block w-full"></div>
+
+            <!-- Centered Brand Block -->
+            <div class="my-auto py-10 flex flex-col items-center justify-center text-center relative z-10 space-y-4 w-full">
+                <!-- Hirna Logo Badge -->
+                <div class="w-24 h-24 rounded-3xl border-2 border-gold-400 flex items-center justify-center shadow-2xl transform hover:scale-105 transition-transform duration-300 overflow-hidden">
+                    <img src="assets/hirna-badge.png" alt="Hirna Official Logo" class="w-full h-full object-cover">
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-wide text-white uppercase leading-tight">Hirna: Transport & Delivery</h1>
+                    <p class="text-xs text-gold-300 font-medium tracking-wide mt-1.5">Booking, Payments & Customer Experience</p>
+                </div>
+
+            </div>
+
+            <!-- Bottom Footnote -->
+            <div class="pt-6 border-t border-hirna-700/50 w-full mt-auto relative z-10 flex items-center justify-between text-[11px] text-hirna-300">
+                <span>© 2026 Hirna Mobility Solutions</span>
+            </div>
+        </div>
+
+        <!-- RIGHT FORM PANEL (INPUTS FOR EMAIL, PASSWORD & OTP) -->
+        <div class="lg:col-span-7 p-8 sm:p-10 flex flex-col justify-center space-y-6">
+            
+            <div>
+                <!-- Top Header & App Button -->
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 id="panel-title" class="text-lg font-black text-white">Sign In to Your Account</h3>
+                        <p id="panel-subtitle" class="text-xs text-slate-400">Enter your email address and password</p>
+                    </div>
+                    <div class="relative" id="hirna-app-btn-wrapper">
+                        <button type="button" onclick="HirnaAppBridge.handleAppClick(event)" data-hirna-app-btn class="hirna-app-trigger px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-gold-400 text-xs font-bold rounded-xl border border-slate-700 transition flex items-center space-x-1.5 shadow-sm hover:border-gold-500/50 cursor-pointer">
+                            <svg class="w-3.5 h-3.5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Download Hirna App</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error Alert Box -->
+                <div id="login-error-alert" class="p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl hidden mb-4"></div>
+
+                <!-- ========================================== -->
+                <!-- STEP 1: Main Email & Password Form        -->
+                <!-- ========================================== -->
+                <form id="standalone-login-form" class="space-y-4 text-xs">
+                    
+                    <!-- Identifier Field: Email Mode -->
+                    <div id="field-email-container">
+                        <label class="block text-slate-300 font-bold mb-1.5">Email Address</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            </span>
+                            <input type="email" id="input-identifier-email" value="example@gmail.com" placeholder="e.g. example@gmail.com" class="w-full pl-10 pr-4 py-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
+                        </div>
+                    </div>
+
+                    <!-- Password / PIN Field Container -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label id="label-secret-input" class="text-slate-300 font-bold">Password</label>
+                            <div class="flex items-center space-x-2.5">
+                                <button type="button" id="btn-toggle-pin-mode" onclick="togglePinMode()" class="text-[11px] text-amber-400 hover:text-amber-300 font-semibold cursor-pointer transition">
+                                    Use PIN instead
+                                </button>
+                                <span class="text-slate-600 text-[10px]">•</span>
+                                <a href="javascript:void(0)" onclick="openForgotPasswordFlow()" class="text-[11px] text-gold-400 hover:text-gold-300 font-semibold">Forgot Password?</a>
+                            </div>
+                        </div>
+
+                        <!-- Standard Password Input Mode -->
+                        <div id="container-password-mode" class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            </span>
+                            <input type="password" id="input-password" value="" placeholder="Enter password (e.g. superadmin, admin, customer)" class="w-full pl-10 pr-12 py-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
+                            <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 cursor-pointer" title="Toggle password visibility">
+                                <span id="eye-icon" class="flex items-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></span>
+                            </button>
+                        </div>
+
+                        <!-- 4-Digit PIN Input Mode (Hidden by default) -->
+                        <div id="container-pin-mode" class="hidden">
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M4 8h16M4 16h4"/></svg>
+                                </span>
+                                <input type="password" id="input-pin" maxlength="4" inputmode="numeric" placeholder="Enter 4-digit PIN (default: 1234)" class="w-full pl-10 pr-12 py-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-mono font-bold tracking-widest text-center text-base focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1.5 flex items-center justify-between">
+                                <span>Default Demo PIN: <strong class="text-gold-400 font-mono">1234</strong></span>
+                                <span>4 numeric digits</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me (Unchecked by default) -->
+                    <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="check-remember-me" class="w-4 h-4 rounded border-slate-700 bg-slate-800 text-gold-500 focus:ring-gold-500">
+                            <span>Remember this device</span>
+                        </label>
+                    </div>
+
+                    <!-- Submit Step 1 Button -->
+                    <button type="submit" id="btn-submit-login" class="w-full py-4 bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-hirna-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center space-x-2 mt-2 cursor-pointer">
+                        <span id="btn-submit-login-text">Sign In with Credentials</span>
+                        <svg class="w-4 h-4 text-hirna-950 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                </form>
+
+                <!-- ========================================== -->
+                <!-- STEP 2: 2-Factor OTP Verification Form     -->
+                <!-- ========================================== -->
+                <div id="otp-verification-section" class="hidden space-y-5 text-xs">
+                    
+                    <!-- Destination Email Indicator -->
+                    <div class="p-3.5 bg-slate-950/80 border border-slate-800 rounded-2xl flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center text-gold-400">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            </div>
+                            <div>
+                                <span class="text-[11px] text-slate-400 block">Code sent to:</span>
+                                <span id="otp-target-email" class="text-xs font-bold text-white font-mono">superadmin@hirna.ph</span>
+                            </div>
+                        </div>
+                        <button type="button" onclick="cancelOtpStep()" class="text-[11px] text-slate-400 hover:text-white transition underline cursor-pointer">Change</button>
+                    </div>
+
+                    <!-- 6-Digit OTP Inputs Grid -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2 px-1">
+                            <label class="text-slate-300 font-bold">Enter 6-Digit Email Verification Code</label>
+                            <button type="button" id="btn-autofill-otp" onclick="pasteFromClipboardOtp()" class="text-[11px] text-gold-400 hover:text-gold-300 font-semibold cursor-pointer transition" title="Paste code from clipboard">
+                                <span>Paste from Clipboard</span>
+                            </button>
+                        </div>
+                        <div class="flex justify-between items-center gap-2 max-w-sm mx-auto" id="otp-input-group">
+                            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit w-12 h-14 text-center text-xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-gold-400 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/30 focus:outline-none transition shadow-inner">
+                            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit w-12 h-14 text-center text-xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-gold-400 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/30 focus:outline-none transition shadow-inner">
+                            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit w-12 h-14 text-center text-xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-gold-400 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/30 focus:outline-none transition shadow-inner">
+                            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit w-12 h-14 text-center text-xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-gold-400 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/30 focus:outline-none transition shadow-inner">
+                            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit w-12 h-14 text-center text-xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-gold-400 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/30 focus:outline-none transition shadow-inner">
+                            <input type="text" maxlength="1" inputmode="numeric" class="otp-digit w-12 h-14 text-center text-xl font-mono font-black bg-slate-950 border border-slate-700 rounded-2xl text-gold-400 focus:border-gold-500 focus:ring-2 focus:ring-gold-500/30 focus:outline-none transition shadow-inner">
+                        </div>
+                    </div>
+
+                    <!-- Resend & Helper Row -->
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                        <span>Didn't receive code?</span>
+                        <button type="button" id="btn-resend-otp" onclick="resendOtpCode()" class="text-gold-400 hover:text-gold-300 font-bold transition cursor-pointer disabled:text-slate-600 disabled:cursor-not-allowed">
+                            Resend Code (<span id="resend-countdown">30</span>s)
+                        </button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="space-y-2 pt-2">
+                        <button type="button" id="btn-verify-otp" onclick="verifyOtpCode()" class="w-full py-4 bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-hirna-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center space-x-2 cursor-pointer">
+                            <span>Verify Code & Complete Sign In</span>
+                            <svg class="w-4 h-4 text-hirna-950 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        </button>
+
+                        <button type="button" onclick="cancelOtpStep()" class="w-full py-3 bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-2xl transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            <span>Back to Credential Login</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- STEP 3: Forgot / Reset Password Flow       -->
+                <!-- ========================================== -->
+                <div id="forgot-password-section" class="hidden space-y-4 text-xs">
+                    <div class="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-white block">Password Reset via Email OTP</span>
+                            <span class="text-[11px] text-slate-400">An OTP code will be sent by <code class="text-amber-300 font-mono">hirnasecurity@gmail.com</code> to verify ownership before resetting.</span>
+                        </div>
+                    </div>
+
+                    <!-- Target Account Email -->
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1.5">Account Email Address</label>
+                        <div class="flex gap-2">
+                            <input type="email" id="reset-target-email" placeholder="e.g. yourname@gmail.com" class="flex-1 px-3.5 py-3 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
+                            <button type="button" id="btn-request-reset-otp" onclick="requestResetOtpCode()" class="px-4 py-3 bg-gold-500 hover:bg-gold-400 text-hirna-950 font-black rounded-2xl transition whitespace-nowrap cursor-pointer">
+                                Send Code
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- OTP Code Input -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label class="text-slate-300 font-bold">6-Digit Reset Code</label>
+                            <span id="reset-resend-indicator" class="text-[11px] text-slate-500 font-medium">Click "Send Code" above</span>
+                        </div>
+                        <input type="text" id="reset-input-otp" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit code received in Gmail" class="w-full px-3.5 py-3 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-mono font-bold tracking-widest text-center text-base focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
+                    </div>
+
+                    <!-- New Password -->
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1.5">New Password</label>
+                        <input type="password" id="reset-new-password" placeholder="Enter new password" class="w-full px-3.5 py-3 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
+                    </div>
+
+                    <!-- Confirm New Password -->
+                    <div>
+                        <label class="block text-slate-300 font-bold mb-1.5">Confirm New Password</label>
+                        <input type="password" id="reset-confirm-password" placeholder="Re-type new password to confirm" class="w-full px-3.5 py-3 bg-slate-950/80 border border-slate-800 rounded-2xl text-white font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none transition">
+                    </div>
+
+                    <!-- Reset Actions -->
+                    <div class="space-y-2 pt-2">
+                        <button type="button" id="btn-confirm-password-reset" onclick="confirmPasswordReset()" class="w-full py-4 bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-hirna-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-xl transition transform active:scale-95 flex items-center justify-center space-x-2 cursor-pointer">
+                            <span>Reset Password & Sign In</span>
+                            <svg class="w-4 h-4 text-hirna-950 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                        </button>
+
+                        <button type="button" onclick="cancelForgotPasswordFlow()" class="w-full py-3 bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-2xl transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            <span>Cancel & Return to Login</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT AUTHENTICATION & OTP LOGIC -->
+    <script src="assets/js/supabase-config.js"></script>
+    <script src="assets/js/auth.js"></script>
+    <script src="assets/js/hirna-app-bridge.js"></script>
+    <script>
+        // State variables for 2-step OTP flow
+        let pendingUser = null;
+        let activeOtpCode = null;
+        let countdownTimer = null;
+        let countdownSeconds = 30;
+        let isPinMode = false;
+
+        // Toggle PIN vs Password Mode
+        function togglePinMode() {
+            if (isLockedOut) return;
+            isPinMode = !isPinMode;
+            const pwdContainer = document.getElementById('container-password-mode');
+            const pinContainer = document.getElementById('container-pin-mode');
+            const labelSecret = document.getElementById('label-secret-input');
+            const toggleBtn = document.getElementById('btn-toggle-pin-mode');
+            const submitBtnText = document.getElementById('btn-submit-login-text');
+            const errorAlert = document.getElementById('login-error-alert');
+            if (errorAlert) errorAlert.classList.add('hidden');
+
+            if (isPinMode) {
+                pwdContainer.classList.add('hidden');
+                pinContainer.classList.remove('hidden');
+                labelSecret.innerText = '4-Digit PIN';
+                toggleBtn.innerText = 'Use Password instead';
+                submitBtnText.innerText = 'Sign In with PIN';
+                const pinInput = document.getElementById('input-pin');
+                if (pinInput) {
+                    pinInput.value = '';
+                    pinInput.focus();
+                }
+            } else {
+                pwdContainer.classList.remove('hidden');
+                pinContainer.classList.add('hidden');
+                labelSecret.innerText = 'Password';
+                toggleBtn.innerText = 'Use PIN instead';
+                submitBtnText.innerText = 'Sign In with Credentials';
+                const pwdInput = document.getElementById('input-password');
+                if (pwdInput) pwdInput.focus();
+            }
+        }
+
+        function togglePasswordVisibility() {
+            const pwdInput = document.getElementById('input-password');
+            const eyeIcon = document.getElementById('eye-icon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                eyeIcon.innerHTML = `<svg class="w-4 h-4 text-slate-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>`;
+            } else {
+                pwdInput.type = 'password';
+                eyeIcon.innerHTML = `<svg class="w-4 h-4 text-slate-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+            }
+        }
+
+        // Generate 6-digit random code
+        function generateRandomOtp() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        // Trigger Real Gmail OTP Dispatch
+        function triggerRealEmailOtp(code, email, purpose = "login") {
+            // Dispatch via backend Gmail SMTP mailer
+            fetch(`/api/send-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}&purpose=${encodeURIComponent(purpose)}`)
+                .then(r => r.json())
+                .then(d => {
+                    console.log(`[Hirna Mailer] OTP (${purpose}) dispatched to:`, d.email, "via sender:", d.sender);
+                })
+                .catch(err => {
+                    console.error("[Hirna Mailer] Error dispatching email:", err);
+                });
+        }
+
+        async function pasteFromClipboardOtp() {
+            try {
+                const text = await navigator.clipboard.readText();
+                const digits = text.trim().replace(/\D/g, '');
+                if (digits.length >= 6) {
+                    const inputs = document.querySelectorAll('.otp-digit');
+                    for (let i = 0; i < inputs.length && i < 6; i++) {
+                        inputs[i].value = digits[i];
+                    }
+                    if (inputs[inputs.length - 1]) inputs[inputs.length - 1].focus();
+                    setTimeout(verifyOtpCode, 200);
+                } else {
+                    alert("No 6-digit code found in clipboard. Please copy your OTP from Gmail.");
+                }
+            } catch (err) {
+                // Clipboard permission blocked, focus first box
+                const first = document.querySelector('.otp-digit');
+                if (first) first.focus();
+            }
+        }
+
+        // Setup OTP Digits Auto-focus & Navigation
+        function setupOtpInputListeners() {
+            const inputs = document.querySelectorAll('.otp-digit');
+            inputs.forEach((input, index) => {
+                // Focus jump on character entry
+                input.addEventListener('input', (e) => {
+                    const val = e.target.value;
+                    if (val.length > 1) {
+                        e.target.value = val.charAt(val.length - 1);
+                    }
+                    if (e.target.value && index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    }
+                    // Auto-verify if all 6 digits entered
+                    const allDigits = Array.from(inputs).map(i => i.value).join('');
+                    if (allDigits.length === 6) {
+                        setTimeout(verifyOtpCode, 200);
+                    }
+                });
+
+                // Backspace jump back
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace') {
+                        if (!input.value && index > 0) {
+                            inputs[index - 1].focus();
+                        }
+                    } else if (e.key === 'Enter') {
+                        verifyOtpCode();
+                    }
+                });
+
+                // Paste entire 6-digit code
+                input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const pastedData = (e.clipboardData || window.clipboardData).getData('text').trim();
+                    if (/^\d{6}$/.test(pastedData)) {
+                        inputs.forEach((inp, i) => {
+                            inp.value = pastedData[i] || '';
+                        });
+                        inputs[inputs.length - 1].focus();
+                        setTimeout(verifyOtpCode, 200);
+                    }
+                });
+            });
+        }
+
+        function startOtpTimer() {
+            clearInterval(countdownTimer);
+            countdownSeconds = 30;
+            const timerEl = document.getElementById('resend-countdown');
+            const resendBtn = document.getElementById('btn-resend-otp');
+            if (timerEl) timerEl.innerText = countdownSeconds;
+            if (resendBtn) resendBtn.disabled = true;
+
+            countdownTimer = setInterval(() => {
+                countdownSeconds--;
+                if (timerEl) timerEl.innerText = countdownSeconds;
+                if (countdownSeconds <= 0) {
+                    clearInterval(countdownTimer);
+                    if (resendBtn) {
+                        resendBtn.disabled = false;
+                        resendBtn.innerHTML = `Resend Code Now`;
+                    }
+                }
+            }, 1000);
+        }
+
+        function resendOtpCode() {
+            if (!pendingUser) return;
+            activeOtpCode = generateRandomOtp();
+            triggerRealEmailOtp(activeOtpCode, pendingUser.email, "login");
+            startOtpTimer();
+            // Clear previous digits
+            document.querySelectorAll('.otp-digit').forEach(i => i.value = '');
+            const first = document.querySelector('.otp-digit');
+            if (first) first.focus();
+        }
+
+        // Lockout & Attempt Tracking with Escalating Durations: 5s -> 10s -> 20s -> 30s (max)
+        const LOCKOUT_DURATIONS = [5, 10, 20, 30];
+        let passwordAttempts = 0;
+        let passwordLockoutCount = 0;
+        let otpAttempts = 0;
+        let otpLockoutCount = 0;
+        let isLockedOut = false;
+        let lockoutTimer = null;
+
+        function getNextLockoutDuration(stage) {
+            const count = stage === 'password' ? passwordLockoutCount : otpLockoutCount;
+            const index = Math.min(count, LOCKOUT_DURATIONS.length - 1);
+            return LOCKOUT_DURATIONS[index];
+        }
+
+        function triggerLockout(stage) {
+            isLockedOut = true;
+            const lockoutDuration = getNextLockoutDuration(stage);
+            let remainingSeconds = lockoutDuration;
+
+            if (stage === 'password') {
+                passwordLockoutCount++;
+            } else {
+                otpLockoutCount++;
+            }
+
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl mb-4";
+            errorAlert.classList.remove('hidden');
+
+            const submitBtn = document.getElementById('btn-submit-login');
+            const verifyBtn = document.getElementById('btn-verify-otp');
+            const resendBtn = document.getElementById('btn-resend-otp');
+            const otpInputs = document.querySelectorAll('.otp-digit');
+            const pwdInput = document.getElementById('input-password');
+            const pinInput = document.getElementById('input-pin');
+            const emailInput = document.getElementById('input-identifier-email');
+
+            // Disable interactive controls during lockout
+            if (stage === 'password') {
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                if (pwdInput) pwdInput.disabled = true;
+                if (pinInput) pinInput.disabled = true;
+                if (emailInput) emailInput.disabled = true;
+            } else if (stage === 'otp') {
+                if (verifyBtn) {
+                    verifyBtn.disabled = true;
+                    verifyBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                if (resendBtn) resendBtn.disabled = true;
+                otpInputs.forEach(inp => inp.disabled = true);
+            }
+
+            const currentLockoutNum = stage === 'password' ? passwordLockoutCount : otpLockoutCount;
+            const updateLockoutMsg = () => {
+                errorAlert.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-rose-400 flex-shrink-0 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        <span>Too many failed attempts (3/3). Security lockout #${currentLockoutNum} active: please wait <strong>${remainingSeconds}s</strong> before retrying.</span>
+                    </div>
+                `;
+            };
+
+            updateLockoutMsg();
+
+            clearInterval(lockoutTimer);
+            lockoutTimer = setInterval(() => {
+                remainingSeconds--;
+                if (remainingSeconds > 0) {
+                    updateLockoutMsg();
+                } else {
+                    clearInterval(lockoutTimer);
+                    isLockedOut = false;
+                    if (stage === 'password') {
+                        passwordAttempts = 0;
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                        if (pwdInput) pwdInput.disabled = false;
+                        if (pinInput) pinInput.disabled = false;
+                        if (emailInput) emailInput.disabled = false;
+                        errorAlert.innerText = `Lockout ended. You may now re-enter your credentials.`;
+                    } else if (stage === 'otp') {
+                        otpAttempts = 0;
+                        if (verifyBtn) {
+                            verifyBtn.disabled = false;
+                            verifyBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                        if (resendBtn && countdownSeconds <= 0) resendBtn.disabled = false;
+                        otpInputs.forEach(inp => inp.disabled = false);
+                        const firstDigit = document.querySelector('.otp-digit');
+                        if (firstDigit) firstDigit.focus();
+                        errorAlert.innerText = `Lockout ended. You may now re-enter your 6-digit verification code.`;
+                    }
+                }
+            }, 1000);
+        }
+
+        function cancelOtpStep() {
+            if (isLockedOut) return;
+            clearInterval(countdownTimer);
+            document.getElementById('otp-verification-section').classList.add('hidden');
+            document.getElementById('forgot-password-section').classList.add('hidden');
+            document.getElementById('standalone-login-form').classList.remove('hidden');
+            document.getElementById('panel-title').innerText = "Sign In to Your Account";
+            document.getElementById('panel-subtitle').innerText = "Enter your email address and password";
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl hidden mb-4";
+            errorAlert.classList.add('hidden');
+            pendingUser = null;
+            activeOtpCode = null;
+            otpAttempts = 0;
+        }
+
+        // ==========================================
+        // FORGOT / RESET PASSWORD FLOW
+        // ==========================================
+        let activeResetOtp = null;
+        let resetCountdownTimer = null;
+        let resetCountdownSeconds = 30;
+        let resetTargetUser = null;
+
+        function openForgotPasswordFlow() {
+            if (isLockedOut) return;
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl hidden mb-4";
+            errorAlert.classList.add('hidden');
+
+            document.getElementById('standalone-login-form').classList.add('hidden');
+            document.getElementById('otp-verification-section').classList.add('hidden');
+            document.getElementById('forgot-password-section').classList.remove('hidden');
+
+            document.getElementById('panel-title').innerText = "Reset Your Password";
+            document.getElementById('panel-subtitle').innerText = "Verify your account email with a code from hirnasecurity@gmail.com";
+
+            // If user typed an email on step 1, prefill it
+            const currentEmail = document.getElementById('input-identifier-email').value.trim();
+            if (currentEmail && currentEmail !== 'example@gmail.com') {
+                document.getElementById('reset-target-email').value = currentEmail;
+            }
+
+            document.getElementById('reset-input-otp').value = '';
+            document.getElementById('reset-new-password').value = '';
+            document.getElementById('reset-confirm-password').value = '';
+            const indicator = document.getElementById('reset-resend-indicator');
+            if (indicator) {
+                indicator.innerText = 'Click "Send Code" above';
+                indicator.className = "text-[11px] text-slate-500 font-medium";
+            }
+        }
+
+        function cancelForgotPasswordFlow() {
+            clearInterval(resetCountdownTimer);
+            document.getElementById('forgot-password-section').classList.add('hidden');
+            document.getElementById('otp-verification-section').classList.add('hidden');
+            document.getElementById('standalone-login-form').classList.remove('hidden');
+
+            document.getElementById('panel-title').innerText = "Sign In to Your Account";
+            document.getElementById('panel-subtitle').innerText = "Enter your email address and password";
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl hidden mb-4";
+            errorAlert.classList.add('hidden');
+            activeResetOtp = null;
+            resetTargetUser = null;
+        }
+
+        function requestResetOtpCode() {
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl mb-4";
+            const email = document.getElementById('reset-target-email').value.trim().toLowerCase();
+            
+            if (!email || !email.includes('@')) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "Please enter a valid email address.";
+                return;
+            }
+
+            // Verify account exists in AuthModule.accounts
+            const user = AuthModule.accounts.find(a => a.email.toLowerCase() === email);
+            if (!user) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "No account found matching this email address.";
+                return;
+            }
+
+            resetTargetUser = user;
+            activeResetOtp = generateRandomOtp();
+            errorAlert.classList.add('hidden');
+
+            const sendBtn = document.getElementById('btn-request-reset-otp');
+            const indicator = document.getElementById('reset-resend-indicator');
+            sendBtn.disabled = true;
+            sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            // Dispatch reset OTP via backend mailer
+            fetch(`/api/send-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(activeResetOtp)}&purpose=reset`)
+                .then(r => r.json())
+                .then(d => {
+                    console.log("[Hirna Reset Mailer] Code dispatched to:", d.email);
+                })
+                .catch(err => {
+                    console.error("[Hirna Reset Mailer] Dispatch error:", err);
+                });
+
+            // Start 30s countdown
+            clearInterval(resetCountdownTimer);
+            resetCountdownSeconds = 30;
+            if (indicator) {
+                indicator.innerText = `Code sent! Resend in ${resetCountdownSeconds}s`;
+                indicator.className = "text-[11px] text-gold-400 font-bold";
+            }
+
+            resetCountdownTimer = setInterval(() => {
+                resetCountdownSeconds--;
+                if (resetCountdownSeconds > 0) {
+                    if (indicator) indicator.innerText = `Code sent! Resend in ${resetCountdownSeconds}s`;
+                } else {
+                    clearInterval(resetCountdownTimer);
+                    sendBtn.disabled = false;
+                    sendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    if (indicator) {
+                        indicator.innerText = `Didn't receive? You can resend now.`;
+                        indicator.className = "text-[11px] text-amber-300 font-medium";
+                    }
+                }
+            }, 1000);
+
+            const otpBox = document.getElementById('reset-input-otp');
+            if (otpBox) otpBox.focus();
+        }
+
+        function confirmPasswordReset() {
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl mb-4";
+            const email = document.getElementById('reset-target-email').value.trim().toLowerCase();
+            const otpEntered = document.getElementById('reset-input-otp').value.trim();
+            const newPassword = document.getElementById('reset-new-password').value;
+            const confirmPassword = document.getElementById('reset-confirm-password').value;
+
+            if (!activeResetOtp) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "Please click 'Send Code' to receive a verification code first.";
+                return;
+            }
+
+            if (!otpEntered || otpEntered !== activeResetOtp) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "Invalid verification code. Please check your Gmail inbox and re-enter.";
+                return;
+            }
+
+            if (!newPassword || newPassword.length < 4) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "New password must be at least 4 characters long.";
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "Passwords do not match. Please verify both password fields.";
+                return;
+            }
+
+            // Perform password reset in AuthModule
+            const result = AuthModule.resetPassword(email, newPassword);
+            if (!result.success) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = result.message || "Failed to reset password.";
+                return;
+            }
+
+            // Success feedback
+            errorAlert.className = "p-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold rounded-xl mb-4";
+            errorAlert.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Password successfully updated! Returning to login...</span>
+                </div>
+            `;
+            errorAlert.classList.remove('hidden');
+
+            const resetBtn = document.getElementById('btn-confirm-password-reset');
+            resetBtn.disabled = true;
+            resetBtn.classList.add('opacity-70');
+
+            setTimeout(() => {
+                cancelForgotPasswordFlow();
+                document.getElementById('input-identifier-email').value = email;
+                document.getElementById('input-password').value = newPassword;
+                if (isPinMode) togglePinMode(); // return to password mode
+                errorAlert.className = "p-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold rounded-xl mb-4";
+                errorAlert.innerText = "Password updated! You can now sign in with your new password.";
+                errorAlert.classList.remove('hidden');
+                resetBtn.disabled = false;
+                resetBtn.classList.remove('opacity-70');
+            }, 1500);
+        }
+
+        // STEP 1: Verify Email and Password OR PIN
+        document.getElementById('standalone-login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (isLockedOut) return;
+
+            const identifier = document.getElementById('input-identifier-email').value.trim().toLowerCase();
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl mb-4";
+
+            if (!identifier) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "Please enter your email address.";
+                return;
+            }
+
+            let matchedUser = null;
+
+            if (isPinMode) {
+                const pin = document.getElementById('input-pin').value.trim();
+                if (!pin || pin.length !== 4) {
+                    errorAlert.classList.remove('hidden');
+                    errorAlert.innerText = "Please enter your 4-digit PIN.";
+                    return;
+                }
+                matchedUser = AuthModule.accounts.find(a => 
+                    a.email.toLowerCase() === identifier &&
+                    (a.pin === pin || (!a.pin && pin === "1234"))
+                );
+            } else {
+                const password = document.getElementById('input-password').value;
+                if (!password) {
+                    errorAlert.classList.remove('hidden');
+                    errorAlert.innerText = "Please enter your password.";
+                    return;
+                }
+                matchedUser = AuthModule.accounts.find(a => 
+                    a.email.toLowerCase() === identifier &&
+                    a.password === password
+                );
+            }
+
+            if (!matchedUser) {
+                passwordAttempts++;
+                errorAlert.classList.remove('hidden');
+                if (passwordAttempts >= 3) {
+                    triggerLockout('password');
+                } else {
+                    const attemptsLeft = 3 - passwordAttempts;
+                    const nextDuration = getNextLockoutDuration('password');
+                    const secretType = isPinMode ? 'PIN' : 'password';
+                    errorAlert.innerText = `Access denied. Invalid email or ${secretType}. (${attemptsLeft} attempt${attemptsLeft === 1 ? '' : 's'} remaining before ${nextDuration}s lockout)`;
+                }
+                return;
+            }
+
+            // Valid credentials: reset password attempts & lockout count, proceed to Step 2 (OTP)
+            passwordAttempts = 0;
+            passwordLockoutCount = 0;
+            otpAttempts = 0;
+            otpLockoutCount = 0;
+            errorAlert.classList.add('hidden');
+            pendingUser = matchedUser;
+            activeOtpCode = generateRandomOtp();
+
+            // Transition UI to OTP Screen
+            document.getElementById('standalone-login-form').classList.add('hidden');
+            const otpSection = document.getElementById('otp-verification-section');
+            otpSection.classList.remove('hidden');
+            
+            document.getElementById('panel-title').innerText = "Two-Factor Email Verification";
+            document.getElementById('panel-subtitle').innerText = "A 6-digit security code has been sent to your Gmail inbox";
+            document.getElementById('otp-target-email').innerText = matchedUser.email;
+
+            // Clear digits & focus first box
+            document.querySelectorAll('.otp-digit').forEach(i => i.value = '');
+            const firstDigit = document.querySelector('.otp-digit');
+            if (firstDigit) setTimeout(() => firstDigit.focus(), 100);
+
+            startOtpTimer();
+
+            // Dispatch REAL Gmail OTP email
+            triggerRealEmailOtp(activeOtpCode, matchedUser.email, "login");
+        });
+
+        // STEP 2: Verify OTP
+        function verifyOtpCode() {
+            if (!pendingUser || isLockedOut) return;
+            const errorAlert = document.getElementById('login-error-alert');
+            errorAlert.className = "p-3 bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-bold rounded-xl mb-4";
+            const digits = Array.from(document.querySelectorAll('.otp-digit')).map(i => i.value).join('');
+
+            if (digits.length < 6) {
+                errorAlert.classList.remove('hidden');
+                errorAlert.innerText = "Please enter all 6 digits of your verification code.";
+                return;
+            }
+
+            // Match active OTP
+            if (digits === activeOtpCode) {
+                otpAttempts = 0;
+                otpLockoutCount = 0;
+                errorAlert.classList.add('hidden');
+                
+                const btn = document.getElementById('btn-verify-otp');
+                btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-hirna-950 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Verifying Code & Launching Session...</span>`;
+                btn.classList.add('opacity-80', 'pointer-events-none');
+
+                // Save session in AuthModule with remember-me checkbox state
+                const rememberMe = document.getElementById('check-remember-me') ? document.getElementById('check-remember-me').checked : false;
+                AuthModule.setSession(pendingUser, rememberMe);
+
+                setTimeout(() => {
+                    if (pendingUser.role === 'passenger') {
+                        window.location.href = "passenger.html";
+                    } else {
+                        window.location.href = "main.html";
+                    }
+                }, 600);
+            } else {
+                otpAttempts++;
+                errorAlert.classList.remove('hidden');
+                if (otpAttempts >= 3) {
+                    triggerLockout('otp');
+                } else {
+                    const attemptsLeft = 3 - otpAttempts;
+                    const nextDuration = getNextLockoutDuration('otp');
+                    errorAlert.innerText = `Invalid verification code. Please check your Gmail inbox and try again. (${attemptsLeft} attempt${attemptsLeft === 1 ? '' : 's'} remaining before ${nextDuration}s lockout)`;
+                }
+            }
+        }
+
+        // Initialize OTP digit listeners
+        window.addEventListener('DOMContentLoaded', () => {
+            setupOtpInputListeners();
+        });
+    </script>
+</body>
+</html>
