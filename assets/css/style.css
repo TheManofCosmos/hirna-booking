@@ -199,29 +199,26 @@ body.bg-slate-950 select:focus,
         size: auto;
     }
 
-    /* Hide everything on the page by default */
-    body * {
+    /* Hide everything except receipt-modal and its descendants */
+    body > *:not(#receipt-modal),
+    header,
+    aside,
+    nav,
+    main,
+    #app-sidebar,
+    .no-print {
+        display: none !important;
         visibility: hidden !important;
     }
 
-    /* Force the receipt modal visible even if it has class="hidden" (display:none) */
+    /* Force the receipt modal visible and position cleanly */
     #receipt-modal {
         display: block !important;
         visibility: visible !important;
-    }
-
-    /* Re-enable visibility strictly for the receipt card */
-    #receipt-modal .receipt-printable-card,
-    #receipt-modal .receipt-printable-card * {
-        visibility: visible !important;
-    }
-
-    /* Reset fixed positioning and backdrop overlays so the card prints cleanly on paper */
-    #receipt-modal {
         position: static !important;
         inset: auto !important;
         background: transparent !important;
-        background-color: transparent !important;
+        background-color: #ffffff !important;
         backdrop-filter: none !important;
         -webkit-backdrop-filter: none !important;
         padding: 0 !important;
@@ -231,8 +228,15 @@ body.bg-slate-950 select:focus,
         box-shadow: none !important;
     }
 
+    /* Re-enable visibility and proper rendering for the receipt card */
+    #receipt-modal .receipt-printable-card,
+    #receipt-modal .receipt-printable-card * {
+        visibility: visible !important;
+    }
+
     #receipt-modal > div,
     #receipt-modal .receipt-printable-card {
+        display: block !important;
         position: static !important;
         margin: 0 auto !important;
         box-shadow: none !important;
@@ -242,6 +246,7 @@ body.bg-slate-950 select:focus,
         transform: none !important;
         animation: none !important;
         page-break-inside: avoid !important;
+        background-color: #ffffff !important;
     }
 
     /* Completely suppress action buttons, print triggers, and close buttons */

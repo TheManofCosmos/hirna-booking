@@ -977,11 +977,16 @@ const PaymentsModule = {
             }
         }
 
+        modal.style.removeProperty('display');
         modal.classList.remove('hidden');
     },
 
     closeReceiptModal() {
-        document.getElementById('receipt-modal')?.classList.add('hidden');
+        const m = document.getElementById('receipt-modal');
+        if (m) {
+            m.classList.add('hidden');
+            m.style.setProperty('display', 'none', 'important');
+        }
     },
 
     renderLedger() {

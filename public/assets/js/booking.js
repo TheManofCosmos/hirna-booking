@@ -2144,7 +2144,7 @@ const BookingModule = {
 
     serviceOptions: {
         transport: [
-            { id: "Motorcycle (1-Passenger)", title: "Hirna Moto", desc: "1-Passenger Motorcycle", icon: `<div class="w-7 h-7 mx-auto mb-1 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-lg"></div>`, default: true },
+            { id: "Motorcycle (1-Passenger)", title: "Hirna Moto", desc: "1-Passenger Motorcycle", icon: `<div class="w-7 h-7 mx-auto mb-1 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 17a2 2 0 11-4 0 2 2 0 014 0zM7 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h1l5.5-5.5a1.5 1.5 0 000-2.12l-.88-.88a1.5 1.5 0 00-2.12 0L14 10V6a2 2 0 00-2-2H9a2 2 0 00-2 2v2m0 6h2m-2-4l-3 4"/></svg></div>`, default: true },
             { id: "Sedan (4-Seater)", title: "Hirna Taxi", desc: "4-Seater Sedan", icon: `<div class="w-7 h-7 mx-auto mb-1 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg></div>` },
             { id: "MPV (6-Seater)", title: "Hirna MPV", desc: "6-Seater Innova", icon: `<div class="w-7 h-7 mx-auto mb-1 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg></div>` }
         ],
@@ -2516,9 +2516,15 @@ const BookingModule = {
                     }
                 });
 
-                setTimeout(() => {
-                    if (this.map) this.map.invalidateSize();
-                }, 250);
+                const invalidate = () => {
+                    if (this.map) {
+                        try { this.map.invalidateSize(); } catch(e) {}
+                    }
+                };
+                setTimeout(invalidate, 100);
+                setTimeout(invalidate, 300);
+                setTimeout(invalidate, 800);
+                window.addEventListener('resize', invalidate);
             }
         } catch (err) {
             console.error("Leaflet map initialization error:", err);
