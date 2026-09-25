@@ -441,7 +441,8 @@
             console.log(`[Hirna Security] 2-Factor Passkey Dispatched to ${email} (Purpose: ${purpose})`);
 
             // Dispatch via backend Gmail SMTP mailer
-            fetch(`/api/send-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}&purpose=${encodeURIComponent(purpose)}`)
+            const apiBase = (window.location.protocol === 'file:') ? 'http://localhost:8000' : '';
+            fetch(`${apiBase}/api/send-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}&purpose=${encodeURIComponent(purpose)}`)
                 .then(r => r.json())
                 .then(d => {
                     console.log(`[Hirna Mailer] OTP (${purpose}) dispatched to:`, d.email, "via sender:", d.sender);
@@ -476,12 +477,19 @@
             const inputs = document.querySelectorAll(selector);
             inputs.forEach((input, index) => {
                 input.addEventListener('input', (e) => {
-                    const val = e.target.value;
+                    const val = e.target.value.replace(/\D/g, '');
                     if (val.length > 1) {
-                        e.target.value = val.charAt(val.length - 1);
-                    }
-                    if (e.target.value && index < inputs.length - 1) {
-                        inputs[index + 1].focus();
+                        // Multi-character input (paste or autofill)
+                        for (let k = 0; k < val.length && (index + k) < inputs.length; k++) {
+                            inputs[index + k].value = val[k];
+                        }
+                        const targetIdx = Math.min(index + val.length, inputs.length) - 1;
+                        if (inputs[targetIdx]) inputs[targetIdx].focus();
+                    } else {
+                        e.target.value = val;
+                        if (val && index < inputs.length - 1) {
+                            inputs[index + 1].focus();
+                        }
                     }
                     const allEntered = Array.from(inputs).every(i => i.value.trim() !== '');
                     if (allEntered && onComplete) {
@@ -503,12 +511,13 @@
                     e.preventDefault();
                     const pastedData = (e.clipboardData || window.clipboardData).getData('text').trim().replace(/\D/g, '');
                     if (pastedData) {
-                        inputs.forEach((inp, i) => {
-                            inp.value = pastedData[i] || '';
-                        });
-                        const lastIndex = Math.min(pastedData.length, inputs.length) - 1;
+                        for (let k = 0; k < pastedData.length && (index + k) < inputs.length; k++) {
+                            inputs[index + k].value = pastedData[k];
+                        }
+                        const lastIndex = Math.min(index + pastedData.length, inputs.length) - 1;
                         if (inputs[lastIndex]) inputs[lastIndex].focus();
-                        if (pastedData.length >= inputs.length && onComplete) {
+                        const allEntered = Array.from(inputs).every(i => i.value.trim() !== '');
+                        if (allEntered && onComplete) {
                             setTimeout(onComplete, 150);
                         }
                     }
@@ -519,18 +528,24 @@
         function startOtpTimer() {
             clearInterval(countdownTimer);
             countdownSeconds = 30;
-            const timerEl = document.getElementById('resend-countdown');
             const resendBtn = document.getElementById('btn-resend-otp');
-            if (timerEl) timerEl.innerText = countdownSeconds;
-            if (resendBtn) resendBtn.disabled = true;
+            if (resendBtn) {
+                resendBtn.disabled = true;
+                resendBtn.classList.remove('text-hirna-700', 'hover:text-hirna-600', 'cursor-pointer');
+                resendBtn.classList.add('text-slate-400', 'cursor-not-allowed');
+                resendBtn.innerHTML = `Resend Code (<span id="resend-countdown">${countdownSeconds}</span>s)`;
+            }
 
             countdownTimer = setInterval(() => {
                 countdownSeconds--;
+                const timerEl = document.getElementById('resend-countdown');
                 if (timerEl) timerEl.innerText = countdownSeconds;
                 if (countdownSeconds <= 0) {
                     clearInterval(countdownTimer);
                     if (resendBtn) {
                         resendBtn.disabled = false;
+                        resendBtn.classList.remove('text-slate-400', 'cursor-not-allowed');
+                        resendBtn.classList.add('text-hirna-700', 'hover:text-hirna-600', 'cursor-pointer');
                         resendBtn.innerHTML = `Resend Code Now`;
                     }
                 }
@@ -538,13 +553,25 @@
         }
 
         function resendOtpCode() {
-            if (!pendingUser) return;
+            if (!pendingUser || countdownSeconds > 0) return;
             activeOtpCode = generateRandomOtp();
             triggerRealEmailOtp(activeOtpCode, pendingUser.email, "login");
             startOtpTimer();
             document.querySelectorAll('.otp-digit').forEach(i => i.value = '');
             const first = document.querySelector('.otp-digit');
             if (first) first.focus();
+
+            const errorAlert = document.getElementById('login-error-alert');
+            if (errorAlert) {
+                errorAlert.className = "p-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold rounded-xl mb-4";
+                errorAlert.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>A new verification code has been dispatched to <strong>${pendingUser.email}</strong>!</span>
+                    </div>
+                `;
+                errorAlert.classList.remove('hidden');
+            }
         }
 
         // Lockout & Attempt Tracking with Escalating Durations: 5s -> 10s -> 20s -> 30s (max)
@@ -746,7 +773,8 @@
             sendBtn.disabled = true;
             sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
-            fetch(`/api/send-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(activeResetOtp)}&purpose=reset`)
+            const apiBase = (window.location.protocol === 'file:') ? 'http://localhost:8000' : '';
+            fetch(`${apiBase}/api/send-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(activeResetOtp)}&purpose=reset`)
                 .then(r => r.json())
                 .then(d => {
                     console.log("[Hirna Reset Mailer] Code dispatched to:", d.email);
@@ -759,7 +787,7 @@
             resetCountdownSeconds = 30;
             if (indicator) {
                 indicator.innerText = `Code sent! Resend in ${resetCountdownSeconds}s`;
-                indicator.className = "text-[11px] text-gold-400 font-bold";
+                indicator.className = "text-[11px] text-amber-500 font-bold";
             }
 
             resetCountdownTimer = setInterval(() => {
@@ -772,7 +800,7 @@
                     sendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                     if (indicator) {
                         indicator.innerText = `Didn't receive? You can resend now.`;
-                        indicator.className = "text-[11px] text-amber-300 font-medium";
+                        indicator.className = "text-[11px] text-slate-500 font-medium";
                     }
                 }
             }, 1000);
@@ -936,18 +964,24 @@
         function startPinSetupTimer() {
             clearInterval(pinSetupCountdownTimer);
             pinSetupCountdownSeconds = 30;
-            const timerEl = document.getElementById('pin-setup-countdown');
             const resendBtn = document.getElementById('btn-resend-pin-setup-otp');
-            if (timerEl) timerEl.innerText = pinSetupCountdownSeconds;
-            if (resendBtn) resendBtn.disabled = true;
+            if (resendBtn) {
+                resendBtn.disabled = true;
+                resendBtn.classList.remove('text-hirna-700', 'hover:text-hirna-600', 'cursor-pointer');
+                resendBtn.classList.add('text-slate-400', 'cursor-not-allowed');
+                resendBtn.innerHTML = `Resend Code (<span id="pin-setup-countdown">${pinSetupCountdownSeconds}</span>s)`;
+            }
 
             pinSetupCountdownTimer = setInterval(() => {
                 pinSetupCountdownSeconds--;
+                const timerEl = document.getElementById('pin-setup-countdown');
                 if (timerEl) timerEl.innerText = pinSetupCountdownSeconds;
                 if (pinSetupCountdownSeconds <= 0) {
                     clearInterval(pinSetupCountdownTimer);
                     if (resendBtn) {
                         resendBtn.disabled = false;
+                        resendBtn.classList.remove('text-slate-400', 'cursor-not-allowed');
+                        resendBtn.classList.add('text-hirna-700', 'hover:text-hirna-600', 'cursor-pointer');
                         resendBtn.innerHTML = `Resend Code Now`;
                     }
                 }
@@ -955,12 +989,24 @@
         }
 
         function resendPinSetupOtp() {
-            if (!pinSetupUser) return;
+            if (!pinSetupUser || pinSetupCountdownSeconds > 0) return;
             activePinSetupOtp = generateRandomOtp();
             triggerRealEmailOtp(activePinSetupOtp, pinSetupUser.email, pinSetupMode === 'setup' ? 'pin_setup' : 'pin_reset');
             startPinSetupTimer();
             document.getElementById('pin-setup-input-otp').value = '';
             document.getElementById('pin-setup-input-otp').focus();
+
+            const errorAlert = document.getElementById('login-error-alert');
+            if (errorAlert) {
+                errorAlert.className = "p-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold rounded-xl mb-4";
+                errorAlert.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>A new verification code has been dispatched to <strong>${pinSetupUser.email}</strong>!</span>
+                    </div>
+                `;
+                errorAlert.classList.remove('hidden');
+            }
         }
 
         function confirmSavePinSetup() {

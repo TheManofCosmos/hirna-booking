@@ -72,12 +72,12 @@ Hirna: Transport & Delivery System (Team 10)
 </body>
 </html>
 """
-        msg.attach(MIMEText(text_body, "plain"))
-        msg.attach(MIMEText(html_body, "html"))
+        msg.attach(MIMEText(text_body, "plain", "utf-8"))
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
 
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
             server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_SENDER, [recipient_email], msg.as_string())
+            server.send_message(msg)
         return True, "Email sent successfully"
     except Exception as e:
         return False, str(e)

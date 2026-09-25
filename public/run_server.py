@@ -169,13 +169,13 @@ Hirna: Transport & Delivery System (Team 10)
 </html>
 """
 
-        msg.attach(MIMEText(text_body, "plain"))
-        msg.attach(MIMEText(html_body, "html"))
+        msg.attach(MIMEText(text_body, "plain", "utf-8"))
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
 
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
             server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_SENDER, [recipient_email], msg.as_string())
-        print(f"[✓] Email successfully delivered to: {recipient_email} (Purpose: {purpose})")
+            server.send_message(msg)
+        print(f"[OK] Email successfully delivered to: {recipient_email} (Purpose: {purpose})")
         return True
     except Exception as e:
         print(f"[!] Gmail SMTP dispatch error to {recipient_email}: {e}")
