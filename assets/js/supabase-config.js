@@ -5772,15 +5772,27 @@ const SupabaseBridge = {
     },
 
     async init() {
+        // 1. First fetch central server database (/api/db or database/data.json)
         try {
-            // Try relative paths
-            let res = await fetch('database/data.json').catch(() => null);
+            let res = await fetch('/api/db', { cache: 'no-store' }).catch(() => null);
             if (!res || !res.ok) {
-                res = await fetch('../database/data.json').catch(() => null);
+                res = await fetch('database/data.json', { cache: 'no-store' }).catch(() => null);
+            }
+            if (!res || !res.ok) {
+                res = await fetch('../database/data.json', { cache: 'no-store' }).catch(() => null);
             }
             if (res && res.ok) {
-                this.db = await res.json();
-                console.log("[SupabaseBridge] Loaded external JSON database.");
+                const serverDb = await res.json();
+                if (serverDb && typeof serverDb === 'object') {
+                    if (!this.db) this.db = {};
+                    // Merge tables from central server
+                    Object.keys(serverDb).forEach(tbl => {
+                        if (Array.isArray(serverDb[tbl])) {
+                            this.mergeTableRecords(tbl, serverDb[tbl]);
+                        }
+                    });
+                    console.log("[SupabaseBridge] Synced with central cloud/server database.");
+                }
             } else {
                 console.log("[SupabaseBridge] Using embedded in-memory database.");
             }
@@ -5788,9 +5800,90 @@ const SupabaseBridge = {
             console.log("[SupabaseBridge] Using embedded in-memory database.");
         }
 
-        // Always load persisted audit logs and data tables across all pages
+        // 2. Load persisted local tables and merge them
         this.loadPersistedAuditLogs();
-        ['bookings', 'feedback', 'support_tickets', 'payments', 'users', 'drivers', 'vehicles'].forEach(t => this.loadPersistedData(t));
+        const tables = ['bookings', 'feedback', 'support_tickets', 'payments', 'users', 'drivers', 'vehicles'];
+        tables.forEach(t => this.loadPersistedData(t));
+
+        // 3. Sync local data up to central database so any offline/previous records are universally shared
+        this.syncAllToRemote();
+
+        // 4. Setup periodic poll for fresh data from other devices (every 10s)
+        if (!this._pollTimer) {
+            this._pollTimer = setInterval(() => {
+                this.pollRemoteUpdates();
+            }, 10000);
+        }
+    },
+
+    mergeTableRecords(table, newRecords) {
+        if (!this.db) this.db = {};
+        if (!this.db[table]) this.db[table] = [];
+        if (!Array.isArray(newRecords)) return;
+
+        const existingMap = new Map();
+        this.db[table].forEach((item, idx) => {
+            const k = item.booking_code || item.id || item.ticket_id || item.invoice_no;
+            if (k) existingMap.set(String(k), idx);
+        });
+
+        newRecords.forEach(r => {
+            const k = r.booking_code || r.id || r.ticket_id || r.invoice_no;
+            if (k && existingMap.has(String(k))) {
+                const idx = existingMap.get(String(k));
+                this.db[table][idx] = { ...this.db[table][idx], ...r };
+            } else {
+                this.db[table].unshift(r);
+                if (k) existingMap.set(String(k), 0);
+            }
+        });
+
+        // Persist merged table to localStorage
+        try {
+            localStorage.setItem(`hirna_db_${table}`, JSON.stringify(this.db[table]));
+        } catch(e) {}
+    },
+
+    async pollRemoteUpdates() {
+        try {
+            const res = await fetch('/api/db', { cache: 'no-store' }).catch(() => null);
+            if (res && res.ok) {
+                const remoteDb = await res.json();
+                if (remoteDb && typeof remoteDb === 'object') {
+                    let hasChanged = false;
+                    ['bookings', 'payments', 'support_tickets', 'feedback'].forEach(tbl => {
+                        if (Array.isArray(remoteDb[tbl])) {
+                            const curLen = (this.db && this.db[tbl]) ? this.db[tbl].length : 0;
+                            this.mergeTableRecords(tbl, remoteDb[tbl]);
+                            const newLen = (this.db && this.db[tbl]) ? this.db[tbl].length : 0;
+                            if (newLen !== curLen) {
+                                hasChanged = true;
+                                this.refreshActiveModules(tbl);
+                            }
+                        }
+                    });
+                    if (hasChanged) {
+                        try {
+                            window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { action: 'remote_sync' } }));
+                        } catch(e) {}
+                    }
+                }
+            }
+        } catch (e) {}
+    },
+
+    async syncAllToRemote() {
+        if (!this.db) return;
+        try {
+            await fetch('/api/db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'sync_all',
+                    data: this.db
+                })
+            }).catch(() => null);
+        } catch(e) {}
     },
 
     savePersistedData(table) {
@@ -5805,6 +5898,18 @@ const SupabaseBridge = {
         } catch (e) {
             console.warn(`Could not persist ${table} to localStorage:`, e);
         }
+
+        // Push update to central server so all other devices see it
+        try {
+            fetch('/api/db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'sync_all',
+                    data: { [table]: this.db[table] }
+                })
+            }).catch(() => null);
+        } catch(e) {}
     },
 
     loadPersistedData(table) {
@@ -5813,8 +5918,7 @@ const SupabaseBridge = {
             if (saved !== null) {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed)) {
-                    if (!this.db) this.db = {};
-                    this.db[table] = parsed;
+                    this.mergeTableRecords(table, parsed);
                 }
             }
         } catch (e) {
@@ -6102,6 +6206,18 @@ const SupabaseBridge = {
                 this.channel.postMessage({ type: 'AUDIT_LOG', log: log });
             } catch(e) {}
         }
+
+        try {
+            fetch('/api/db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    table: 'audit_logs',
+                    action: 'insert',
+                    record: log
+                })
+            }).catch(() => null);
+        } catch(e) {}
 
         return log;
     }

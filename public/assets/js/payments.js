@@ -781,16 +781,16 @@ const PaymentsModule = {
         this.activeBooking.status = 'completed';
         this.activeBooking.payment_method = method;
 
-        // Persist update in Supabase / Local storage if possible
+        // Persist update in Supabase / Local storage / Central Server
         try {
-            const list = SupabaseBridge.getData('bookings');
-            const idx = list.findIndex(b => b.id === this.activeBooking.id || b.booking_code === this.activeBooking.booking_code);
-            if (idx !== -1) {
-                list[idx] = { ...list[idx], ...this.activeBooking };
-                localStorage.setItem('hirna_db_bookings', JSON.stringify(list));
-            }
+            const bookingKey = this.activeBooking.booking_code || this.activeBooking.id;
+            SupabaseBridge.update('bookings', bookingKey, {
+                payment_status: 'completed',
+                status: 'completed',
+                payment_method: method
+            });
         } catch (e) {
-            console.warn("Failed to update booking in local storage:", e);
+            console.warn("Failed to update booking in storage:", e);
         }
 
         // Log transaction to Audit

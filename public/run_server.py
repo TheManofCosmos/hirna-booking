@@ -296,6 +296,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(data)
             return
 
+        if self.path.startswith('/api/db') or self.path.startswith('/api/sync-db'):
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            table = query.get('table', [None])[0]
+            db_path = os.path.join(DIRECTORY, 'database', 'data.json')
+            db = {}
+            if os.path.exists(db_path):
+                try:
+                    with open(db_path, 'r', encoding='utf-8') as f:
+                        db = json.load(f)
+                except Exception:
+                    db = {}
+            if table:
+                resp_data = db.get(table, [])
+            else:
+                resp_data = db
+            data = json.dumps(resp_data).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
         super().do_GET()
 
     def do_OPTIONS(self):
@@ -412,6 +435,124 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_header('Content-Length', str(len(err_resp)))
                 self.end_headers()
                 self.wfile.write(err_resp)
+                return
+
+        if self.path.startswith('/api/db') or self.path.startswith('/api/sync-db'):
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            try:
+                payload = json.loads(post_data) if post_data else {}
+                db_path = os.path.join(DIRECTORY, 'database', 'data.json')
+                pub_db_path = os.path.join(DIRECTORY, 'public', 'database', 'data.json')
+                db = {}
+                if os.path.exists(db_path):
+                    try:
+                        with open(db_path, 'r', encoding='utf-8') as f:
+                            db = json.load(f)
+                    except Exception:
+                        db = {}
+
+                table = payload.get('table')
+                action = payload.get('action', 'insert')
+
+                if action == 'sync_all':
+                    tables_data = payload.get('data', {})
+                    if isinstance(tables_data, dict):
+                        for tbl, records in tables_data.items():
+                            if not isinstance(records, list):
+                                continue
+                            if tbl not in db:
+                                db[tbl] = []
+                            existing_map = {}
+                            for idx, item in enumerate(db[tbl]):
+                                k = item.get('booking_code') or item.get('id') or item.get('ticket_id') or item.get('invoice_no')
+                                if k:
+                                    existing_map[str(k)] = idx
+                            for r in records:
+                                k = r.get('booking_code') or r.get('id') or r.get('ticket_id') or r.get('invoice_no')
+                                if k and str(k) in existing_map:
+                                    db[tbl][existing_map[str(k)]].update(r)
+                                else:
+                                    db[tbl].insert(0, r)
+                    resp = {'status': 'ok', 'message': 'Database synced across devices', 'db': db}
+
+                elif table:
+                    if table not in db:
+                        db[table] = []
+                    if action == 'insert':
+                        record = payload.get('record', {})
+                        if record:
+                            k = record.get('booking_code') or record.get('id') or record.get('ticket_id') or record.get('invoice_no')
+                            exists = False
+                            if k:
+                                for idx, item in enumerate(db[table]):
+                                    ik = item.get('booking_code') or item.get('id') or item.get('ticket_id') or item.get('invoice_no')
+                                    if ik and str(ik) == str(k):
+                                        db[table][idx].update(record)
+                                        exists = True
+                                        break
+                            if not exists:
+                                db[table].insert(0, record)
+                        resp = {'status': 'ok', 'record': record, 'table': table}
+
+                    elif action == 'update':
+                        id_val = str(payload.get('id', ''))
+                        updates = payload.get('updates', {})
+                        updated_item = None
+                        for idx, item in enumerate(db[table]):
+                            ik = str(item.get('booking_code') or item.get('id') or item.get('ticket_id') or item.get('invoice_no') or '')
+                            if ik == id_val:
+                                db[table][idx].update(updates)
+                                updated_item = db[table][idx]
+                                break
+                        resp = {'status': 'ok', 'record': updated_item, 'table': table}
+
+                    elif action == 'archive':
+                        id_val = str(payload.get('id', ''))
+                        reason = payload.get('reason', 'Archived by user')
+                        archived_by = payload.get('user', 'superadmin@hirna.ph')
+                        archived_item = None
+                        for idx, item in enumerate(db[table]):
+                            ik = str(item.get('booking_code') or item.get('id') or item.get('ticket_id') or item.get('invoice_no') or '')
+                            if ik == id_val:
+                                db[table][idx]['is_archived'] = True
+                                db[table][idx]['archived_at'] = payload.get('timestamp')
+                                db[table][idx]['archived_by'] = archived_by
+                                db[table][idx]['archive_reason'] = reason
+                                archived_item = db[table][idx]
+                                break
+                        resp = {'status': 'ok', 'record': archived_item, 'table': table}
+                    else:
+                        resp = {'status': 'error', 'message': f'Unknown action {action}'}
+                else:
+                    resp = {'status': 'error', 'message': 'Missing table or data'}
+
+                # Write to disk
+                os.makedirs(os.path.dirname(db_path), exist_ok=True)
+                with open(db_path, 'w', encoding='utf-8') as f:
+                    json.dump(db, f, indent=2)
+                try:
+                    os.makedirs(os.path.dirname(pub_db_path), exist_ok=True)
+                    with open(pub_db_path, 'w', encoding='utf-8') as f:
+                        json.dump(db, f, indent=2)
+                except Exception:
+                    pass
+
+                resp_body = json.dumps(resp).encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(resp_body)))
+                self.end_headers()
+                self.wfile.write(resp_body)
+                return
+
+            except Exception as e:
+                err_body = json.dumps({'status': 'error', 'message': str(e)}).encode('utf-8')
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(err_body)))
+                self.end_headers()
+                self.wfile.write(err_body)
                 return
 
         super().do_POST()
