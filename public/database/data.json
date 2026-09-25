@@ -76,6 +76,13 @@
   ],
   "bookings": [
     {
+      "id": "test-bk-999",
+      "booking_code": "TEST-2026-999",
+      "passenger_name": "Test Passenger",
+      "total_fare": 150.0,
+      "is_archived": false
+    },
+    {
       "id": "c0000001-0000-0000-0000-000000000001",
       "booking_code": "TNVS-2026-0091",
       "service_type": "standard",
@@ -107,7 +114,10 @@
       "payment_status": "completed",
       "status": "completed",
       "created_at": "2026-08-20 08:30:00",
-      "safety_score": 98
+      "safety_score": 98,
+      "invoice_no": "INV-2026-60091",
+      "txn_ref": "TXN-GCASH-260091",
+      "paid_at": "2026-08-20 08:30:00"
     },
     {
       "id": "c0000001-0000-0000-0000-000000000002",
@@ -141,7 +151,10 @@
       "payment_status": "completed",
       "status": "completed",
       "created_at": "2026-08-20 11:15:00",
-      "safety_score": 95
+      "safety_score": 95,
+      "invoice_no": "INV-2026-60092",
+      "txn_ref": "TXN-MAYA-260092",
+      "paid_at": "2026-08-20 11:15:00"
     },
     {
       "id": "c0000001-0000-0000-0000-000000000003",
@@ -179,7 +192,10 @@
       "payment_status": "completed",
       "status": "completed",
       "created_at": "2026-08-20 14:20:00",
-      "safety_score": 100
+      "safety_score": 100,
+      "invoice_no": "INV-2026-92104",
+      "txn_ref": "TXN-GCASH-892104",
+      "paid_at": "2026-08-20 14:20:00"
     }
   ],
   "telemetry_routes": {
@@ -5443,6 +5459,68 @@
       "status": "SUCCESS",
       "timestamp": "2026-08-20 08:52:12",
       "details": "Auto-transmitted revenue record to Team 5 Accounts Receivable & General Ledger"
+    }
+  ],
+  "payments": [
+    {
+      "id": "pay-60091",
+      "invoice_no": "INV-2026-60091",
+      "txn_ref": "TXN-GCASH-260091",
+      "booking_code": "TNVS-2026-0091",
+      "booking_id": "c0000001-0000-0000-0000-000000000001",
+      "passenger_name": "Juan Dela Cruz",
+      "passenger_phone": "+63 917 123 4567",
+      "amount": 237.6,
+      "total_fare": 237.6,
+      "base_fare": 45.0,
+      "distance_fare": 87.0,
+      "time_fare": 44.0,
+      "surge_multiplier": 1.35,
+      "payment_method": "GCash",
+      "payment_status": "completed",
+      "service_type": "standard",
+      "created_at": "2026-08-20 08:30:00",
+      "is_archived": false
+    },
+    {
+      "id": "pay-60092",
+      "invoice_no": "INV-2026-60092",
+      "txn_ref": "TXN-MAYA-260092",
+      "booking_code": "TNVS-2026-0092",
+      "booking_id": "c0000001-0000-0000-0000-000000000002",
+      "passenger_name": "Maria Santos",
+      "passenger_phone": "+63 918 987 6543",
+      "amount": 520.8,
+      "total_fare": 520.8,
+      "base_fare": 60.0,
+      "distance_fare": 284.0,
+      "time_fare": 90.0,
+      "surge_multiplier": 1.2,
+      "payment_method": "Maya",
+      "payment_status": "completed",
+      "service_type": "premium",
+      "created_at": "2026-08-20 11:15:00",
+      "is_archived": false
+    },
+    {
+      "id": "pay-92104",
+      "invoice_no": "INV-2026-92104",
+      "txn_ref": "TXN-GCASH-892104",
+      "booking_code": "HIRNA-PCL-892104",
+      "booking_id": "c0000001-0000-0000-0000-000000000003",
+      "passenger_name": "Danilo Cruz (Sender)",
+      "passenger_phone": "+63 928 345 6789",
+      "amount": 120.0,
+      "total_fare": 120.0,
+      "base_fare": 60.0,
+      "distance_fare": 45.0,
+      "time_fare": 15.0,
+      "surge_multiplier": 1.0,
+      "payment_method": "GCash",
+      "payment_status": "completed",
+      "service_type": "parcel",
+      "created_at": "2026-08-20 14:20:00",
+      "is_archived": false
     }
   ]
 }

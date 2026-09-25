@@ -5771,10 +5771,36 @@ const SupabaseBridge = {
         }
     },
 
+    getApiBase() {
+        if (typeof window !== 'undefined' && window.location) {
+            if (window.location.protocol === 'file:') {
+                return window._hirnaApiBase || 'http://127.0.0.1:8000';
+            }
+            if (window.location.origin && window.location.origin !== 'null') {
+                return window.location.origin;
+            }
+        }
+        return '';
+    },
+
     async init() {
+        let apiBase = this.getApiBase();
         // 1. First fetch central server database (/api/db or database/data.json)
         try {
-            let res = await fetch('/api/db', { cache: 'no-store' }).catch(() => null);
+            let res = await fetch(`${apiBase}/api/db`, { cache: 'no-store' }).catch(() => null);
+            if (!res || !res.ok) {
+                if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
+                    const fallbackPorts = ['http://127.0.0.1:8001', 'http://127.0.0.1:8002', 'http://127.0.0.1:8080'];
+                    for (const fallback of fallbackPorts) {
+                        res = await fetch(`${fallback}/api/db`, { cache: 'no-store' }).catch(() => null);
+                        if (res && res.ok) {
+                            window._hirnaApiBase = fallback;
+                            apiBase = fallback;
+                            break;
+                        }
+                    }
+                }
+            }
             if (!res || !res.ok) {
                 res = await fetch('database/data.json', { cache: 'no-store' }).catch(() => null);
             }
@@ -5808,55 +5834,95 @@ const SupabaseBridge = {
         // 3. Sync local data up to central database so any offline/previous records are universally shared
         this.syncAllToRemote();
 
-        // 4. Setup periodic poll for fresh data from other devices (every 10s)
+        // 4. Setup periodic poll for fresh data from other devices (every 3s)
         if (!this._pollTimer) {
             this._pollTimer = setInterval(() => {
                 this.pollRemoteUpdates();
-            }, 10000);
+            }, 3000);
         }
     },
 
     mergeTableRecords(table, newRecords) {
         if (!this.db) this.db = {};
         if (!this.db[table]) this.db[table] = [];
-        if (!Array.isArray(newRecords)) return;
+        if (!Array.isArray(newRecords)) return false;
+
+        let changed = false;
+        const getKey = (r) => {
+            if (!r || typeof r !== 'object') return null;
+            return r.booking_code || r.id || r.ticket_id || r.invoice_no || r.txn_ref || null;
+        };
 
         const existingMap = new Map();
         this.db[table].forEach((item, idx) => {
-            const k = item.booking_code || item.id || item.ticket_id || item.invoice_no;
+            const k = getKey(item);
             if (k) existingMap.set(String(k), idx);
         });
 
+        const toPrepend = [];
         newRecords.forEach(r => {
-            const k = r.booking_code || r.id || r.ticket_id || r.invoice_no;
+            if (!r || typeof r !== 'object') return;
+            const k = getKey(r);
             if (k && existingMap.has(String(k))) {
                 const idx = existingMap.get(String(k));
-                this.db[table][idx] = { ...this.db[table][idx], ...r };
+                const current = this.db[table][idx];
+
+                const isCurrentArchived = !!current.is_archived;
+                const isNewArchived = (r.is_archived !== undefined) ? !!r.is_archived : isCurrentArchived;
+
+                let recordChanged = false;
+                for (const prop of Object.keys(r)) {
+                    if (r[prop] !== current[prop]) {
+                        recordChanged = true;
+                        break;
+                    }
+                }
+                if (isCurrentArchived !== isNewArchived) {
+                    recordChanged = true;
+                }
+
+                if (recordChanged) {
+                    this.db[table][idx] = { ...current, ...r };
+                    if (isCurrentArchived && r.is_archived === undefined) {
+                        this.db[table][idx].is_archived = true;
+                    }
+                    changed = true;
+                }
             } else {
-                this.db[table].unshift(r);
-                if (k) existingMap.set(String(k), 0);
+                toPrepend.push(r);
+                if (k) existingMap.set(String(k), -1);
+                changed = true;
             }
         });
 
-        // Persist merged table to localStorage
-        try {
-            localStorage.setItem(`hirna_db_${table}`, JSON.stringify(this.db[table]));
-        } catch(e) {}
+        if (toPrepend.length > 0) {
+            this.db[table] = [...toPrepend, ...this.db[table]];
+        }
+
+        if (changed) {
+            try {
+                if (table === 'audit_logs') {
+                    localStorage.setItem('hirna_audit_logs', JSON.stringify(this.db.audit_logs));
+                } else {
+                    localStorage.setItem(`hirna_db_${table}`, JSON.stringify(this.db[table]));
+                }
+            } catch(e) {}
+        }
+        return changed;
     },
 
     async pollRemoteUpdates() {
         try {
-            const res = await fetch('/api/db', { cache: 'no-store' }).catch(() => null);
+            const apiBase = this.getApiBase();
+            const res = await fetch(`${apiBase}/api/db`, { cache: 'no-store' }).catch(() => null);
             if (res && res.ok) {
                 const remoteDb = await res.json();
                 if (remoteDb && typeof remoteDb === 'object') {
                     let hasChanged = false;
-                    ['bookings', 'payments', 'support_tickets', 'feedback'].forEach(tbl => {
+                    ['bookings', 'payments', 'support_tickets', 'feedback', 'audit_logs'].forEach(tbl => {
                         if (Array.isArray(remoteDb[tbl])) {
-                            const curLen = (this.db && this.db[tbl]) ? this.db[tbl].length : 0;
-                            this.mergeTableRecords(tbl, remoteDb[tbl]);
-                            const newLen = (this.db && this.db[tbl]) ? this.db[tbl].length : 0;
-                            if (newLen !== curLen) {
+                            const changed = this.mergeTableRecords(tbl, remoteDb[tbl]);
+                            if (changed) {
                                 hasChanged = true;
                                 this.refreshActiveModules(tbl);
                             }
@@ -5875,7 +5941,8 @@ const SupabaseBridge = {
     async syncAllToRemote() {
         if (!this.db) return;
         try {
-            await fetch('/api/db', {
+            const apiBase = this.getApiBase();
+            await fetch(`${apiBase}/api/db`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -5901,7 +5968,8 @@ const SupabaseBridge = {
 
         // Push update to central server so all other devices see it
         try {
-            fetch('/api/db', {
+            const apiBase = this.getApiBase();
+            fetch(`${apiBase}/api/db`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -5970,6 +6038,23 @@ const SupabaseBridge = {
 
         this.savePersistedData(table);
 
+        // Send explicit archive action to central database
+        try {
+            const apiBase = this.getApiBase();
+            fetch(`${apiBase}/api/db`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    table: table,
+                    action: 'archive',
+                    id: idStr,
+                    reason: reason,
+                    user: userEmail,
+                    timestamp: item.archived_at
+                })
+            }).catch(() => null);
+        } catch(e) {}
+
         this.logAudit("Compliance & Archival", "RECORD_ARCHIVED", idStr, userEmail, {
             table: table,
             archived_id: idStr,
@@ -6014,6 +6099,20 @@ const SupabaseBridge = {
         delete item.archive_reason;
 
         this.savePersistedData(table);
+
+        // Send explicit unarchive action to central database
+        try {
+            const apiBase = this.getApiBase();
+            fetch(`${apiBase}/api/db`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    table: table,
+                    action: 'unarchive',
+                    id: idStr
+                })
+            }).catch(() => null);
+        } catch(e) {}
 
         this.logAudit("Compliance & Archival", "RECORD_RESTORED", idStr, userEmail, {
             table: table,
@@ -6096,6 +6195,21 @@ const SupabaseBridge = {
         if (idx !== -1) {
             this.db[table][idx] = { ...this.db[table][idx], ...updates };
             this.savePersistedData(table);
+
+            try {
+                const apiBase = this.getApiBase();
+                fetch(`${apiBase}/api/db`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        table: table,
+                        action: 'update',
+                        id: idOrBookingCode,
+                        updates: updates
+                    })
+                }).catch(() => null);
+            } catch(e) {}
+
             return this.db[table][idx];
         }
         return null;
@@ -6118,6 +6232,19 @@ const SupabaseBridge = {
 
         this.db[table].unshift(record);
         this.savePersistedData(table);
+
+        try {
+            const apiBase = this.getApiBase();
+            fetch(`${apiBase}/api/db`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    table: table,
+                    action: 'insert',
+                    record: record
+                })
+            }).catch(() => null);
+        } catch(e) {}
         
         // Auto-create informative audit log
         if (table === 'bookings') {
@@ -6208,7 +6335,8 @@ const SupabaseBridge = {
         }
 
         try {
-            fetch('/api/db', {
+            const apiBase = this.getApiBase();
+            fetch(`${apiBase}/api/db`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

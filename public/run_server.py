@@ -11,6 +11,7 @@ import subprocess
 import urllib.parse
 import urllib.request
 import json
+from datetime import datetime
 
 PORT = 8000
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
@@ -332,10 +333,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_OPTIONS(self):
-        self.send_response(204)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/plain')
+        self.send_header('Content-Length', '0')
         self.end_headers()
 
     def do_POST(self):
@@ -465,6 +465,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 table = payload.get('table')
                 action = payload.get('action', 'insert')
 
+                def get_rec_key(r):
+                    if not isinstance(r, dict):
+                        return None
+                    for k in ('booking_code', 'id', 'ticket_id', 'invoice_no', 'txn_ref'):
+                        v = r.get(k)
+                        if v is not None and str(v).strip():
+                            return str(v).strip()
+                    return None
+
+                def record_matches_id(item, id_val):
+                    if not isinstance(item, dict) or not id_val:
+                        return False
+                    id_val_str = str(id_val).strip()
+                    for k in ('id', 'booking_code', 'ticket_id', 'invoice_no', 'txn_ref'):
+                        v = item.get(k)
+                        if v is not None and str(v).strip() == id_val_str:
+                            return True
+                    return False
+
                 if action == 'sync_all':
                     tables_data = payload.get('data', {})
                     if isinstance(tables_data, dict):
@@ -475,15 +494,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                                 db[tbl] = []
                             existing_map = {}
                             for idx, item in enumerate(db[tbl]):
-                                k = item.get('booking_code') or item.get('id') or item.get('ticket_id') or item.get('invoice_no')
+                                k = get_rec_key(item)
                                 if k:
-                                    existing_map[str(k)] = idx
+                                    existing_map[k] = idx
                             for r in records:
-                                k = r.get('booking_code') or r.get('id') or r.get('ticket_id') or r.get('invoice_no')
-                                if k and str(k) in existing_map:
-                                    db[tbl][existing_map[str(k)]].update(r)
+                                if not isinstance(r, dict):
+                                    continue
+                                k = get_rec_key(r)
+                                if k and k in existing_map:
+                                    target_idx = existing_map[k]
+                                    was_archived = db[tbl][target_idx].get('is_archived', False)
+                                    db[tbl][target_idx].update(r)
+                                    if was_archived and 'is_archived' not in r:
+                                        db[tbl][target_idx]['is_archived'] = True
                                 else:
-                                    db[tbl].insert(0, r)
+                                    db[tbl].append(r)
+                                    if k:
+                                        existing_map[k] = len(db[tbl]) - 1
                     resp = {'status': 'ok', 'message': 'Database synced across devices', 'db': db}
 
                 elif table:
@@ -491,13 +518,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         db[table] = []
                     if action == 'insert':
                         record = payload.get('record', {})
-                        if record:
-                            k = record.get('booking_code') or record.get('id') or record.get('ticket_id') or record.get('invoice_no')
+                        if record and isinstance(record, dict):
+                            k = get_rec_key(record)
                             exists = False
                             if k:
                                 for idx, item in enumerate(db[table]):
-                                    ik = item.get('booking_code') or item.get('id') or item.get('ticket_id') or item.get('invoice_no')
-                                    if ik and str(ik) == str(k):
+                                    ik = get_rec_key(item)
+                                    if ik and ik == k:
                                         db[table][idx].update(record)
                                         exists = True
                                         break
@@ -506,32 +533,44 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         resp = {'status': 'ok', 'record': record, 'table': table}
 
                     elif action == 'update':
-                        id_val = str(payload.get('id', ''))
+                        id_val = str(payload.get('id', '')).strip()
                         updates = payload.get('updates', {})
                         updated_item = None
                         for idx, item in enumerate(db[table]):
-                            ik = str(item.get('booking_code') or item.get('id') or item.get('ticket_id') or item.get('invoice_no') or '')
-                            if ik == id_val:
+                            if record_matches_id(item, id_val):
                                 db[table][idx].update(updates)
                                 updated_item = db[table][idx]
                                 break
                         resp = {'status': 'ok', 'record': updated_item, 'table': table}
 
                     elif action == 'archive':
-                        id_val = str(payload.get('id', ''))
+                        id_val = str(payload.get('id', '')).strip()
                         reason = payload.get('reason', 'Archived by user')
                         archived_by = payload.get('user', 'superadmin@hirna.ph')
+                        archived_at = payload.get('timestamp') or datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                         archived_item = None
                         for idx, item in enumerate(db[table]):
-                            ik = str(item.get('booking_code') or item.get('id') or item.get('ticket_id') or item.get('invoice_no') or '')
-                            if ik == id_val:
+                            if record_matches_id(item, id_val):
                                 db[table][idx]['is_archived'] = True
-                                db[table][idx]['archived_at'] = payload.get('timestamp')
+                                db[table][idx]['archived_at'] = archived_at
                                 db[table][idx]['archived_by'] = archived_by
                                 db[table][idx]['archive_reason'] = reason
                                 archived_item = db[table][idx]
                                 break
                         resp = {'status': 'ok', 'record': archived_item, 'table': table}
+
+                    elif action == 'unarchive':
+                        id_val = str(payload.get('id', '')).strip()
+                        unarchived_item = None
+                        for idx, item in enumerate(db[table]):
+                            if record_matches_id(item, id_val):
+                                db[table][idx]['is_archived'] = False
+                                db[table][idx].pop('archived_at', None)
+                                db[table][idx].pop('archived_by', None)
+                                db[table][idx].pop('archive_reason', None)
+                                unarchived_item = db[table][idx]
+                                break
+                        resp = {'status': 'ok', 'record': unarchived_item, 'table': table}
                     else:
                         resp = {'status': 'error', 'message': f'Unknown action {action}'}
                 else:
@@ -574,7 +613,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Expires', '0')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Cache-Control, Authorization, X-Requested-With')
         super().end_headers()
 
 def find_available_server():

@@ -774,12 +774,16 @@ const PaymentsModule = {
         this.activeBooking._processed = true;
 
         const cleanCode = (method || 'GCASH').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
-        const txnRef = `TXN-${cleanCode || 'PAY'}-${Math.floor(100000 + Math.random() * 900000)}`;
-        const invoiceNo = `INV-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+        const txnRef = this.activeBooking.txn_ref || `TXN-${cleanCode || 'PAY'}-${Math.floor(100000 + Math.random() * 900000)}`;
+        const invoiceNo = this.activeBooking.invoice_no || `INV-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+        const paidAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
         this.activeBooking.payment_status = 'completed';
         this.activeBooking.status = 'completed';
         this.activeBooking.payment_method = method;
+        this.activeBooking.invoice_no = invoiceNo;
+        this.activeBooking.txn_ref = txnRef;
+        this.activeBooking.paid_at = paidAt;
 
         // Persist update in Supabase / Local storage / Central Server
         try {
@@ -787,10 +791,36 @@ const PaymentsModule = {
             SupabaseBridge.update('bookings', bookingKey, {
                 payment_status: 'completed',
                 status: 'completed',
-                payment_method: method
+                payment_method: method,
+                invoice_no: invoiceNo,
+                txn_ref: txnRef,
+                paid_at: paidAt
             });
+
+            // Formally record receipt into payments ledger table
+            const paymentRecord = {
+                id: `pay-${invoiceNo.replace('INV-2026-', '')}`,
+                invoice_no: invoiceNo,
+                txn_ref: txnRef,
+                booking_code: this.activeBooking.booking_code,
+                booking_id: this.activeBooking.id,
+                passenger_name: this.activeBooking.passenger_name || this.activeBooking.sender_name || 'Passenger',
+                passenger_phone: this.activeBooking.passenger_phone || this.activeBooking.sender_phone || '+63 917 123 4567',
+                amount: parseFloat(this.activeBooking.total_fare || 0),
+                total_fare: parseFloat(this.activeBooking.total_fare || 0),
+                base_fare: parseFloat(this.activeBooking.base_fare || (this.activeBooking.total_fare * 0.35)),
+                distance_fare: parseFloat(this.activeBooking.distance_fare || (this.activeBooking.total_fare * 0.45)),
+                time_fare: parseFloat(this.activeBooking.time_fare || (this.activeBooking.total_fare * 0.10)),
+                surge_multiplier: this.activeBooking.surge_multiplier || 1.0,
+                payment_method: method,
+                payment_status: 'completed',
+                service_type: this.activeBooking.service_type || 'standard',
+                created_at: paidAt,
+                is_archived: false
+            };
+            SupabaseBridge.insert('payments', paymentRecord);
         } catch (e) {
-            console.warn("Failed to update booking in storage:", e);
+            console.warn("Failed to update booking or insert payment in storage:", e);
         }
 
         // Log transaction to Audit
@@ -1037,8 +1067,9 @@ const PaymentsModule = {
             return;
         }
         if (confirm(`SuperAdmin Action: Are you sure you want to archive receipt & transaction record ${id}? It will be moved to Compliance Archives.`)) {
-            const archived = SupabaseBridge.archive('bookings', id, 'Archived from Payments Ledger');
-            if (archived) {
+            const archived1 = SupabaseBridge.archive('bookings', id, 'Archived from Payments Ledger');
+            const archived2 = SupabaseBridge.archive('payments', id, 'Archived from Payments Ledger');
+            if (archived1 || archived2) {
                 this.renderLedger();
                 this.closeReceiptModal();
                 if (typeof App !== 'undefined') App.showToast(`Receipt record ${id} safely moved to Compliance Archives.`, 'success');
@@ -1054,7 +1085,11 @@ const PaymentsModule = {
         const list = SupabaseBridge.getData('bookings');
         const b = list.find(item => item.id === id || item.booking_code === id) || this.activeBooking || list[0];
         if (b) {
-            this.showReceipt(b, `TXN-${(b.payment_method || 'GCASH').toUpperCase()}-994120`, `INV-2026-88219`, b.payment_method || 'GCash');
+            const codeNum = (b.booking_code || '').replace(/\D/g, '') || '88219';
+            const invoiceNo = b.invoice_no || `INV-2026-${codeNum.slice(-5) || '88219'}`;
+            const cleanCode = (b.payment_method || 'GCASH').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const txnRef = b.txn_ref || `TXN-${cleanCode}-${codeNum.slice(-6) || '994120'}`;
+            this.showReceipt(b, txnRef, invoiceNo, b.payment_method || 'GCash');
         }
     },
 
