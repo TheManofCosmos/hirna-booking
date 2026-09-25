@@ -468,7 +468,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 def get_rec_key(r):
                     if not isinstance(r, dict):
                         return None
-                    for k in ('booking_code', 'id', 'ticket_id', 'invoice_no', 'txn_ref'):
+                    for k in ('booking_code', 'id', 'booking_id', 'ticket_id', 'invoice_no', 'txn_ref'):
                         v = r.get(k)
                         if v is not None and str(v).strip():
                             return str(v).strip()
@@ -478,7 +478,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     if not isinstance(item, dict) or not id_val:
                         return False
                     id_val_str = str(id_val).strip()
-                    for k in ('id', 'booking_code', 'ticket_id', 'invoice_no', 'txn_ref'):
+                    for k in ('id', 'booking_code', 'booking_id', 'ticket_id', 'invoice_no', 'txn_ref'):
                         v = item.get(k)
                         if v is not None and str(v).strip() == id_val_str:
                             return True
@@ -623,6 +623,7 @@ def find_available_server():
         s = None
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(("0.0.0.0", p))
             s.close()
             server = socketserver.ThreadingTCPServer(("0.0.0.0", p), Handler)

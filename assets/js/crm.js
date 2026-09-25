@@ -9,7 +9,27 @@ const CRMModule = {
         searchQuery: ''        // free-text search string
     },
 
+    getReviewerName() {
+        if (typeof AuthModule !== 'undefined' && AuthModule.currentUser) {
+            const u = AuthModule.currentUser;
+            if (u.name && u.name.trim()) return u.name.trim();
+            if (u.full_name && u.full_name.trim()) return u.full_name.trim();
+            if (u.email && u.email.trim()) return u.email.trim().split('@')[0];
+        }
+        const local = localStorage.getItem('hirna_user_name');
+        if (local && local.trim()) return local.trim();
+        return 'Customer';
+    },
+
+    updateReviewerDisplay() {
+        const el = document.getElementById('crm-current-reviewer-display');
+        if (el) {
+            el.textContent = this.getReviewerName();
+        }
+    },
+
     init() {
+        this.updateReviewerDisplay();
         this.renderProfiles();
         this.renderFeedback();
         this.renderTickets();
@@ -511,7 +531,7 @@ const CRMModule = {
             const newFb = {
                 id: `fb-${Date.now()}`,
                 booking_code: "TNVS-2026-LIVE",
-                passenger: "Juan Dela Cruz",
+                passenger: this.getReviewerName(),
                 rating: rating,
                 comment: text,
                 sentiment: analysis.sentiment,

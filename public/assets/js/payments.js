@@ -1024,16 +1024,61 @@ const PaymentsModule = {
         if (!tbody) return;
 
         const isSuperAdmin = typeof AuthModule !== 'undefined' && AuthModule.isSuperAdmin();
-        const bookings = SupabaseBridge.getData('bookings');
-        const seen = new Set();
-        const uniqueBookings = bookings.filter(b => {
-            const key = b.booking_code || b.id;
-            if (!key || seen.has(key)) return false;
-            seen.add(key);
-            return true;
+        const bookings = SupabaseBridge.getData('bookings') || [];
+        const payments = SupabaseBridge.getData('payments') || [];
+
+        // Build unified list of transactions from both bookings and payments tables
+        const ledgerMap = new Map();
+
+        // 1. Add all payments records
+        payments.forEach(p => {
+            const key = p.booking_code || p.booking_id || p.invoice_no || p.id;
+            if (key) {
+                ledgerMap.set(key, {
+                    id: p.id || p.booking_id || key,
+                    booking_code: p.booking_code || p.invoice_no || key,
+                    created_at: p.created_at || 'Recently',
+                    payment_method: p.payment_method || 'GCash',
+                    total_fare: p.amount || p.total_fare || 0,
+                    service_type: p.service_type || 'standard',
+                    vehicle_class: p.vehicle_class || 'Standard Taxi',
+                    rawRecord: p
+                });
+            }
         });
 
-        tbody.innerHTML = uniqueBookings.map(b => `
+        // 2. Merge bookings records
+        bookings.forEach(b => {
+            const key = b.booking_code || b.id;
+            if (key) {
+                if (ledgerMap.has(key)) {
+                    const existing = ledgerMap.get(key);
+                    ledgerMap.set(key, {
+                        ...existing,
+                        ...b,
+                        total_fare: b.total_fare || existing.total_fare,
+                        payment_method: b.payment_method || existing.payment_method,
+                        rawRecord: { ...existing.rawRecord, ...b }
+                    });
+                } else {
+                    ledgerMap.set(key, {
+                        id: b.id,
+                        booking_code: b.booking_code,
+                        created_at: b.created_at || 'Recently',
+                        payment_method: b.payment_method || 'GCash',
+                        total_fare: b.total_fare || 0,
+                        service_type: b.service_type || 'standard',
+                        vehicle_class: b.vehicle_class || 'Standard Taxi',
+                        rawRecord: b
+                    });
+                }
+            }
+        });
+
+        const unifiedList = Array.from(ledgerMap.values());
+        unifiedList.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+        tbody.innerHTML = unifiedList.map(b => `
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                 <td class="px-4 py-3 font-mono text-xs font-semibold text-slate-800">${b.booking_code}</td>
                 <td class="px-4 py-3 text-xs text-slate-600">${b.created_at}</td>
@@ -1082,8 +1127,16 @@ const PaymentsModule = {
     },
 
     printReceipt(id) {
-        const list = SupabaseBridge.getData('bookings');
-        const b = list.find(item => item.id === id || item.booking_code === id) || this.activeBooking || list[0];
+        const bookings = SupabaseBridge.getData('bookings') || [];
+        const payments = SupabaseBridge.getData('payments') || [];
+        let b = bookings.find(item => item.id === id || item.booking_code === id);
+        if (!b) {
+            const p = payments.find(item => item.id === id || item.booking_code === id || item.booking_id === id || item.invoice_no === id);
+            if (p) {
+                b = bookings.find(item => item.id === p.booking_id || item.booking_code === p.booking_code) || p;
+            }
+        }
+        if (!b) b = this.activeBooking || bookings[0] || payments[0];
         if (b) {
             const codeNum = (b.booking_code || '').replace(/\D/g, '') || '88219';
             const invoiceNo = b.invoice_no || `INV-2026-${codeNum.slice(-5) || '88219'}`;

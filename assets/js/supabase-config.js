@@ -5754,16 +5754,15 @@ const SupabaseBridge = {
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    this.db.audit_logs = parsed;
-                    return;
+                    this.mergeTableRecords('audit_logs', parsed);
                 }
             }
         } catch (e) {
             console.warn("Failed loading saved audit logs", e);
         }
 
-        // Initialize comprehensive baseline audit logs if none exist
-        if (!this.db.audit_logs || this.db.audit_logs.length < 5) {
+        // Initialize comprehensive baseline audit logs only if completely empty
+        if (!this.db.audit_logs || this.db.audit_logs.length === 0) {
             this.db.audit_logs = this.getBaselineAuditLogs();
             try {
                 localStorage.setItem('hirna_audit_logs', JSON.stringify(this.db.audit_logs));
@@ -6021,8 +6020,10 @@ const SupabaseBridge = {
         const item = this.db[table].find(i => 
             (i.id && String(i.id) === idStr) ||
             (i.booking_code && String(i.booking_code) === idStr) ||
+            (i.booking_id && String(i.booking_id) === idStr) ||
             (i.ticket_id && String(i.ticket_id) === idStr) ||
-            (i.invoice_no && String(i.invoice_no) === idStr)
+            (i.invoice_no && String(i.invoice_no) === idStr) ||
+            (i.txn_ref && String(i.txn_ref) === idStr)
         );
         if (!item) return false;
 
@@ -6084,8 +6085,10 @@ const SupabaseBridge = {
         const item = this.db[table].find(i => 
             (i.id && String(i.id) === idStr) ||
             (i.booking_code && String(i.booking_code) === idStr) ||
+            (i.booking_id && String(i.booking_id) === idStr) ||
             (i.ticket_id && String(i.ticket_id) === idStr) ||
-            (i.invoice_no && String(i.invoice_no) === idStr)
+            (i.invoice_no && String(i.invoice_no) === idStr) ||
+            (i.txn_ref && String(i.txn_ref) === idStr)
         );
         if (!item) return false;
 
@@ -6151,7 +6154,7 @@ const SupabaseBridge = {
             const records = this.db[tbl] || [];
             records.forEach(item => {
                 if (item && item.is_archived) {
-                    const idDisplay = item.id || item.booking_code || item.ticket_id || item.invoice_no || 'REC-UNKNOWN';
+                    const idDisplay = item.booking_code || item.booking_id || item.invoice_no || item.ticket_id || item.id || 'REC-UNKNOWN';
                     archives.push({
                         ...item,
                         _table: tbl,
@@ -6170,6 +6173,7 @@ const SupabaseBridge = {
             if (table === 'bookings' || table === 'payments') {
                 if (typeof PaymentsModule !== 'undefined' && PaymentsModule.renderLedger) PaymentsModule.renderLedger();
                 if (typeof BookingModule !== 'undefined' && BookingModule.renderRecentPlaces) BookingModule.renderRecentPlaces();
+                if (typeof GPSModule !== 'undefined' && GPSModule.renderRecordedTrips) GPSModule.renderRecordedTrips();
             }
             if (table === 'support_tickets' || table === 'feedback') {
                 if (typeof CRMModule !== 'undefined') {
@@ -6178,7 +6182,7 @@ const SupabaseBridge = {
                 }
             }
             if (typeof AuditModule !== 'undefined') {
-                if (AuditModule.isArchivesUnlocked && AuditModule.renderArchives) AuditModule.renderArchives();
+                if (AuditModule.renderArchives) AuditModule.renderArchives();
                 if (AuditModule.renderAuditLogs) AuditModule.renderAuditLogs();
             }
         } catch (e) {
@@ -6188,9 +6192,14 @@ const SupabaseBridge = {
 
     update(table, idOrBookingCode, updates) {
         if (!this.db || !this.db[table]) return null;
+        const idStr = String(idOrBookingCode);
         const idx = this.db[table].findIndex(item => 
-            (item.id && item.id === idOrBookingCode) || 
-            (item.booking_code && item.booking_code === idOrBookingCode)
+            (item.id && String(item.id) === idStr) || 
+            (item.booking_code && String(item.booking_code) === idStr) ||
+            (item.booking_id && String(item.booking_id) === idStr) ||
+            (item.invoice_no && String(item.invoice_no) === idStr) ||
+            (item.ticket_id && String(item.ticket_id) === idStr) ||
+            (item.txn_ref && String(item.txn_ref) === idStr)
         );
         if (idx !== -1) {
             this.db[table][idx] = { ...this.db[table][idx], ...updates };

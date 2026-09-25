@@ -16,9 +16,28 @@ const AuditModule = {
     activeArchiveDetail: null,
 
     init() {
+        this.checkArchiveAutoUnlock();
         this.renderAuditLogs();
         this.checkArchiveLockout();
+        this.renderArchives();
         this.bindEvents();
+    },
+
+    checkArchiveAutoUnlock() {
+        try {
+            const isUnlockedSession = sessionStorage.getItem('hirna_arch_unlocked') === 'true';
+            const isSuperAdminUser = (typeof AuthModule !== 'undefined' && AuthModule.currentUser && (AuthModule.currentUser.role === 'superadmin' || AuthModule.currentUser.role === 'admin'));
+            if (isUnlockedSession || isSuperAdminUser) {
+                this.isArchivesUnlocked = true;
+                document.getElementById('archives-locked-container')?.classList.add('hidden');
+                document.getElementById('archives-unlocked-container')?.classList.remove('hidden');
+                const badge = document.getElementById('archives-lock-status-badge');
+                if (badge) {
+                    badge.className = "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 border border-emerald-500/40 text-emerald-300";
+                    badge.innerText = "Unlocked & Decrypted";
+                }
+            }
+        } catch(e) {}
     },
 
     getModuleBadgeClass(module) {
@@ -641,6 +660,9 @@ const AuditModule = {
         // Successfully authenticated!
         this.archiveAttempts = 0;
         this.isArchivesUnlocked = true;
+        try {
+            sessionStorage.setItem('hirna_arch_unlocked', 'true');
+        } catch(e) {}
         if (alertBox) alertBox.classList.add('hidden');
 
         // Toggle UI
@@ -669,6 +691,9 @@ const AuditModule = {
 
     lockArchives() {
         this.isArchivesUnlocked = false;
+        try {
+            sessionStorage.removeItem('hirna_arch_unlocked');
+        } catch(e) {}
         document.getElementById('archives-unlocked-container')?.classList.add('hidden');
         document.getElementById('archives-locked-container')?.classList.remove('hidden');
 
@@ -697,6 +722,12 @@ const AuditModule = {
     },
 
     renderArchives(filter = this.archiveFilter, query = this.archiveSearchQuery) {
+        const allArchivesTotal = SupabaseBridge.getAllArchives();
+        const pill = document.getElementById('archives-count-pill');
+        if (pill) {
+            pill.innerText = `${allArchivesTotal.length} archived record${allArchivesTotal.length === 1 ? '' : 's'}`;
+        }
+
         if (!this.isArchivesUnlocked) return;
         const tbody = document.getElementById('archives-tbody');
         if (!tbody) return;
@@ -713,11 +744,6 @@ const AuditModule = {
                 const fullMatch = JSON.stringify(item).toLowerCase().includes(q);
                 return idMatch || tableMatch || byMatch || reasonMatch || fullMatch;
             });
-        }
-
-        const pill = document.getElementById('archives-count-pill');
-        if (pill) {
-            pill.innerText = `${archives.length} archived record${archives.length === 1 ? '' : 's'}`;
         }
 
         if (archives.length === 0) {
@@ -918,9 +944,8 @@ const AuditModule = {
 
         // Live sync when database changes (e.g. archiving/restoring)
         window.addEventListener('hirna:db_updated', () => {
-            if (this.isArchivesUnlocked) {
-                this.renderArchives();
-            }
+            this.renderArchives();
+            this.renderAuditLogs();
         });
 
         // Cross-tab storage sync
@@ -928,7 +953,7 @@ const AuditModule = {
             if (e.key === 'hirna_audit_logs') {
                 this.renderAuditLogs();
             }
-            if (e.key && e.key.startsWith('hirna_db_') && this.isArchivesUnlocked) {
+            if (e.key && e.key.startsWith('hirna_db_')) {
                 this.renderArchives();
             }
         });

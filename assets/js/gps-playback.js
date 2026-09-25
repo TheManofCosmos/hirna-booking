@@ -84,6 +84,13 @@ const GPSModule = {
                 this.renderRecordedTrips();
             }
         });
+
+        // Listen for custom database update events (central server or local)
+        window.addEventListener('hirna:db_updated', (e) => {
+            if (!e.detail || !e.detail.table || e.detail.table === 'bookings') {
+                this.renderRecordedTrips();
+            }
+        });
     },
 
     initMap() {
@@ -338,9 +345,10 @@ const GPSModule = {
         const endLng = dropoff[1];
         const endLat = dropoff[0];
 
+        const apiBase = (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.getApiBase) ? SupabaseBridge.getApiBase() : '';
         const endpoints = [
-            `/api/route?start=${startLat},${startLng}&end=${endLat},${endLng}&steps=true`,
-            `http://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson&steps=true`
+            `${apiBase}/api/route?start=${startLat},${startLng}&end=${endLat},${endLng}&steps=true`,
+            `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson&steps=true`
         ];
 
         for (const url of endpoints) {
