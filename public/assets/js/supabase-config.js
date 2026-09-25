@@ -6292,6 +6292,19 @@ const SupabaseBridge = {
                 }).catch(() => null);
             } catch(e) {}
 
+            // Broadcast live update event & refresh active UI modules
+            try {
+                window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { table, action: 'update', id: idOrBookingCode, updates } }));
+            } catch(e) {}
+
+            if (this.channel) {
+                try {
+                    this.channel.postMessage({ type: 'DB_UPDATE', table, action: 'update', id: idOrBookingCode, updates });
+                } catch(e) {}
+            }
+
+            this.refreshActiveModules(table);
+
             return this.db[table][idx];
         }
         return null;
