@@ -19,6 +19,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.header import Header
+from email.utils import make_msgid, formatdate
 
 GMAIL_SENDER = os.environ.get("GMAIL_SENDER", "hirnasecurity@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "mukfvbhuiepcocoq")
@@ -31,6 +32,11 @@ def send_real_email_otp(recipient_email, otp_code, purpose="login", device="Asus
         is_pin = purpose in ["pin_setup", "pin_reset"]
         is_alert = purpose in ["new_login_alert", "security_alert"]
         
+        msg["Date"] = formatdate(localtime=True)
+        msg["Message-ID"] = make_msgid(domain="gmail.com")
+        msg["X-Priority"] = "1"
+        msg["Importance"] = "high"
+
         if is_alert:
             current_time = time.strftime("%Y-%m-%d %H:%M:%S UTC+8")
             msg["Subject"] = Header(f"Hirna Security Alert: New Device Sign-In ({device})", "utf-8").encode()
