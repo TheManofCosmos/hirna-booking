@@ -175,62 +175,6 @@ const DEFAULT_INITIAL_DATA = {
   ],
   "bookings": [
     {
-      "id": "c0000001-0000-0000-0000-000000000001",
-      "booking_code": "TNVS-2026-0091",
-      "service_type": "standard",
-      "passenger_name": "Juan Dela Cruz",
-      "passenger_phone": "+63 917 123 4567",
-      "driver_name": "Ricardo Dalisay",
-      "vehicle_plate": "NFD-8892",
-      "vehicle_model": "Toyota Vios 1.5G",
-      "vehicle_class": "Sedan (4-Seater)",
-      "pickup": "Ayala Malls Circuit, Makati City",
-      "pickup_coords": [14.5758, 121.0183],
-      "dropoff": "Bonifacio High Street, BGC, Taguig",
-      "dropoff_coords": [14.5517, 121.0509],
-      "distance_km": 5.8,
-      "duration_min": 22,
-      "base_fare": 45.00,
-      "distance_fare": 87.00,
-      "time_fare": 44.00,
-      "surge_multiplier": 1.35,
-      "surge_reason": "Morning Rush in Makati CBD (Demand/Supply = 2.4)",
-      "total_fare": 237.60,
-      "payment_method": "GCash",
-      "payment_status": "completed",
-      "status": "completed",
-      "created_at": "2026-08-20 08:30:00",
-      "safety_score": 98
-    },
-    {
-      "id": "c0000001-0000-0000-0000-000000000002",
-      "booking_code": "TNVS-2026-0092",
-      "service_type": "premium",
-      "passenger_name": "Maria Santos",
-      "passenger_phone": "+63 918 987 6543",
-      "driver_name": "Elena Roces",
-      "vehicle_plate": "NBL-3301",
-      "vehicle_model": "Mitsubishi Xpander",
-      "vehicle_class": "MPV (6-Seater)",
-      "pickup": "Ortigas Center, Pasig City",
-      "pickup_coords": [14.5869, 121.0614],
-      "dropoff": "SM Mall of Asia, Pasay City",
-      "dropoff_coords": [14.5353, 120.9829],
-      "distance_km": 14.2,
-      "duration_min": 45,
-      "base_fare": 60.00,
-      "distance_fare": 284.00,
-      "time_fare": 90.00,
-      "surge_multiplier": 1.20,
-      "surge_reason": "Moderate Rain & EDSA Congestion",
-      "total_fare": 520.80,
-      "payment_method": "Maya",
-      "payment_status": "completed",
-      "status": "completed",
-      "created_at": "2026-08-20 11:15:00",
-      "safety_score": 95
-    },
-    {
       "id": "c0000001-0000-0000-0000-000000000003",
       "booking_code": "HIRNA-PCL-892104",
       "service_type": "parcel",
@@ -5786,6 +5730,29 @@ const SupabaseBridge = {
     },
 
     hydrateAllFromLocalStorage() {
+        // One-time cleanup: purge removed default sample bookings from localStorage cache
+        try {
+            const _PURGE_BOOKING_IDS = [
+                'c0000001-0000-0000-0000-000000000001', // TNVS-2026-0091 (removed)
+                'c0000001-0000-0000-0000-000000000002', // TNVS-2026-0092 (removed)
+                'test-bk-999'                           // TEST-2026-999  (orphan)
+            ];
+            const _PURGE_BOOKING_CODES = ['TNVS-2026-0091', 'TNVS-2026-0092', 'TEST-2026-999'];
+            const _storedBookings = localStorage.getItem('hirna_db_bookings');
+            if (_storedBookings) {
+                const _parsed = JSON.parse(_storedBookings);
+                if (Array.isArray(_parsed)) {
+                    const _cleaned = _parsed.filter(b =>
+                        !_PURGE_BOOKING_IDS.includes(b.id) &&
+                        !_PURGE_BOOKING_CODES.includes(b.booking_code)
+                    );
+                    if (_cleaned.length !== _parsed.length) {
+                        localStorage.setItem('hirna_db_bookings', JSON.stringify(_cleaned));
+                    }
+                }
+            }
+        } catch(e) {}
+
         this.loadPersistedAuditLogs();
         const tables = ['bookings', 'feedback', 'support_tickets', 'payments', 'users', 'drivers', 'vehicles'];
         tables.forEach(t => this.loadPersistedData(t));
