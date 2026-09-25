@@ -2390,6 +2390,41 @@ const BookingModule = {
 
         this.checkBothAddressesFilled();
 
+        // Render booking history table immediately on load
+        this.renderHistory();
+
+        // Listen for real-time database updates
+        if (!this._dbListenerBound) {
+            this._dbListenerBound = true;
+            window.addEventListener('hirna:db_updated', (e) => {
+                if (!e.detail || !e.detail.table || e.detail.table === 'bookings') {
+                    this.renderHistory();
+                }
+            });
+        }
+
+        // Resume ongoing trip simulation if user refreshed or navigated back
+        try {
+            const savedSim = localStorage.getItem('hirna_active_trip_sim');
+            if (savedSim) {
+                const parsed = JSON.parse(savedSim);
+                if (parsed && parsed.booking && (Date.now() - (parsed.timestamp || 0)) < 20 * 60 * 1000) {
+                    const dbBookings = (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.getData) ? SupabaseBridge.getData('bookings') : [];
+                    const bKey = parsed.booking.booking_code || parsed.booking.id;
+                    const matched = dbBookings.find(b => (b.booking_code && b.booking_code === bKey) || (b.id && b.id === bKey));
+                    if (!matched || matched.status !== 'completed') {
+                        setTimeout(() => {
+                            this.resumeActiveTrip(parsed);
+                        }, 500);
+                    } else {
+                        localStorage.removeItem('hirna_active_trip_sim');
+                    }
+                } else {
+                    localStorage.removeItem('hirna_active_trip_sim');
+                }
+            }
+        } catch(e) {}
+
         // Start with clean empty boxes as requested (no pre-filled addresses)
     },
 
@@ -5975,6 +6010,54 @@ const BookingModule = {
         }
     },
 
+    resumeActiveTrip(savedSim) {
+        if (!savedSim || !savedSim.booking) return;
+        const booking = savedSim.booking;
+        const phase = savedSim.phase || 'en_route_pickup';
+
+        if (!this.map) {
+            this.initMap();
+        }
+
+        const pickup = this.normalizeCoords(booking.pickup_coords, [14.5583, 121.0189]);
+        const dropoff = this.normalizeCoords(booking.dropoff_coords, [14.5517, 121.0509]);
+        this.pickupCoords = pickup;
+        this.dropoffCoords = dropoff;
+
+        if (this.map) {
+            if (pickup) {
+                if (this.pickupMarker) {
+                    try { this.pickupMarker.setLatLng(pickup); } catch(e) {}
+                } else {
+                    this.pickupMarker = L.marker(pickup, { icon: this.getPickupIcon(), draggable: false }).addTo(this.map);
+                }
+            }
+            if (dropoff) {
+                if (this.dropoffMarker) {
+                    try { this.dropoffMarker.setLatLng(dropoff); } catch(e) {}
+                } else {
+                    this.dropoffMarker = L.marker(dropoff, { icon: this.getDropoffIcon(), draggable: false }).addTo(this.map);
+                }
+            }
+        }
+
+        this.tripSimulation.active = true;
+        this.tripSimulation.booking = booking;
+        this.tripSimulation.phase = phase;
+        this.tripSimulation._settled = false;
+        this.tripSimulation.autoTrack = true;
+
+        if (phase === 'arrived_dropoff') {
+            this.onArrivedAtDropoff();
+        } else if (phase === 'arrived_pickup') {
+            this.onArrivedAtPickup();
+        } else if (phase === 'en_route_dropoff') {
+            this.proceedToDropoff();
+        } else {
+            this.spawnDriverAndStartLegToPickup(booking);
+        }
+    },
+
     startTripSimulation(booking) {
         if (!booking) return;
 
@@ -5983,6 +6066,14 @@ const BookingModule = {
         this.tripSimulation.phase = 'assigning';
         this.tripSimulation._settled = false;
         this.tripSimulation.autoTrack = true;
+
+        try {
+            localStorage.setItem('hirna_active_trip_sim', JSON.stringify({
+                booking: booking,
+                phase: 'assigning',
+                timestamp: Date.now()
+            }));
+        } catch(e) {}
 
         // Pre-compute driverCoords and pre-fetch the driving route to pickup during assignment modal!
         const pickup = this.normalizeCoords(booking.pickup_coords || this.pickupCoords, [14.5583, 121.0189]);
@@ -6101,7 +6192,7 @@ const BookingModule = {
     },
 
     async spawnDriverAndStartLegToPickup(booking) {
-        if (!this.tripSimulation.active || this.tripSimulation.phase !== 'assigning') return;
+        if (!this.tripSimulation.active || (this.tripSimulation.phase !== 'assigning' && this.tripSimulation.phase !== 'en_route_pickup')) return;
         const pickup = this.normalizeCoords(booking.pickup_coords || this.pickupCoords, [14.5583, 121.0189]);
         booking.pickup_coords = pickup;
 
@@ -6221,6 +6312,13 @@ const BookingModule = {
         }
 
         this.tripSimulation.phase = 'en_route_pickup';
+        try {
+            localStorage.setItem('hirna_active_trip_sim', JSON.stringify({
+                booking: booking,
+                phase: 'en_route_pickup',
+                timestamp: Date.now()
+            }));
+        } catch(e) {}
 
         if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
             const b = this.tripSimulation.booking || {};
@@ -6542,6 +6640,13 @@ const BookingModule = {
 
     onArrivedAtPickup() {
         this.tripSimulation.phase = 'arrived_pickup';
+        try {
+            localStorage.setItem('hirna_active_trip_sim', JSON.stringify({
+                booking: this.tripSimulation.booking,
+                phase: 'arrived_pickup',
+                timestamp: Date.now()
+            }));
+        } catch(e) {}
 
         if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
             const b = this.tripSimulation.booking || {};
@@ -6735,6 +6840,13 @@ const BookingModule = {
         this.updateTrackButtonUI(true);
 
         this.tripSimulation.phase = 'en_route_dropoff';
+        try {
+            localStorage.setItem('hirna_active_trip_sim', JSON.stringify({
+                booking: this.tripSimulation.booking,
+                phase: 'en_route_dropoff',
+                timestamp: Date.now()
+            }));
+        } catch(e) {}
 
         if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
             const b = this.tripSimulation.booking || {};
@@ -6842,6 +6954,13 @@ const BookingModule = {
         this.tripSimulation._settled = true;
 
         this.tripSimulation.phase = 'arrived_dropoff';
+        try {
+            localStorage.setItem('hirna_active_trip_sim', JSON.stringify({
+                booking: this.tripSimulation.booking,
+                phase: 'arrived_dropoff',
+                timestamp: Date.now()
+            }));
+        } catch(e) {}
 
         if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
             const b = this.tripSimulation.booking || {};
@@ -6969,6 +7088,9 @@ const BookingModule = {
 
         this.tripSimulation.active = false;
         this.tripSimulation.phase = null;
+        try {
+            localStorage.removeItem('hirna_active_trip_sim');
+        } catch(e) {}
     },
 
     closeReceipt() {

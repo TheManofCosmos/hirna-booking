@@ -5785,7 +5785,16 @@ const SupabaseBridge = {
         return '';
     },
 
+    hydrateAllFromLocalStorage() {
+        this.loadPersistedAuditLogs();
+        const tables = ['bookings', 'feedback', 'support_tickets', 'payments', 'users', 'drivers', 'vehicles'];
+        tables.forEach(t => this.loadPersistedData(t));
+    },
+
     async init() {
+        // Immediate synchronous local hydration
+        this.hydrateAllFromLocalStorage();
+
         let apiBase = this.getApiBase();
         // 1. First fetch central server database (/api/db or database/data.json)
         try {
@@ -5814,11 +5823,21 @@ const SupabaseBridge = {
                 if (serverDb && typeof serverDb === 'object') {
                     if (!this.db) this.db = {};
                     // Merge tables from central server
+                    let hasMergedAny = false;
                     Object.keys(serverDb).forEach(tbl => {
                         if (Array.isArray(serverDb[tbl])) {
-                            this.mergeTableRecords(tbl, serverDb[tbl]);
+                            const changed = this.mergeTableRecords(tbl, serverDb[tbl]);
+                            if (changed) {
+                                hasMergedAny = true;
+                                this.refreshActiveModules(tbl);
+                            }
                         }
                     });
+                    if (hasMergedAny) {
+                        try {
+                            window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { action: 'initial_remote_sync' } }));
+                        } catch(e) {}
+                    }
                     console.log("[SupabaseBridge] Synced with central cloud/server database.");
                 }
             } else {
@@ -5829,9 +5848,7 @@ const SupabaseBridge = {
         }
 
         // 2. Load persisted local tables and merge them
-        this.loadPersistedAuditLogs();
-        const tables = ['bookings', 'feedback', 'support_tickets', 'payments', 'users', 'drivers', 'vehicles'];
-        tables.forEach(t => this.loadPersistedData(t));
+        this.hydrateAllFromLocalStorage();
 
         // 3. Sync local data up to central database so any offline/previous records are universally shared
         this.syncAllToRemote();
@@ -5991,6 +6008,7 @@ const SupabaseBridge = {
             const apiBase = this.getApiBase();
             fetch(`${apiBase}/api/db`, {
                 method: 'POST',
+                keepalive: true,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'sync_all',
@@ -6022,8 +6040,10 @@ const SupabaseBridge = {
             return this.db.audit_logs || [];
         }
         if (!this.db) this.db = {};
-        if (this.db[table] === undefined) {
+        if (!this._hydratedTables) this._hydratedTables = {};
+        if (!this._hydratedTables[table]) {
             this.loadPersistedData(table);
+            this._hydratedTables[table] = true;
         }
         const list = this.db[table] || [];
         if (!includeArchived) {
@@ -6065,6 +6085,7 @@ const SupabaseBridge = {
             const apiBase = this.getApiBase();
             fetch(`${apiBase}/api/db`, {
                 method: 'POST',
+                keepalive: true,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     table: table,
@@ -6129,6 +6150,7 @@ const SupabaseBridge = {
             const apiBase = this.getApiBase();
             fetch(`${apiBase}/api/db`, {
                 method: 'POST',
+                keepalive: true,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     table: table,
@@ -6222,7 +6244,7 @@ const SupabaseBridge = {
         try {
             if (table === 'bookings' || table === 'payments') {
                 if (typeof PaymentsModule !== 'undefined' && PaymentsModule.renderLedger) PaymentsModule.renderLedger();
-                if (typeof BookingModule !== 'undefined' && BookingModule.renderRecentPlaces) BookingModule.renderRecentPlaces();
+                if (typeof BookingModule !== 'undefined' && BookingModule.renderHistory) BookingModule.renderHistory();
                 if (typeof GPSModule !== 'undefined' && GPSModule.renderRecordedTrips) GPSModule.renderRecordedTrips();
             }
             if (table === 'support_tickets' || table === 'feedback') {
@@ -6259,6 +6281,7 @@ const SupabaseBridge = {
                 const apiBase = this.getApiBase();
                 fetch(`${apiBase}/api/db`, {
                     method: 'POST',
+                    keepalive: true,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         table: table,
@@ -6277,18 +6300,36 @@ const SupabaseBridge = {
     insert(table, record) {
         if (!this.db[table]) this.db[table] = [];
         
-        // Prevent duplicate insertion using proper primary key per table
+        // Prevent duplicate insertion or perform upsert if record exists
         if (record) {
-            const exists = this.db[table].some(item => {
+            const idx = this.db[table].findIndex(item => {
                 if (record.id && item.id && String(item.id) === String(record.id)) return true;
                 if (table === 'bookings' && record.booking_code && item.booking_code && String(item.booking_code) === String(record.booking_code)) return true;
                 if (table === 'payments' && record.invoice_no && item.invoice_no && String(item.invoice_no) === String(record.invoice_no)) return true;
+                if (table === 'payments' && record.txn_ref && item.txn_ref && String(item.txn_ref) === String(record.txn_ref)) return true;
                 if (table === 'support_tickets' && record.ticket_id && item.ticket_id && String(item.ticket_id) === String(record.ticket_id)) return true;
                 return false;
             });
-            if (exists) {
-                console.warn(`[SupabaseBridge] Duplicate prevented for ${record.id || record.booking_code || record.invoice_no}`);
-                return record;
+            if (idx !== -1) {
+                // Upsert: merge updates into existing record and persist
+                this.db[table][idx] = { ...this.db[table][idx], ...record };
+                this.savePersistedData(table);
+                try {
+                    const apiBase = this.getApiBase();
+                    fetch(`${apiBase}/api/db`, {
+                        method: 'POST',
+                        keepalive: true,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            table: table,
+                            action: 'update',
+                            id: record.id || record.booking_code || record.invoice_no || record.ticket_id,
+                            updates: record
+                        })
+                    }).catch(() => null);
+                } catch(e) {}
+                this.refreshActiveModules(table);
+                return this.db[table][idx];
             }
         }
 
@@ -6299,6 +6340,7 @@ const SupabaseBridge = {
             const apiBase = this.getApiBase();
             fetch(`${apiBase}/api/db`, {
                 method: 'POST',
+                keepalive: true,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     table: table,
@@ -6433,6 +6475,7 @@ const SupabaseBridge = {
                 const apiBase = this.getApiBase();
                 fetch(`${apiBase}/api/db`, {
                     method: 'POST',
+                    keepalive: true,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         table: 'audit_logs',
@@ -6450,6 +6493,11 @@ const SupabaseBridge = {
         }
     }
 };
+
+// Immediately hydrate all tables synchronously on load before submodules initialize
+try {
+    SupabaseBridge.hydrateAllFromLocalStorage();
+} catch(e) {}
 
 // Multi-Tab & Cross-Module Synchronization Engine
 SupabaseBridge.channel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('hirna_sync') : null;

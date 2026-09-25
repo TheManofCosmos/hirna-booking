@@ -142,21 +142,16 @@
             <!-- ============================================================= -->
             <div id="payments-wallet-section" class="hidden bg-gradient-to-r from-hirna-900 via-hirna-850 to-slate-900 p-5 rounded-2xl border border-hirna-700/80 shadow-md text-white transition-all duration-300">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div class="flex items-center space-x-4">
-                        <div class="w-12 h-12 rounded-2xl bg-gold-500/20 border border-gold-400/40 flex items-center justify-center text-gold-400 text-2xl shadow-inner shrink-0">
-                            
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold tracking-wider text-gold-400 uppercase">Hirna Digital Wallet & Treasury</span>
+                            <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold rounded-full">Active • SuperAdmin Role</span>
                         </div>
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs font-bold tracking-wider text-gold-400 uppercase">Hirna Digital Wallet & Treasury</span>
-                                <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold rounded-full">Active • SuperAdmin Role</span>
-                            </div>
-                            <div class="flex items-baseline space-x-2 mt-1">
-                                <span class="text-3xl font-black text-white font-mono tracking-tight hirna-wallet-amount-display" id="payments-wallet-amount">₱2,450.00</span>
-                                <span class="text-xs text-slate-300">Available In-App Balance</span>
-                            </div>
-                            <p class="text-[11px] text-slate-400 mt-0.5">Stored value balance for instant booking settlements, driver payouts & digital disbursements</p>
+                        <div class="flex items-baseline space-x-2 mt-1">
+                            <span class="text-3xl font-black text-white font-mono tracking-tight hirna-wallet-amount-display" id="payments-wallet-amount">₱2,450.00</span>
+                            <span class="text-xs text-slate-300">Available In-App Balance</span>
                         </div>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Stored value balance for instant booking settlements, driver payouts & digital disbursements</p>
                     </div>
                     <div class="flex items-center flex-wrap gap-2.5">
                         <button type="button" onclick="HirnaWallet.openTopUpModal()" class="px-4 py-2.5 bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-hirna-950 text-xs font-black rounded-xl shadow-md transition flex items-center space-x-1.5 cursor-pointer transform hover:scale-105 active:scale-95">
@@ -494,14 +489,9 @@
     <div id="add-payment-method-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white max-w-lg w-full rounded-2xl shadow-2xl overflow-hidden border border-hirna-200 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
             <div class="bg-gradient-to-r from-hirna-800 to-hirna-900 p-5 text-white flex items-center justify-between flex-shrink-0">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-8 h-8 rounded-lg bg-gold-500/20 border border-gold-500/30 flex items-center justify-center text-gold-400 text-lg">
-                        
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-white">Select Payment Method</h3>
-                        <p class="text-xs text-hirna-200">Tap a payment option to add it directly to your booking checkout</p>
-                    </div>
+                <div>
+                    <h3 class="text-sm font-bold text-white">Select Payment Method</h3>
+                    <p class="text-xs text-hirna-200">Tap a payment option to add it directly to your booking checkout</p>
                 </div>
                 <button type="button" onclick="PaymentsModule.closeAddMethodModal()" class="text-white/80 hover:text-white transition p-1 cursor-pointer">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -1176,12 +1166,9 @@
     <div id="wallet-topup-modal" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 transform transition-all animate-in fade-in zoom-in-95">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div class="flex items-center space-x-2.5">
-                    <div class="w-10 h-10 rounded-2xl bg-gold-500/20 text-gold-600 border border-gold-400/40 flex items-center justify-center text-xl"></div>
-                    <div>
-                        <h3 class="text-sm font-bold text-hirna-900">Cash In Hirna Wallet</h3>
-                        <p class="text-[11px] text-slate-500">Top-up stored-value digital balance</p>
-                    </div>
+                <div>
+                    <h3 class="text-sm font-bold text-hirna-900">Cash In Hirna Wallet</h3>
+                    <p class="text-[11px] text-slate-500">Top-up stored-value digital balance</p>
                 </div>
                 <button type="button" onclick="HirnaWallet.closeTopUpModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
