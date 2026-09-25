@@ -438,7 +438,7 @@
                 </button>
             </div>
 
-            <form id="rbac-account-form" onsubmit="SSOGateway.handleSaveAccount(event)" class="p-6 space-y-4 text-xs">
+            <form id="rbac-account-form" onsubmit="SSOGateway.handleSaveAccount(event); return false;" class="p-6 space-y-4 text-xs">
                 <input type="hidden" id="rbac-account-original-email" value="">
                 <input type="hidden" id="rbac-modal-mode" value="add">
 
@@ -468,7 +468,7 @@
                         <span class="text-[10px] text-gold-600 font-semibold">SuperAdmin Editable</span>
                     </div>
                     <div class="relative">
-                        <input type="password" id="rbac-account-password" required placeholder="Enter new account password" class="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:ring-2 focus:ring-gold-500 focus:outline-none">
+                        <input type="password" id="rbac-account-password" placeholder="Enter new account password" class="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:ring-2 focus:ring-gold-500 focus:outline-none">
                         <button type="button" onclick="SSOGateway.toggleModalPasswordVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer" title="Hide/Unhide Password">
                             <span id="rbac-modal-eye-icon">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -482,8 +482,8 @@
                     <button type="button" onclick="SSOGateway.closeAccountModal()" class="w-full py-2.5 px-4 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="rbac-submit-btn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-hirna-950 text-xs font-black shadow-md transition cursor-pointer">
-                        Save Account
+                    <button type="submit" id="rbac-submit-btn" onclick="SSOGateway.handleSaveAccount(event)" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-gold-500 to-amber-500 hover:from-gold-400 hover:to-amber-400 text-hirna-950 text-xs font-black shadow-md transition cursor-pointer">
+                        Save Changes
                     </button>
                 </div>
             </form>

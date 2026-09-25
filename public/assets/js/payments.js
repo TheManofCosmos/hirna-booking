@@ -1075,8 +1075,53 @@ const PaymentsModule = {
             }
         });
 
-        const unifiedList = Array.from(ledgerMap.values());
+        const currentUser = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+        const isPassenger = (typeof AuthModule !== 'undefined' && AuthModule.isPassenger && AuthModule.isPassenger()) ||
+                            (currentUser && (currentUser.role === 'passenger' || currentUser.role === 'customer')) ||
+                            window.location.pathname.includes('passenger.html');
+
+        const isRecordOwned = (rec) => {
+            if (!isPassenger || !currentUser) return true;
+            if (typeof BookingModule !== 'undefined' && typeof BookingModule.isTripOwnedByUser === 'function') {
+                return BookingModule.isTripOwnedByUser(rec, currentUser);
+            }
+            const uEmail = (currentUser.email || '').trim().toLowerCase();
+            const uPhone = (currentUser.phone || '').replace(/\D/g, '');
+            const uName = (currentUser.name || '').trim().toLowerCase();
+            if (rec.user_email && uEmail && rec.user_email.trim().toLowerCase() === uEmail) return true;
+            if (rec.user_id && currentUser.id && rec.user_id === currentUser.id) return true;
+            try {
+                const myCodes = JSON.parse(localStorage.getItem('hirna_my_booking_codes') || '[]');
+                const code = rec.booking_code || rec.booking_id || rec.invoice_no || rec.id;
+                if (code && myCodes.includes(code)) return true;
+            } catch(e) {}
+            const bPhone = (rec.passenger_phone || rec.sender_phone || '').replace(/\D/g, '');
+            if (bPhone && uPhone && (bPhone.endsWith(uPhone) || uPhone.endsWith(bPhone))) return true;
+            const bName = (rec.passenger_name || rec.sender_name || '').trim().toLowerCase();
+            if (bName && uName && (bName.includes(uName) || uName.includes(bName))) return true;
+            return false;
+        };
+
+        let unifiedList = Array.from(ledgerMap.values());
+        if (isPassenger && currentUser) {
+            unifiedList = unifiedList.filter(b => isRecordOwned(b) || (b.rawRecord && isRecordOwned(b.rawRecord)));
+        }
         unifiedList.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+        if (unifiedList.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-slate-400 text-sm">
+                        <div class="flex flex-col items-center justify-center space-y-2">
+                            <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span class="font-medium text-slate-500">${isPassenger ? 'No payment records found for your account.' : 'No payment records available.'}</span>
+                            <span class="text-xs text-slate-400">${isPassenger ? 'Your completed rides and deliveries will appear here.' : 'Transactions will show once bookings are completed.'}</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
 
         tbody.innerHTML = unifiedList.map(b => `
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">

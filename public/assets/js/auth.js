@@ -943,6 +943,18 @@ const AuthModule = {
         }
     },
 
+    saveCurrentUser(user) {
+        this.currentUser = user;
+        try {
+            sessionStorage.setItem('hirna_auth_user', JSON.stringify(user));
+            if (localStorage.getItem('hirna_auth_user')) {
+                localStorage.setItem('hirna_auth_user', JSON.stringify(user));
+            }
+        } catch(e) {}
+        this.saveDeviceAccount(user);
+        this.updateUI();
+    },
+
     logout() {
         this.confirmLogout();
     },

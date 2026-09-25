@@ -186,6 +186,8 @@ const GPSModule = {
                     bookings.push({
                         id: p.booking_id || p.id || `b-${p.invoice_no}`,
                         booking_code: code,
+                        user_email: p.user_email || '',
+                        user_id: p.user_id || '',
                         service_type: p.service_type || 'standard',
                         passenger_name: p.passenger_name || 'Passenger',
                         passenger_phone: p.passenger_phone || '+63 917 123 4567',
@@ -213,7 +215,36 @@ const GPSModule = {
         const tbody = document.getElementById('recorded-trips-tbody');
         if (!tbody) return;
 
-        const bookings = this.getAllBookings();
+        let bookings = this.getAllBookings();
+
+        const currentUser = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+        const isPassenger = (typeof AuthModule !== 'undefined' && AuthModule.isPassenger && AuthModule.isPassenger()) ||
+                            (currentUser && (currentUser.role === 'passenger' || currentUser.role === 'customer')) ||
+                            window.location.pathname.includes('passenger.html');
+
+        if (isPassenger && currentUser) {
+            bookings = bookings.filter(b => {
+                if (typeof BookingModule !== 'undefined' && typeof BookingModule.isTripOwnedByUser === 'function') {
+                    return BookingModule.isTripOwnedByUser(b, currentUser);
+                }
+                const uEmail = (currentUser.email || '').trim().toLowerCase();
+                const uPhone = (currentUser.phone || '').replace(/\D/g, '');
+                const uName = (currentUser.name || '').trim().toLowerCase();
+                if (b.user_email && uEmail && b.user_email.trim().toLowerCase() === uEmail) return true;
+                if (b.user_id && currentUser.id && b.user_id === currentUser.id) return true;
+                try {
+                    const myCodes = JSON.parse(localStorage.getItem('hirna_my_booking_codes') || '[]');
+                    const code = b.booking_code || b.id;
+                    if (code && myCodes.includes(code)) return true;
+                } catch(e) {}
+                const bPhone = (b.passenger_phone || b.sender_phone || '').replace(/\D/g, '');
+                if (bPhone && uPhone && (bPhone.endsWith(uPhone) || uPhone.endsWith(bPhone))) return true;
+                const bName = (b.passenger_name || b.sender_name || '').trim().toLowerCase();
+                if (bName && uName && (bName.includes(uName) || uName.includes(bName))) return true;
+                return false;
+            });
+        }
+
         const countBadge = document.getElementById('trip-count-badge');
         if (countBadge) {
             countBadge.innerText = `${bookings.length} ${bookings.length === 1 ? 'Trip' : 'Trips'} Recorded`;
@@ -223,7 +254,7 @@ const GPSModule = {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" class="px-4 py-8 text-center text-slate-400">
-                        No recorded trips found. Create a booking in Module 1 to see its GPS telemetry here.
+                        ${isPassenger ? 'No recorded trips found for your account. Book a ride or delivery to view its GPS telemetry here.' : 'No recorded trips found. Create a booking in Module 1 to see its GPS telemetry here.'}
                     </td>
                 </tr>
             `;

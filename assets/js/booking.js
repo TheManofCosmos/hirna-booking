@@ -299,7 +299,7 @@ const DeviceLocationManager = {
                         console.info("Device GPS not currently locked.");
                         this.disableLocation(false);
                     },
-                    { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+                    { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
                 );
             },
             { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
@@ -340,7 +340,7 @@ const DeviceLocationManager = {
                         this.disableLocation(true, "Unable to acquire device GPS. Please ensure location access is allowed in browser and device settings.");
                         this.showWindowsLocationGuideModal();
                     },
-                    { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+                    { enableHighAccuracy: false, timeout: 6000, maximumAge: 0 }
                 );
             },
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
@@ -384,19 +384,31 @@ const DeviceLocationManager = {
         const rawLng = parseFloat(pos.coords.longitude);
         const rawAcc = Math.max(1, Math.round(pos.coords.accuracy || 15));
 
-        // Outlier rejection: if locked on high accuracy (<25m) and get a sudden coarse spike (>120m), reject it
-        if (this.coords && this.bestAccuracy <= 25 && rawAcc > 120) {
-            console.warn(`[GPS Filter] Discarded coarse position spike: ±${rawAcc}m`);
-            return this.coords;
+        // If distance between new sample and previous coords is significant (>100m), user is at a new location: reset sample buffer
+        if (this.coords && typeof BookingModule !== 'undefined' && BookingModule.calculateDistance) {
+            const distFromPrevious = BookingModule.calculateDistance(this.coords.lat, this.coords.lng, rawLat, rawLng);
+            if (distFromPrevious > 0.1) {
+                this.recentSamples = [];
+                this.bestAccuracy = rawAcc;
+            }
+        }
+
+        // Outlier rejection: only reject sudden coarse spike if at the SAME spot (<100m) and already high-accuracy
+        if (this.coords && this.bestAccuracy <= 25 && rawAcc > 150) {
+            const dist = typeof BookingModule !== 'undefined' ? BookingModule.calculateDistance(this.coords.lat, this.coords.lng, rawLat, rawLng) : 0;
+            if (dist < 0.1) {
+                console.warn(`[GPS Filter] Discarded coarse position spike: ±${rawAcc}m`);
+                return this.coords;
+            }
         }
 
         if (rawAcc < this.bestAccuracy) {
             this.bestAccuracy = rawAcc;
         }
 
-        // Keep rolling sample buffer (up to 5 samples)
+        // Keep rolling sample buffer (up to 3 samples for fast adaptation)
         this.recentSamples.push({ lat: rawLat, lng: rawLng, accuracy: rawAcc, time: Date.now() });
-        if (this.recentSamples.length > 5) {
+        if (this.recentSamples.length > 3) {
             this.recentSamples.shift();
         }
 
@@ -677,14 +689,30 @@ const DeviceLocationManager = {
                 if (resolved && !resolved.startsWith('Pinned Location') && !resolved.startsWith('Resolving')) {
                     if (!this.reverseGeoCache) this.reverseGeoCache = {};
                     this.reverseGeoCache[cacheKey] = resolved;
-                    if (this.coords && Math.abs(this.coords.lat - lat) < 0.0001 && Math.abs(this.coords.lng - lng) < 0.0001) {
+                    if (this.coords && Math.abs(this.coords.lat - lat) < 0.005 && Math.abs(this.coords.lng - lng) < 0.005) {
                         this.coords.resolvedName = `${resolved} • ±${Math.round(this.coords.accuracy)}m`;
                         const label = document.getElementById('location-status-label');
                         if (label && this.isEnabled) {
-                            label.innerText = `Location: Enabled (±${Math.round(this.coords.accuracy)}m)`;
+                            label.innerText = `Location: Live GPS (±${Math.round(this.coords.accuracy)}m)`;
                         }
                         const popupAddr = document.getElementById('user-location-popup-addr');
                         if (popupAddr) popupAddr.innerText = this.coords.resolvedName;
+
+                        // Update pickup or dropoff input if they currently show raw GPS coordinates
+                        const pInp = document.getElementById('pickup-input');
+                        if (pInp && pInp.value.includes('Current Device GPS')) {
+                            pInp.value = this.coords.resolvedName;
+                            if (typeof BookingModule !== 'undefined') BookingModule.pickupName = this.coords.resolvedName;
+                        }
+                        const pbInp = document.getElementById('parcel-booker-address');
+                        if (pbInp && pbInp.value.includes('Current Device GPS')) {
+                            pbInp.value = this.coords.resolvedName;
+                        }
+
+                        // Refresh food stores with the resolved location
+                        if (typeof FoodDeliveryModule !== 'undefined') {
+                            FoodDeliveryModule.onLocationChanged();
+                        }
                     }
                 }
             });
@@ -1266,27 +1294,69 @@ const FoodDeliveryModule = {
         this.plotStoreMarkersOnMap();
     },
 
+    getStoresForAnchor(anchor, craving) {
+        const baseStores = this.storesData[craving || this.selectedCraving] || [];
+        if (!anchor || typeof anchor.lat !== 'number' || typeof anchor.lng !== 'number') {
+            return baseStores;
+        }
+
+        // Clean local area/city name from anchor
+        let localArea = "Nearby District";
+        if (anchor.name) {
+            const cleanStr = anchor.name.replace(/•.*$/, '').trim();
+            const parts = cleanStr.split(',');
+            if (parts.length >= 2) {
+                localArea = parts[parts.length - 2].trim();
+            } else if (parts.length === 1) {
+                localArea = parts[0].trim();
+            }
+        }
+
+        const localOffsets = [
+            { dLat: 0.0042, dLng: 0.0035, locSuffix: "Commercial Row" },
+            { dLat: -0.0051, dLng: 0.0042, locSuffix: "Town Center" },
+            { dLat: 0.0031, dLng: -0.0068, locSuffix: "Mall Plaza" },
+            { dLat: -0.0075, dLng: -0.0050, locSuffix: "Central Avenue" }
+        ];
+
+        return baseStores.map((store, idx) => {
+            const off = localOffsets[idx % localOffsets.length];
+            const storeLat = parseFloat((anchor.lat + off.dLat).toFixed(5));
+            const storeLng = parseFloat((anchor.lng + off.dLng).toFixed(5));
+            const distKm = parseFloat(BookingModule.calculateDistance(anchor.lat, anchor.lng, storeLat, storeLng).toFixed(1));
+            const minEta = Math.max(12, Math.round(10 + distKm * 3.5));
+            const maxEta = minEta + 10;
+            const fee = Math.max(49, 49 + Math.round(Math.max(0, distKm - 2) * 10));
+
+            return {
+                ...store,
+                lat: storeLat,
+                lng: storeLng,
+                address: `${off.locSuffix}, ${localArea}`,
+                computedDist: distKm,
+                computedDistStr: `${distKm} km`,
+                computedEtaStr: `${minEta}-${maxEta} mins`,
+                computedFee: fee
+            };
+        });
+    },
+
+    getCurrentStores() {
+        const anchor = (typeof DeviceLocationManager !== 'undefined')
+            ? DeviceLocationManager.getActiveAnchor()
+            : { type: 'home', label: 'Home Address', name: 'Home Location, Mandaluyong City', lat: 14.5822, lng: 121.0545 };
+        return this.getStoresForAnchor(anchor, this.selectedCraving);
+    },
+
     renderStoresList() {
         const listEl = document.getElementById('food-stores-list');
         if (!listEl) return;
 
-        const rawStores = this.storesData[this.selectedCraving] || [];
         const anchor = (typeof DeviceLocationManager !== 'undefined')
             ? DeviceLocationManager.getActiveAnchor()
-            : { type: 'home', label: 'Home Address', name: 'Home Location, Mandaluyong City', lat: 14.5822, lng: 121.0545, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>' };
+            : { type: 'home', label: 'Home Address', name: 'Home Location, Mandaluyong City', lat: 14.5822, lng: 121.0545 };
 
-        // Calculate dynamic distance and delivery estimates from active anchor (Home Address or Current Location)
-        rawStores.forEach(store => {
-            const distKm = BookingModule.calculateDistance(anchor.lat, anchor.lng, store.lat, store.lng);
-            store.computedDist = distKm;
-            store.computedDistStr = `${distKm.toFixed(1)} km`;
-            const minEta = Math.max(10, Math.round(12 + distKm * 3.5));
-            const maxEta = minEta + 10;
-            store.computedEtaStr = `${minEta}-${maxEta} mins`;
-            store.computedFee = Math.max(49, 49 + Math.round(Math.max(0, distKm - 2) * 10));
-        });
-
-        // Sort nearest stores first
+        const rawStores = this.getStoresForAnchor(anchor, this.selectedCraving);
         const stores = [...rawStores].sort((a, b) => a.computedDist - b.computedDist);
 
         const badgeEl = document.getElementById('food-stores-count-badge');
@@ -1338,13 +1408,13 @@ const FoodDeliveryModule = {
         this.clearStoreMarkers();
         if (!BookingModule.map || typeof L === 'undefined') return;
 
-        const stores = this.storesData[this.selectedCraving] || [];
-        if (stores.length === 0) return;
-
         const bounds = [];
         const anchor = (typeof DeviceLocationManager !== 'undefined')
             ? DeviceLocationManager.getActiveAnchor()
             : null;
+
+        const stores = this.getStoresForAnchor(anchor, this.selectedCraving);
+        if (stores.length === 0) return;
 
         // Plot User's Origin Anchor (Current Location or Home Address)
         if (anchor && typeof anchor.lat === 'number' && typeof anchor.lng === 'number') {
@@ -1476,7 +1546,7 @@ const FoodDeliveryModule = {
     },
 
     selectStore(storeId) {
-        const stores = this.storesData[this.selectedCraving] || [];
+        const stores = this.getCurrentStores();
         const store = stores.find(s => s.id === storeId);
         if (!store) return;
 
@@ -1587,7 +1657,7 @@ const FoodDeliveryModule = {
         const subtotalEl = document.getElementById('food-modal-subtotal');
         const notesEl = document.getElementById('food-modal-notes');
 
-        if (iconEl) iconEl.innerText = item.icon || '';
+        if (iconEl) iconEl.innerHTML = item.icon || '';
         if (titleEl) titleEl.innerText = item.name;
         if (descEl) descEl.innerText = item.desc;
         if (priceEl) priceEl.innerText = `₱${item.price.toFixed(2)} each`;
@@ -2026,12 +2096,18 @@ const FoodDeliveryModule = {
         const cleanCode = (paymentMethod || 'GCASH').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
         const txnRef = `TXN-${cleanCode || 'PAY'}-${Math.floor(100000 + Math.random() * 900000)}`;
 
+        const currentAuthUser = (typeof AuthModule !== 'undefined') ? AuthModule.currentUser : null;
+        const userEmail = (currentAuthUser && currentAuthUser.email) ? currentAuthUser.email.toLowerCase() : '';
+        const userId = (currentAuthUser && currentAuthUser.id) ? currentAuthUser.id : '';
+
         const newFoodBooking = {
             id: `b-${Date.now()}`,
             booking_code: bookingCode,
             invoice_no: invoiceNo,
             txn_ref: txnRef,
             service_type: 'food',
+            user_email: userEmail,
+            user_id: userId,
             passenger_name: bName,
             passenger_phone: bPhone,
             driver_name: driver.name,
@@ -2057,6 +2133,15 @@ const FoodDeliveryModule = {
             safety_score: 99
         };
 
+        // Record booking code for current user session
+        try {
+            const myCodes = JSON.parse(localStorage.getItem('hirna_my_booking_codes') || '[]');
+            if (!myCodes.includes(bookingCode)) {
+                myCodes.push(bookingCode);
+                localStorage.setItem('hirna_my_booking_codes', JSON.stringify(myCodes));
+            }
+        } catch(e) {}
+
         if (typeof SupabaseBridge !== 'undefined') {
             SupabaseBridge.insert('bookings', newFoodBooking);
             
@@ -2067,6 +2152,8 @@ const FoodDeliveryModule = {
                 txn_ref: txnRef,
                 booking_code: bookingCode,
                 booking_id: newFoodBooking.id,
+                user_email: userEmail,
+                user_id: userId,
                 passenger_name: bName,
                 passenger_phone: bPhone,
                 amount: parseFloat(totalFare || 0),
@@ -5506,12 +5593,18 @@ const BookingModule = {
         const cleanCode = (paymentMethod || 'GCASH').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
         const txnRef = `TXN-${cleanCode || 'PAY'}-${Math.floor(100000 + Math.random() * 900000)}`;
 
+        const currentAuthUser = (typeof AuthModule !== 'undefined') ? AuthModule.currentUser : null;
+        const userEmail = (currentAuthUser && currentAuthUser.email) ? currentAuthUser.email.toLowerCase() : '';
+        const userId = (currentAuthUser && currentAuthUser.id) ? currentAuthUser.id : '';
+
         const newBooking = {
             id: `b-${Date.now()}`,
             booking_code: bookingCode,
             invoice_no: invoiceNo,
             txn_ref: txnRef,
             service_type: this.activeService,
+            user_email: userEmail,
+            user_id: userId,
             passenger_name: passengerName,
             passenger_phone: passengerPhone,
             driver_name: driver.name,
@@ -5538,6 +5631,15 @@ const BookingModule = {
             safety_score: 99
         };
 
+        // Record booking code for current user session
+        try {
+            const myCodes = JSON.parse(localStorage.getItem('hirna_my_booking_codes') || '[]');
+            if (!myCodes.includes(bookingCode)) {
+                myCodes.push(bookingCode);
+                localStorage.setItem('hirna_my_booking_codes', JSON.stringify(myCodes));
+            }
+        } catch(e) {}
+
         SupabaseBridge.insert('bookings', newBooking);
 
         // Record receipt immediately into payments table so Fare & Payments has the ledger record right away
@@ -5547,6 +5649,8 @@ const BookingModule = {
             txn_ref: txnRef,
             booking_code: bookingCode,
             booking_id: newBooking.id,
+            user_email: userEmail,
+            user_id: userId,
             passenger_name: passengerName,
             passenger_phone: passengerPhone,
             amount: parseFloat(this.currentQuote.totalFare || 0),
@@ -5662,12 +5766,18 @@ const BookingModule = {
         const cleanCode = (payMethod || 'GCASH').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
         const txnRef = `TXN-${cleanCode || 'PAY'}-${Math.floor(100000 + Math.random() * 900000)}`;
 
+        const currentAuthUser = (typeof AuthModule !== 'undefined') ? AuthModule.currentUser : null;
+        const userEmail = (currentAuthUser && currentAuthUser.email) ? currentAuthUser.email.toLowerCase() : '';
+        const userId = (currentAuthUser && currentAuthUser.id) ? currentAuthUser.id : '';
+
         const newParcelBooking = {
             id: `pcl-${Date.now()}`,
             booking_code: bookingCode,
             invoice_no: invoiceNo,
             txn_ref: txnRef,
             service_type: "parcel",
+            user_email: userEmail,
+            user_id: userId,
             passenger_name: `${this.bookerName} (Sender)`,
             passenger_phone: this.bookerPhone || '+63 917 888 9999',
             sender_name: this.bookerName,
@@ -5704,6 +5814,15 @@ const BookingModule = {
             safety_score: 100
         };
 
+        // Record booking code for current user session
+        try {
+            const myCodes = JSON.parse(localStorage.getItem('hirna_my_booking_codes') || '[]');
+            if (!myCodes.includes(bookingCode)) {
+                myCodes.push(bookingCode);
+                localStorage.setItem('hirna_my_booking_codes', JSON.stringify(myCodes));
+            }
+        } catch(e) {}
+
         SupabaseBridge.insert('bookings', newParcelBooking);
 
         // Record receipt immediately into payments table so Fare & Payments has the ledger record
@@ -5713,6 +5832,8 @@ const BookingModule = {
             txn_ref: txnRef,
             booking_code: bookingCode,
             booking_id: newParcelBooking.id,
+            user_email: userEmail,
+            user_id: userId,
             passenger_name: `${this.bookerName} (Sender)`,
             passenger_phone: this.bookerPhone || '+63 917 888 9999',
             amount: parseFloat(fare || 0),
@@ -5749,18 +5870,85 @@ const BookingModule = {
         this.startTripSimulation(newParcelBooking);
     },
 
+    isTripOwnedByUser(item, user) {
+        if (!item) return false;
+        if (!user) return true;
+        // Superadmin and Admin can oversee all trips
+        if (user.role && user.role !== 'passenger' && user.role !== 'customer') {
+            return true;
+        }
+
+        const uEmail = (user.email || '').trim().toLowerCase();
+        const uPhone = (user.phone || '').replace(/\D/g, '');
+        const uName = (user.name || '').trim().toLowerCase();
+
+        // 1. Direct user_email match
+        if (item.user_email && uEmail && item.user_email.trim().toLowerCase() === uEmail) {
+            return true;
+        }
+
+        // 2. Direct user_id match
+        if (item.user_id && user.id && item.user_id === user.id) {
+            return true;
+        }
+
+        // 3. User session created codes
+        try {
+            const myCodes = JSON.parse(localStorage.getItem('hirna_my_booking_codes') || '[]');
+            const code = item.booking_code || item.id || item.invoice_no;
+            if (code && myCodes.includes(code)) return true;
+        } catch(e) {}
+
+        // 4. Phone number match
+        const bPhone = (item.passenger_phone || item.sender_phone || '').replace(/\D/g, '');
+        if (bPhone && uPhone && (bPhone.endsWith(uPhone) || uPhone.endsWith(bPhone))) {
+            return true;
+        }
+
+        // 5. Name match
+        const bName = (item.passenger_name || item.sender_name || '').trim().toLowerCase();
+        if (bName && uName) {
+            if (bName.includes(uName) || uName.includes(bName)) return true;
+        }
+
+        return false;
+    },
+
     renderHistory() {
         const tbody = document.getElementById('booking-history-tbody');
         if (!tbody) return;
 
         const bookings = SupabaseBridge.getData('bookings');
+        const currentUser = (typeof AuthModule !== 'undefined') ? AuthModule.currentUser : null;
+        const isPassenger = (typeof AuthModule !== 'undefined' && AuthModule.isPassenger()) || (currentUser && (currentUser.role === 'passenger' || currentUser.role === 'customer')) || window.location.pathname.includes('passenger.html');
+
         const seen = new Set();
-        const uniqueBookings = bookings.filter(b => {
+        let uniqueBookings = bookings.filter(b => {
             const key = b.booking_code || b.id;
             if (!key || seen.has(key)) return false;
             seen.add(key);
             return true;
         });
+
+        if (isPassenger && currentUser) {
+            uniqueBookings = uniqueBookings.filter(b => this.isTripOwnedByUser(b, currentUser));
+        }
+
+        if (uniqueBookings.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-slate-400">
+                        <div class="flex flex-col items-center justify-center space-y-2">
+                            <span class="text-2xl">🚗</span>
+                            <p class="font-bold text-slate-700 text-xs">${isPassenger ? 'No recorded trips for your passenger account yet.' : 'No booking records found.'}</p>
+                            <p class="text-[11px] text-slate-400">Book a ride above to see your live trips and history here.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
         tbody.innerHTML = uniqueBookings.map(b => `
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                 <td class="px-4 py-3 font-mono font-bold text-hirna-700 text-xs">

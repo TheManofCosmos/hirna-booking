@@ -320,8 +320,11 @@ const SSOGateway = {
         if (nameInp) { nameInp.value = ""; nameInp.required = true; }
         if (emailInp) { emailInp.value = ""; emailInp.required = true; }
         if (roleSel) roleSel.value = "admin";
-        if (pwdInp) { pwdInp.value = "admin"; pwdInp.type = "password"; }
-        if (submitBtn) submitBtn.innerText = "Save Account";
+        if (pwdInp) { pwdInp.value = "admin"; pwdInp.type = "password"; pwdInp.required = true; pwdInp.setAttribute('required', 'required'); }
+        if (submitBtn) {
+            submitBtn.innerText = "Save Account";
+            submitBtn.onclick = (e) => SSOGateway.handleSaveAccount(e);
+        }
 
         // Unhide all fields
         document.getElementById('rbac-name-group')?.classList.remove('hidden');
@@ -368,10 +371,15 @@ const SSOGateway = {
         if (pwdInp) {
             pwdInp.value = acc.password || '';
             pwdInp.type = 'password';
+            pwdInp.required = true;
+            pwdInp.setAttribute('required', 'required');
         }
 
         const submitBtn = document.getElementById('rbac-submit-btn');
-        if (submitBtn) submitBtn.innerText = "Save New Password";
+        if (submitBtn) {
+            submitBtn.innerText = "Save New Password";
+            submitBtn.onclick = (e) => SSOGateway.handleSaveAccount(e);
+        }
 
         // Reset eye icon
         const iconSpan = document.getElementById('rbac-modal-eye-icon');
@@ -410,8 +418,12 @@ const SSOGateway = {
             pwdInp.value = acc.password || '';
             pwdInp.type = "password";
             pwdInp.required = false;
+            pwdInp.removeAttribute('required');
         }
-        if (submitBtn) submitBtn.innerText = "Save Changes";
+        if (submitBtn) {
+            submitBtn.innerText = "Save Changes";
+            submitBtn.onclick = (e) => SSOGateway.handleSaveAccount(e);
+        }
 
         document.getElementById('rbac-name-group')?.classList.remove('hidden');
         document.getElementById('rbac-email-group')?.classList.remove('hidden');
@@ -532,7 +544,15 @@ const SSOGateway = {
             AuthModule.currentUser.role = role;
             AuthModule.currentUser.roleTitle = roleTitles[role] || AuthModule.currentUser.roleTitle;
             AuthModule.currentUser.badgeClass = badgeClasses[role] || AuthModule.currentUser.badgeClass;
-            AuthModule.saveCurrentUser(AuthModule.currentUser);
+            if (typeof AuthModule.saveCurrentUser === 'function') {
+                AuthModule.saveCurrentUser(AuthModule.currentUser);
+            } else {
+                try {
+                    localStorage.setItem('hirna_auth_user', JSON.stringify(AuthModule.currentUser));
+                    sessionStorage.setItem('hirna_auth_user', JSON.stringify(AuthModule.currentUser));
+                } catch(e) {}
+                if (typeof AuthModule.updateUI === 'function') AuthModule.updateUI();
+            }
         }
 
         if (typeof SupabaseBridge !== 'undefined') {
