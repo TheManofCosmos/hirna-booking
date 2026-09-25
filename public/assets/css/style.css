@@ -204,8 +204,13 @@ body.bg-slate-950 select:focus,
         visibility: hidden !important;
     }
 
+    /* Force the receipt modal visible even if it has class="hidden" (display:none) */
+    #receipt-modal {
+        display: block !important;
+        visibility: visible !important;
+    }
+
     /* Re-enable visibility strictly for the receipt card */
-    #receipt-modal,
     #receipt-modal .receipt-printable-card,
     #receipt-modal .receipt-printable-card * {
         visibility: visible !important;
@@ -223,7 +228,6 @@ body.bg-slate-950 select:focus,
         margin: 0 auto !important;
         width: 100% !important;
         max-width: 100% !important;
-        display: block !important;
         box-shadow: none !important;
     }
 

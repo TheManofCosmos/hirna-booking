@@ -1054,8 +1054,9 @@ const PaymentsModule = {
     },
 
     printReceiptDocument() {
+        const modal = document.getElementById('receipt-modal');
         const receiptCard = document.querySelector('#receipt-modal .receipt-printable-card');
-        if (!receiptCard) {
+        if (!receiptCard || !modal) {
             window.print();
             return;
         }
@@ -1065,14 +1066,15 @@ const PaymentsModule = {
         const actions = clone.querySelectorAll('.receipt-actions, button, .no-print');
         actions.forEach(el => el.remove());
 
-        // Gather Tailwind and stylesheets
-        const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
-            .map(el => el.outerHTML)
-            .join('\n');
-
         const printWin = window.open('', '_blank', 'width=520,height=760,toolbar=0,scrollbars=1,status=0');
         if (!printWin) {
-            window.print();
+            // Fallback: temporarily make modal visible and use window.print()
+            const wasHidden = modal.classList.contains('hidden');
+            if (wasHidden) modal.classList.remove('hidden');
+            setTimeout(() => {
+                window.print();
+                if (wasHidden) modal.classList.add('hidden');
+            }, 100);
             return;
         }
 
@@ -1082,7 +1084,19 @@ const PaymentsModule = {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hirna Official Trip Receipt</title>
-    ${styles}
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        hirna: { 50:'#fef2f2',100:'#fee2e2',200:'#fecaca',300:'#fca5a5',400:'#f87171',500:'#ef4444',600:'#dc2626',700:'#b91c1c',800:'#991b1b',900:'#7f1d1d',950:'#450a0a' },
+                        gold: { 400:'#fbbf24',500:'#f59e0b',600:'#d97706' }
+                    }
+                }
+            }
+        }
+    <\/script>
     <style>
         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
         body { margin: 0; padding: 20px; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #ffffff; display: flex; justify-content: center; }
@@ -1096,12 +1110,18 @@ const PaymentsModule = {
 <body>
     ${clone.outerHTML}
     <script>
-        window.onload = function() {
+        // Wait for Tailwind to process classes before printing
+        function tryPrint() {
             setTimeout(function() {
                 window.print();
                 window.close();
-            }, 350);
-        };
+            }, 600);
+        }
+        if (document.readyState === 'complete') {
+            tryPrint();
+        } else {
+            window.onload = tryPrint;
+        }
     <\/script>
 </body>
 </html>`);

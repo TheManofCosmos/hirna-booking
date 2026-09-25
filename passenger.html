@@ -1731,7 +1731,7 @@
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                     <span>Print Receipt</span>
                 </button>
-                <button type="button" onclick="BookingModule.closeReceipt()" class="w-full py-2.5 px-3 rounded-xl bg-hirna-700 hover:bg-hirna-800 text-white text-xs font-black shadow-lg shadow-hirna-700/20 transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                <button type="button" onclick="if (window.PaymentsModule && window.PaymentsModule.closeReceiptModal) window.PaymentsModule.closeReceiptModal(); if (window.BookingModule && window.BookingModule.closeReceipt) window.BookingModule.closeReceipt(); document.getElementById('receipt-modal')?.classList.add('hidden');" class="w-full py-2.5 px-3 rounded-xl bg-hirna-700 hover:bg-hirna-800 text-white text-xs font-black shadow-lg shadow-hirna-700/20 transition flex items-center justify-center space-x-1.5 cursor-pointer">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                     <span>OK</span>
                 </button>
