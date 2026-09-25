@@ -26,7 +26,14 @@ const AuditModule = {
     checkArchiveAutoUnlock() {
         try {
             const isUnlockedSession = sessionStorage.getItem('hirna_arch_unlocked') === 'true';
-            const isSuperAdminUser = (typeof AuthModule !== 'undefined' && AuthModule.currentUser && (AuthModule.currentUser.role === 'superadmin' || AuthModule.currentUser.role === 'admin'));
+            let currentUser = (typeof AuthModule !== 'undefined') ? AuthModule.currentUser : null;
+            if (!currentUser) {
+                try {
+                    const saved = localStorage.getItem('hirna_auth_user') || sessionStorage.getItem('hirna_auth_user');
+                    if (saved) currentUser = JSON.parse(saved);
+                } catch(e) {}
+            }
+            const isSuperAdminUser = !!(currentUser && (currentUser.role === 'superadmin' || currentUser.role === 'admin'));
             if (isUnlockedSession || isSuperAdminUser) {
                 this.isArchivesUnlocked = true;
                 document.getElementById('archives-locked-container')?.classList.add('hidden');

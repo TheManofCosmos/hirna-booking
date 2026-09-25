@@ -5749,6 +5749,13 @@ const SupabaseBridge = {
     },
 
     loadPersistedAuditLogs() {
+        if (!this.db) this.db = {};
+        if (!this.db.audit_logs) this.db.audit_logs = [];
+
+        // Ensure all baseline compliance audit logs are present
+        const baseline = this.getBaselineAuditLogs();
+        this.mergeTableRecords('audit_logs', baseline);
+
         try {
             const saved = localStorage.getItem('hirna_audit_logs');
             if (saved) {
@@ -5761,13 +5768,9 @@ const SupabaseBridge = {
             console.warn("Failed loading saved audit logs", e);
         }
 
-        // Initialize comprehensive baseline audit logs only if completely empty
-        if (!this.db.audit_logs || this.db.audit_logs.length === 0) {
-            this.db.audit_logs = this.getBaselineAuditLogs();
-            try {
-                localStorage.setItem('hirna_audit_logs', JSON.stringify(this.db.audit_logs));
-            } catch (e) {}
-        }
+        try {
+            localStorage.setItem('hirna_audit_logs', JSON.stringify(this.db.audit_logs));
+        } catch (e) {}
     },
 
     getApiBase() {
@@ -5849,7 +5852,22 @@ const SupabaseBridge = {
         let changed = false;
         const getKey = (r) => {
             if (!r || typeof r !== 'object') return null;
-            return r.booking_code || r.id || r.ticket_id || r.invoice_no || r.txn_ref || null;
+            if (table === 'bookings') {
+                return r.booking_code || r.id || null;
+            }
+            if (table === 'payments') {
+                return r.id || r.invoice_no || r.txn_ref || r.booking_code || null;
+            }
+            if (table === 'audit_logs') {
+                return r.id || null;
+            }
+            if (table === 'feedback') {
+                return r.id || null;
+            }
+            if (table === 'support_tickets') {
+                return r.ticket_id || r.id || null;
+            }
+            return r.id || r.ticket_id || r.invoice_no || r.txn_ref || r.booking_code || null;
         };
 
         const existingMap = new Map();
@@ -5882,8 +5900,11 @@ const SupabaseBridge = {
 
                 if (recordChanged) {
                     this.db[table][idx] = { ...current, ...r };
-                    if (isCurrentArchived && r.is_archived === undefined) {
+                    if (isCurrentArchived && (r.is_archived === undefined || r.is_archived === false) && !r.force_unarchive) {
                         this.db[table][idx].is_archived = true;
+                        if (current.archived_at) this.db[table][idx].archived_at = current.archived_at;
+                        if (current.archived_by) this.db[table][idx].archived_by = current.archived_by;
+                        if (current.archive_reason) this.db[table][idx].archive_reason = current.archive_reason;
                     }
                     changed = true;
                 }
@@ -6146,6 +6167,7 @@ const SupabaseBridge = {
         const knownTables = ['bookings', 'payments', 'support_tickets', 'feedback', 'users', 'drivers'];
         const tablesToScan = (filterTable && filterTable !== 'ALL') ? [filterTable] : knownTables;
         const archives = [];
+        const seenIds = new Set();
 
         tablesToScan.forEach(tbl => {
             if (!this.db || this.db[tbl] === undefined) {
@@ -6153,15 +6175,43 @@ const SupabaseBridge = {
             }
             const records = this.db[tbl] || [];
             records.forEach(item => {
-                if (item && item.is_archived) {
+                if (item && (item.is_archived === true || item.is_archived === 'true')) {
                     const idDisplay = item.booking_code || item.booking_id || item.invoice_no || item.ticket_id || item.id || 'REC-UNKNOWN';
-                    archives.push({
-                        ...item,
-                        _table: tbl,
-                        _displayId: idDisplay
-                    });
+                    const key = `${tbl}_${idDisplay}`;
+                    if (!seenIds.has(key)) {
+                        seenIds.add(key);
+                        archives.push({
+                            ...item,
+                            _table: tbl,
+                            _displayId: idDisplay
+                        });
+                    }
                 }
             });
+
+            // Also check localStorage in case of background updates
+            try {
+                const stored = localStorage.getItem(`hirna_db_${tbl}`);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        parsed.forEach(item => {
+                            if (item && (item.is_archived === true || item.is_archived === 'true')) {
+                                const idDisplay = item.booking_code || item.booking_id || item.invoice_no || item.ticket_id || item.id || 'REC-UNKNOWN';
+                                const key = `${tbl}_${idDisplay}`;
+                                if (!seenIds.has(key)) {
+                                    seenIds.add(key);
+                                    archives.push({
+                                        ...item,
+                                        _table: tbl,
+                                        _displayId: idDisplay
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            } catch(e) {}
         });
 
         archives.sort((a, b) => new Date(b.archived_at || 0) - new Date(a.archived_at || 0));
@@ -6227,14 +6277,17 @@ const SupabaseBridge = {
     insert(table, record) {
         if (!this.db[table]) this.db[table] = [];
         
-        // Prevent duplicate insertion if booking_code or id already exists in table
-        if (record && (record.booking_code || record.id)) {
-            const exists = this.db[table].some(item => 
-                (record.id && item.id === record.id) || 
-                (record.booking_code && item.booking_code === record.booking_code)
-            );
+        // Prevent duplicate insertion using proper primary key per table
+        if (record) {
+            const exists = this.db[table].some(item => {
+                if (record.id && item.id && String(item.id) === String(record.id)) return true;
+                if (table === 'bookings' && record.booking_code && item.booking_code && String(item.booking_code) === String(record.booking_code)) return true;
+                if (table === 'payments' && record.invoice_no && item.invoice_no && String(item.invoice_no) === String(record.invoice_no)) return true;
+                if (table === 'support_tickets' && record.ticket_id && item.ticket_id && String(item.ticket_id) === String(record.ticket_id)) return true;
+                return false;
+            });
             if (exists) {
-                console.warn(`[SupabaseBridge] Duplicate prevented for ${record.booking_code || record.id}`);
+                console.warn(`[SupabaseBridge] Duplicate prevented for ${record.id || record.booking_code || record.invoice_no}`);
                 return record;
             }
         }
@@ -6254,7 +6307,20 @@ const SupabaseBridge = {
                 })
             }).catch(() => null);
         } catch(e) {}
-        
+
+        // Broadcast live update event & refresh active UI modules
+        try {
+            window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { table, action: 'insert', record } }));
+        } catch(e) {}
+
+        if (this.channel) {
+            try {
+                this.channel.postMessage({ type: 'DB_UPDATE', table: table, action: 'insert', record });
+            } catch(e) {}
+        }
+
+        this.refreshActiveModules(table);
+
         // Auto-create informative audit log
         if (table === 'bookings') {
             this.logAudit("Booking System", "TRIP_CREATED", record.booking_code || record.id || "N/A", record.passenger_name || record.sender_name || "juan.delacruz@example.com", {
@@ -6268,7 +6334,7 @@ const SupabaseBridge = {
                 surge_multiplier: record.surge_multiplier
             });
         } else if (table === 'payments' || table === 'transactions') {
-            this.logAudit("Payment Gateway", "PAYMENT_RECORDED", record.id || record.invoice_no || "N/A", record.user || "customer@hirna.ph", record);
+            this.logAudit("Payment Gateway", "PAYMENT_RECORDED", record.invoice_no || record.id || "N/A", record.passenger_name || "customer@hirna.ph", record);
         } else if (table === 'feedback') {
             this.logAudit("CRM & Retention", "PASSENGER_RATING_SUBMITTED", record.id || "N/A", record.passenger || "passenger@tnvs.ph", {
                 passenger: record.passenger,
@@ -6280,14 +6346,14 @@ const SupabaseBridge = {
             });
         } else if (table === 'support_tickets' || table === 'tickets') {
             this.logAudit("CRM & Retention", "SUPPORT_TICKET_CREATED", record.id || "N/A", record.user || "customer@hirna.ph", {
-                ticket_id: record.id,
+                ticket_id: record.ticket_id || record.id,
                 passenger: record.user,
                 subject: record.subject,
                 category: record.category,
                 priority: record.priority,
                 status: record.status
             });
-        } else {
+        } else if (table !== 'audit_logs') {
             this.logAudit("Database", "INSERT_RECORD", record.id || "N/A", "System Auto-Sync", { table, record });
         }
 
@@ -6296,67 +6362,92 @@ const SupabaseBridge = {
 
     logAudit(module, event, entityId, user, details) {
         const id = `AUD-${Math.floor(10000 + Math.random() * 90000)}`;
-        const now = new Date();
-        const timestamp = now.toISOString().replace('T', ' ').substring(0, 19);
-        const currentUserEmail = (typeof AuthModule !== 'undefined' && AuthModule.currentUser && AuthModule.currentUser.email) 
-            ? AuthModule.currentUser.email 
-            : (user || "superadmin@hirna.ph");
-        
-        const payload = (typeof details === 'object' && details !== null) ? details : { summary: String(details) };
-        const detailsStr = typeof details === 'string' ? details : (details.summary || JSON.stringify(details));
-
-        const log = {
-            id: id,
-            module: module || "System Core",
-            event: event || "SYSTEM_EVENT",
-            entity: entityId || "SYSTEM",
-            user: currentUserEmail,
-            ip: "120.28.17.44",
-            status: "SUCCESS",
-            timestamp: timestamp,
-            details: detailsStr,
-            payload: payload,
-            syslog_hash: this.generateAuditHash(id, timestamp, event, entityId)
-        };
-
-        if (!this.db) this.db = {};
-        if (!this.db.audit_logs) this.db.audit_logs = [];
-        this.db.audit_logs.unshift(log);
-
-        if (this.db.audit_logs.length > 500) {
-            this.db.audit_logs = this.db.audit_logs.slice(0, 500);
-        }
-
         try {
-            localStorage.setItem('hirna_audit_logs', JSON.stringify(this.db.audit_logs));
-        } catch (e) {
-            console.warn("Could not save audit log to localStorage:", e);
-        }
+            const now = new Date();
+            const timestamp = now.toISOString().replace('T', ' ').substring(0, 19);
+            
+            let currentUserEmail = user;
+            if (!currentUserEmail) {
+                if (typeof AuthModule !== 'undefined' && AuthModule.currentUser && AuthModule.currentUser.email) {
+                    currentUserEmail = AuthModule.currentUser.email;
+                } else {
+                    try {
+                        const saved = localStorage.getItem('hirna_auth_user') || sessionStorage.getItem('hirna_auth_user');
+                        if (saved) {
+                            const u = JSON.parse(saved);
+                            if (u && u.email) currentUserEmail = u.email;
+                        }
+                    } catch(e) {}
+                }
+            }
+            if (!currentUserEmail) currentUserEmail = "superadmin@hirna.ph";
+            
+            const payload = (typeof details === 'object' && details !== null) ? details : { summary: details != null ? String(details) : '' };
+            const detailsStr = typeof details === 'string' 
+                ? details 
+                : (details && typeof details === 'object' && details.summary 
+                    ? details.summary 
+                    : (details != null ? JSON.stringify(details) : 'Action logged successfully'));
 
-        try {
-            window.dispatchEvent(new CustomEvent('hirna:audit_logged', { detail: log }));
-        } catch(e) {}
+            const log = {
+                id: id,
+                module: module || "System Core",
+                event: event || "SYSTEM_EVENT",
+                entity: entityId || "SYSTEM",
+                user: currentUserEmail,
+                ip: "120.28.17.44",
+                status: "SUCCESS",
+                timestamp: timestamp,
+                details: detailsStr,
+                payload: payload,
+                syslog_hash: this.generateAuditHash(id, timestamp, event, entityId)
+            };
 
-        if (this.channel) {
+            if (!this.db) this.db = {};
+            if (!this.db.audit_logs) this.db.audit_logs = [];
+            this.db.audit_logs.unshift(log);
+
+            if (this.db.audit_logs.length > 500) {
+                this.db.audit_logs = this.db.audit_logs.slice(0, 500);
+            }
+
             try {
-                this.channel.postMessage({ type: 'AUDIT_LOG', log: log });
+                localStorage.setItem('hirna_audit_logs', JSON.stringify(this.db.audit_logs));
+            } catch (e) {
+                console.warn("Could not save audit log to localStorage:", e);
+            }
+
+            try {
+                window.dispatchEvent(new CustomEvent('hirna:audit_logged', { detail: log }));
+                window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { table: 'audit_logs', action: 'insert', record: log } }));
             } catch(e) {}
+
+            if (this.channel) {
+                try {
+                    this.channel.postMessage({ type: 'AUDIT_LOG', log: log });
+                    this.channel.postMessage({ type: 'DB_UPDATE', table: 'audit_logs', action: 'insert', record: log });
+                } catch(e) {}
+            }
+
+            try {
+                const apiBase = this.getApiBase();
+                fetch(`${apiBase}/api/db`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        table: 'audit_logs',
+                        action: 'insert',
+                        record: log
+                    })
+                }).catch(() => null);
+            } catch(e) {}
+
+            this.refreshActiveModules('audit_logs');
+            return log;
+        } catch (err) {
+            console.warn("[SupabaseBridge] logAudit error:", err);
+            return null;
         }
-
-        try {
-            const apiBase = this.getApiBase();
-            fetch(`${apiBase}/api/db`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    table: 'audit_logs',
-                    action: 'insert',
-                    record: log
-                })
-            }).catch(() => null);
-        } catch(e) {}
-
-        return log;
     }
 };
 

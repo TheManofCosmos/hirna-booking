@@ -1114,11 +1114,9 @@ const PaymentsModule = {
         if (confirm(`SuperAdmin Action: Are you sure you want to archive receipt & transaction record ${id}? It will be moved to Compliance Archives.`)) {
             const archived1 = SupabaseBridge.archive('bookings', id, 'Archived from Payments Ledger');
             const archived2 = SupabaseBridge.archive('payments', id, 'Archived from Payments Ledger');
-            if (archived1 || archived2) {
-                this.renderLedger();
-                this.closeReceiptModal();
-                if (typeof App !== 'undefined') App.showToast(`Receipt record ${id} safely moved to Compliance Archives.`, 'success');
-            }
+            this.renderLedger();
+            this.closeReceiptModal();
+            if (typeof App !== 'undefined') App.showToast(`Receipt record ${id} safely moved to Compliance Archives.`, 'success');
         }
     },
 

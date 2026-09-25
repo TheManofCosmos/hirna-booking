@@ -2022,9 +2022,15 @@ const FoodDeliveryModule = {
             ? motoDrivers[Math.floor(Math.random() * motoDrivers.length)]
             : { name: 'Jomar Reyes', vehicle_plate: 'MC-4412', vehicle_model: 'Honda Click 125i (Pearl White)', vehicle_class: 'Scooter (125cc)' };
 
+        const invoiceNo = `INV-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+        const cleanCode = (paymentMethod || 'GCASH').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const txnRef = `TXN-${cleanCode || 'PAY'}-${Math.floor(100000 + Math.random() * 900000)}`;
+
         const newFoodBooking = {
             id: `b-${Date.now()}`,
             booking_code: bookingCode,
+            invoice_no: invoiceNo,
+            txn_ref: txnRef,
             service_type: 'food',
             passenger_name: bName,
             passenger_phone: bPhone,
@@ -2053,6 +2059,32 @@ const FoodDeliveryModule = {
 
         if (typeof SupabaseBridge !== 'undefined') {
             SupabaseBridge.insert('bookings', newFoodBooking);
+            
+            // Record receipt immediately into payments table so Fare & Payments has the ledger record
+            const paymentRecord = {
+                id: `pay-${invoiceNo.replace('INV-2026-', '')}`,
+                invoice_no: invoiceNo,
+                txn_ref: txnRef,
+                booking_code: bookingCode,
+                booking_id: newFoodBooking.id,
+                passenger_name: bName,
+                passenger_phone: bPhone,
+                amount: parseFloat(totalFare || 0),
+                total_fare: parseFloat(totalFare || 0),
+                base_fare: 49.0,
+                distance_fare: Math.max(0, deliveryFee - 49),
+                time_fare: 0,
+                surge_multiplier: 1.0,
+                payment_method: paymentMethod,
+                payment_status: "pending",
+                service_type: 'food',
+                vehicle_class: 'Food Courier Express',
+                pickup: newFoodBooking.pickup,
+                dropoff: newFoodBooking.dropoff,
+                created_at: newFoodBooking.created_at,
+                is_archived: false
+            };
+            SupabaseBridge.insert('payments', paymentRecord);
         }
 
         // Start real-time trip simulation on the map with active HUD
@@ -5435,9 +5467,15 @@ const BookingModule = {
         const passengerPhone = document.getElementById('std-passenger-phone')?.value.trim() || this.passengerPhone || "+63 917 888 9999";
         const paymentMethod = document.querySelector('input[name="std-payment-method"]:checked')?.value || this.stdPaymentMethod;
 
+        const invoiceNo = `INV-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+        const cleanCode = (paymentMethod || 'GCASH').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const txnRef = `TXN-${cleanCode || 'PAY'}-${Math.floor(100000 + Math.random() * 900000)}`;
+
         const newBooking = {
             id: `b-${Date.now()}`,
             booking_code: bookingCode,
+            invoice_no: invoiceNo,
+            txn_ref: txnRef,
             service_type: this.activeService,
             passenger_name: passengerName,
             passenger_phone: passengerPhone,
@@ -5466,6 +5504,32 @@ const BookingModule = {
         };
 
         SupabaseBridge.insert('bookings', newBooking);
+
+        // Record receipt immediately into payments table so Fare & Payments has the ledger record right away
+        const paymentRecord = {
+            id: `pay-${invoiceNo.replace('INV-2026-', '')}`,
+            invoice_no: invoiceNo,
+            txn_ref: txnRef,
+            booking_code: bookingCode,
+            booking_id: newBooking.id,
+            passenger_name: passengerName,
+            passenger_phone: passengerPhone,
+            amount: parseFloat(this.currentQuote.totalFare || 0),
+            total_fare: parseFloat(this.currentQuote.totalFare || 0),
+            base_fare: parseFloat(this.currentQuote.baseFare || 0),
+            distance_fare: parseFloat(this.currentQuote.distanceFare || 0),
+            time_fare: parseFloat(this.currentQuote.timeFare || 0),
+            surge_multiplier: this.currentQuote.surgeMultiplier || 1.0,
+            payment_method: paymentMethod,
+            payment_status: "pending",
+            service_type: this.activeService || 'standard',
+            vehicle_class: this.currentQuote.vehicleClass,
+            pickup: newBooking.pickup,
+            dropoff: newBooking.dropoff,
+            created_at: newBooking.created_at,
+            is_archived: false
+        };
+        SupabaseBridge.insert('payments', paymentRecord);
 
         // Save passenger contact to history
         if (passengerName || passengerPhone) {
@@ -5559,9 +5623,15 @@ const BookingModule = {
 
         const fare = this.currentQuote ? this.currentQuote.totalFare : 180.00;
 
+        const invoiceNo = `INV-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+        const cleanCode = (payMethod || 'GCASH').toString().toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const txnRef = `TXN-${cleanCode || 'PAY'}-${Math.floor(100000 + Math.random() * 900000)}`;
+
         const newParcelBooking = {
             id: `pcl-${Date.now()}`,
             booking_code: bookingCode,
+            invoice_no: invoiceNo,
+            txn_ref: txnRef,
             service_type: "parcel",
             passenger_name: `${this.bookerName} (Sender)`,
             passenger_phone: this.bookerPhone || '+63 917 888 9999',
@@ -5600,6 +5670,32 @@ const BookingModule = {
         };
 
         SupabaseBridge.insert('bookings', newParcelBooking);
+
+        // Record receipt immediately into payments table so Fare & Payments has the ledger record
+        const paymentRecord = {
+            id: `pay-${invoiceNo.replace('INV-2026-', '')}`,
+            invoice_no: invoiceNo,
+            txn_ref: txnRef,
+            booking_code: bookingCode,
+            booking_id: newParcelBooking.id,
+            passenger_name: `${this.bookerName} (Sender)`,
+            passenger_phone: this.bookerPhone || '+63 917 888 9999',
+            amount: parseFloat(fare || 0),
+            total_fare: parseFloat(fare || 0),
+            base_fare: parseFloat(newParcelBooking.base_fare || 60),
+            distance_fare: parseFloat(newParcelBooking.distance_fare || 75),
+            time_fare: parseFloat(newParcelBooking.time_fare || 25),
+            surge_multiplier: newParcelBooking.surge_multiplier || 1.0,
+            payment_method: payMethod,
+            payment_status: "pending",
+            service_type: "parcel",
+            vehicle_class: newParcelBooking.vehicle_class,
+            pickup: newParcelBooking.pickup,
+            dropoff: newParcelBooking.dropoff,
+            created_at: newParcelBooking.created_at,
+            is_archived: false
+        };
+        SupabaseBridge.insert('payments', paymentRecord);
 
         // Save booker & recipient contacts to history
         if (this.bookerName || this.bookerPhone) {
@@ -5936,7 +6032,7 @@ const BookingModule = {
         const titleEl = document.getElementById('assign-modal-title');
         const statusEl = document.getElementById('assign-modal-status');
 
-        if (radarIcon) radarIcon.innerText = this.getVehicleIcon(booking);
+        if (radarIcon) radarIcon.innerHTML = this.getVehicleIcon(booking);
         if (titleEl) titleEl.innerText = "Assigning driver nearby...";
         if (statusEl) statusEl.innerText = "Searching for available Hirna drivers within 2.0 km radius...";
 
@@ -6090,7 +6186,7 @@ const BookingModule = {
             if (nameEl) nameEl.innerText = booking.driver_name;
             if (vehEl) vehEl.innerText = `${booking.vehicle_model} • ${booking.vehicle_plate}`;
             if (codeEl) codeEl.innerText = `#${booking.booking_code}`;
-            if (avatarEl) avatarEl.innerText = this.getVehicleIcon(booking);
+            if (avatarEl) avatarEl.innerHTML = this.getVehicleIcon(booking);
             if (labelEl) labelEl.innerText = "Driver En Route to Pickup";
             if (currLocEl) currLocEl.innerText = this.tripSimulation.driverOriginName || "Locating exact address...";
             if (addrEl) addrEl.innerText = booking.pickup || 'Pickup Point';

@@ -246,8 +246,8 @@ const SSOGateway = {
                             </button>
                         ` : ''}
                         ${isSuperAdmin ? `
-                            <button onclick="SSOGateway.openEditPasswordModal('${a.email}')" class="px-2.5 py-1 text-slate-700 hover:text-white hover:bg-slate-800 rounded-lg border border-slate-300 transition text-[11px] font-bold cursor-pointer">
-                                Edit Password
+                            <button onclick="SSOGateway.openEditAccountModal('${a.email}')" class="px-2.5 py-1 text-slate-700 hover:text-white hover:bg-slate-800 rounded-lg border border-slate-300 transition text-[11px] font-bold cursor-pointer">
+                                Edit Account
                             </button>
                             ${a.email.toLowerCase() === 'edgaradovas50@gmail.com' ? '' : `
                             <button onclick="SSOGateway.confirmDeleteAccount('${a.email}')" class="px-2 py-1 text-rose-600 hover:text-white hover:bg-rose-600 rounded-lg border border-rose-200 transition text-[11px] font-bold cursor-pointer">
@@ -383,7 +383,51 @@ const SSOGateway = {
     },
 
     openEditAccountModal(email) {
-        return this.openEditPasswordModal(email);
+        if (!AuthModule.isSuperAdmin()) {
+            if (typeof App !== 'undefined' && App.showToast) App.showToast("Permission Denied: Only SuperAdmin can edit accounts.", "error");
+            return;
+        }
+        const acc = AuthModule.accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+        if (!acc) return;
+
+        const modeEl = document.getElementById('rbac-modal-mode');
+        if (modeEl) modeEl.value = "edit_account";
+
+        document.getElementById('rbac-modal-title').innerText = `Edit Account: ${acc.name}`;
+        document.getElementById('rbac-account-original-email').value = acc.email;
+
+        // Unhide all fields
+        const nameInp = document.getElementById('rbac-account-name');
+        const emailInp = document.getElementById('rbac-account-email');
+        const roleSel = document.getElementById('rbac-account-role');
+        const pwdInp = document.getElementById('rbac-account-password');
+        const submitBtn = document.getElementById('rbac-submit-btn');
+
+        if (nameInp) { nameInp.value = acc.name; nameInp.required = true; }
+        if (emailInp) { emailInp.value = acc.email; emailInp.required = true; }
+        if (roleSel) roleSel.value = acc.role || "admin";
+        if (pwdInp) {
+            pwdInp.value = acc.password || '';
+            pwdInp.type = "password";
+            pwdInp.required = false;
+        }
+        if (submitBtn) submitBtn.innerText = "Save Changes";
+
+        document.getElementById('rbac-name-group')?.classList.remove('hidden');
+        document.getElementById('rbac-email-group')?.classList.remove('hidden');
+        document.getElementById('rbac-role-group')?.classList.remove('hidden');
+        document.getElementById('rbac-password-note')?.classList.remove('hidden');
+
+        const pwdLabel = document.getElementById('rbac-password-label');
+        if (pwdLabel) pwdLabel.innerText = "Change Password (Optional)";
+
+        // Reset eye icon
+        const iconSpan = document.getElementById('rbac-modal-eye-icon');
+        if (iconSpan) {
+            iconSpan.innerHTML = `<svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+        }
+
+        document.getElementById('rbac-account-modal')?.classList.remove('hidden');
     },
 
     closeAccountModal() {
@@ -440,12 +484,13 @@ const SSOGateway = {
             return;
         }
 
-        // Add Mode
+        // Add or Edit Account Mode
         const name = (document.getElementById('rbac-account-name')?.value || '').trim();
         const email = (document.getElementById('rbac-account-email')?.value || '').trim().toLowerCase();
         const role = document.getElementById('rbac-account-role')?.value || 'admin';
         const pwdInput = document.getElementById('rbac-account-password');
-        const password = (pwdInput && pwdInput.value ? pwdInput.value.trim() : '') || role;
+        const existingAcc = origEmail ? AuthModule.accounts.find(a => a.email.toLowerCase() === origEmail.toLowerCase()) : null;
+        const password = (pwdInput && pwdInput.value ? pwdInput.value.trim() : '') || (existingAcc ? existingAcc.password : role);
 
         if (!email || !name) {
             if (typeof App !== 'undefined' && App.showToast) App.showToast("Please provide both name and valid email.", "error");
@@ -471,7 +516,7 @@ const SSOGateway = {
         const newAccount = {
             email: email,
             password: password,
-            pin: null,
+            pin: existingAcc ? existingAcc.pin : null,
             name: name,
             role: role,
             roleTitle: roleTitles[role] || "Hirna Staff",
@@ -481,11 +526,21 @@ const SSOGateway = {
 
         AuthModule.addOrUpdateAccount(newAccount);
 
+        if (origEmail && AuthModule.currentUser && AuthModule.currentUser.email.toLowerCase() === origEmail.toLowerCase()) {
+            AuthModule.currentUser.name = name;
+            AuthModule.currentUser.email = email;
+            AuthModule.currentUser.role = role;
+            AuthModule.currentUser.roleTitle = roleTitles[role] || AuthModule.currentUser.roleTitle;
+            AuthModule.currentUser.badgeClass = badgeClasses[role] || AuthModule.currentUser.badgeClass;
+            AuthModule.saveCurrentUser(AuthModule.currentUser);
+        }
+
         if (typeof SupabaseBridge !== 'undefined') {
             SupabaseBridge.logAudit("RBAC Security", origEmail ? "ACCOUNT_UPDATED" : "ACCOUNT_CREATED", email, AuthModule.currentUser ? AuthModule.currentUser.email : "superadmin", {
                 name: name,
                 assigned_role: role,
-                password_set: true
+                email: email,
+                previous_email: origEmail || undefined
             });
         }
 
@@ -493,7 +548,7 @@ const SSOGateway = {
         this.renderAccountsTable();
 
         if (typeof App !== 'undefined' && App.showToast) {
-            App.showToast(`Account ${email} created! Role: ${role.toUpperCase()} (Password saved)`, 'success');
+            App.showToast(origEmail ? `Account ${name} (${email}) updated successfully!` : `Account ${email} created! Role: ${role.toUpperCase()}`, 'success');
         }
     },
 

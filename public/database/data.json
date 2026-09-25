@@ -196,6 +196,28 @@
       "invoice_no": "INV-2026-92104",
       "txn_ref": "TXN-GCASH-892104",
       "paid_at": "2026-08-20 14:20:00"
+    },
+    {
+      "id": "b-archived-01",
+      "booking_code": "HIRNA-ARC-99120",
+      "service_type": "standard",
+      "passenger_name": "Maria Santos",
+      "passenger_phone": "+63 917 111 2233",
+      "driver_name": "Danilo Cruz",
+      "vehicle_plate": "MTR-9821",
+      "vehicle_model": "Yamaha NMAX 155 (Midnight Blue)",
+      "vehicle_class": "Motorcycle (1-Passenger)",
+      "pickup": "Ayala Center, Makati City",
+      "dropoff": "Bonifacio High Street, BGC, Taguig",
+      "total_fare": 185.0,
+      "payment_method": "GCash",
+      "status": "completed",
+      "payment_status": "completed",
+      "created_at": "2026-08-15 14:20:00",
+      "is_archived": true,
+      "archived_at": "2026-08-16 10:00:00",
+      "archived_by": "superadmin@hirna.ph",
+      "archive_reason": "Completed regulatory retention period (LTFRB compliance)"
     }
   ],
   "telemetry_routes": {
@@ -5404,6 +5426,23 @@
       "score": 0.78,
       "category": "Route & Safety",
       "date": "2026-08-20"
+    },
+    {
+      "id": "fb-archived-01",
+      "booking_code": "HIRNA-ARC-99120",
+      "passenger": "Maria Santos",
+      "passenger_name": "Maria Santos",
+      "rating": 5,
+      "comment": "Smooth ride and polite courier. Very prompt arrival.",
+      "sentiment": "Positive",
+      "score": 9,
+      "category": "Service Quality",
+      "date": "2026-08-15",
+      "created_at": "2026-08-15 15:00:00",
+      "is_archived": true,
+      "archived_at": "2026-08-16 10:00:00",
+      "archived_by": "superadmin@hirna.ph",
+      "archive_reason": "Customer satisfaction survey closed"
     }
   ],
   "support_tickets": [
@@ -5459,6 +5498,82 @@
       "status": "SUCCESS",
       "timestamp": "2026-08-20 08:52:12",
       "details": "Auto-transmitted revenue record to Team 5 Accounts Receivable & General Ledger"
+    },
+    {
+      "id": "AUD-9010",
+      "module": "Payment Gateway",
+      "event": "PAYMENT_CONFIRMED",
+      "entity": "INV-2026-00091",
+      "user": "juan.delacruz@example.com",
+      "ip": "120.28.17.44",
+      "status": "SUCCESS",
+      "timestamp": "2026-09-23 10:45:12",
+      "details": "Amount: \u20b1237.60 | Channel: GCash | Invoice: INV-2026-00091 | Status: SETTLED",
+      "payload": {
+        "invoice_no": "INV-2026-00091",
+        "amount": 237.6,
+        "channel": "GCash"
+      }
+    },
+    {
+      "id": "AUD-9009",
+      "module": "Booking System",
+      "event": "TRIP_COMPLETED",
+      "entity": "HIRNA-994120",
+      "user": "juan.delacruz@example.com",
+      "ip": "120.28.17.44",
+      "status": "SUCCESS",
+      "timestamp": "2026-09-23 10:42:05",
+      "details": "Trip Completed: Ayala Malls Circuit -> Bonifacio High Street, BGC | Driver: Ricardo Dalisay (TXI-5431)",
+      "payload": {
+        "booking_code": "HIRNA-994120",
+        "driver": "Ricardo Dalisay"
+      }
+    },
+    {
+      "id": "AUD-9008",
+      "module": "BPA Integration",
+      "event": "TEAM5_GL_SYNC",
+      "entity": "TXN-GCASH-998812",
+      "user": "SYSTEM_DAEMON",
+      "ip": "127.0.0.1",
+      "status": "SUCCESS",
+      "timestamp": "2026-09-23 10:45:15",
+      "details": "Auto-transmitted revenue record to Team 5 Accounts Receivable & General Ledger",
+      "payload": {
+        "txn_ref": "TXN-GCASH-998812",
+        "amount": 237.6
+      }
+    },
+    {
+      "id": "AUD-9007",
+      "module": "Compliance & Archival",
+      "event": "RECORD_ARCHIVED",
+      "entity": "HIRNA-ARC-99120",
+      "user": "superadmin@hirna.ph",
+      "ip": "120.28.17.44",
+      "status": "SUCCESS",
+      "timestamp": "2026-08-16 10:00:00",
+      "details": "Archived record HIRNA-ARC-99120 | Reason: Completed regulatory retention period (LTFRB compliance)",
+      "payload": {
+        "table": "bookings",
+        "archived_id": "HIRNA-ARC-99120"
+      }
+    },
+    {
+      "id": "AUD-9006",
+      "module": "RBAC Security",
+      "event": "ACCOUNT_UPDATED",
+      "entity": "admin@hirna.ph",
+      "user": "superadmin@hirna.ph",
+      "ip": "120.28.17.44",
+      "status": "SUCCESS",
+      "timestamp": "2026-09-22 16:30:00",
+      "details": "Account updated: Operations Admin (admin@hirna.ph) | Role: Operations Administrator",
+      "payload": {
+        "email": "admin@hirna.ph",
+        "role": "admin"
+      }
     }
   ],
   "payments": [
@@ -5521,6 +5636,29 @@
       "service_type": "parcel",
       "created_at": "2026-08-20 14:20:00",
       "is_archived": false
+    },
+    {
+      "id": "pay-archived-01",
+      "invoice_no": "INV-2026-88001",
+      "txn_ref": "TXN-GCASH-771122",
+      "booking_code": "HIRNA-ARC-99120",
+      "booking_id": "b-archived-01",
+      "passenger_name": "Maria Santos",
+      "passenger_phone": "+63 917 111 2233",
+      "amount": 185.0,
+      "total_fare": 185.0,
+      "base_fare": 45.0,
+      "distance_fare": 105.0,
+      "time_fare": 35.0,
+      "surge_multiplier": 1.0,
+      "payment_method": "GCash",
+      "payment_status": "completed",
+      "service_type": "standard",
+      "created_at": "2026-08-15 14:45:00",
+      "is_archived": true,
+      "archived_at": "2026-08-16 10:00:00",
+      "archived_by": "superadmin@hirna.ph",
+      "archive_reason": "Financial audit reconciliation complete"
     }
   ]
 }

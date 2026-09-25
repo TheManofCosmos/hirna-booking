@@ -468,7 +468,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 def get_rec_key(r):
                     if not isinstance(r, dict):
                         return None
-                    for k in ('booking_code', 'id', 'booking_id', 'ticket_id', 'invoice_no', 'txn_ref'):
+                    for k in ('id', 'ticket_id', 'invoice_no', 'txn_ref', 'booking_code', 'booking_id'):
                         v = r.get(k)
                         if v is not None and str(v).strip():
                             return str(v).strip()
@@ -505,7 +505,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                                     target_idx = existing_map[k]
                                     was_archived = db[tbl][target_idx].get('is_archived', False)
                                     db[tbl][target_idx].update(r)
-                                    if was_archived and 'is_archived' not in r:
+                                    if was_archived and not r.get('force_unarchive', False):
                                         db[tbl][target_idx]['is_archived'] = True
                                 else:
                                     db[tbl].append(r)

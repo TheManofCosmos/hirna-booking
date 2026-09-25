@@ -78,16 +78,16 @@ const GPSModule = {
             });
         });
 
-        // Listen for storage events in case bookings are added in other tabs
+        // Listen for storage events in case bookings or payments are added in other tabs
         window.addEventListener('storage', (e) => {
-            if (e.key === 'hirna_db_bookings') {
+            if (e.key === 'hirna_db_bookings' || e.key === 'hirna_db_payments') {
                 this.renderRecordedTrips();
             }
         });
 
         // Listen for custom database update events (central server or local)
         window.addEventListener('hirna:db_updated', (e) => {
-            if (!e.detail || !e.detail.table || e.detail.table === 'bookings') {
+            if (!e.detail || !e.detail.table || e.detail.table === 'bookings' || e.detail.table === 'payments') {
                 this.renderRecordedTrips();
             }
         });
@@ -175,6 +175,36 @@ const GPSModule = {
                 }
             }
         } catch (e) {}
+
+        // Also integrate payments table records so any paid trip/receipt is immediately visible in GPS Playback
+        if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.getData) {
+            const payments = SupabaseBridge.getData('payments') || [];
+            payments.forEach(p => {
+                const code = p.booking_code || p.invoice_no;
+                const exists = bookings.some(b => (b.booking_code && b.booking_code === code) || b.id === p.booking_id || b.id === p.id);
+                if (!exists && code) {
+                    bookings.push({
+                        id: p.booking_id || p.id || `b-${p.invoice_no}`,
+                        booking_code: code,
+                        service_type: p.service_type || 'standard',
+                        passenger_name: p.passenger_name || 'Passenger',
+                        passenger_phone: p.passenger_phone || '+63 917 123 4567',
+                        driver_name: p.driver_name || 'Ricardo Dalisay',
+                        vehicle_plate: p.vehicle_plate || 'TXI-5431',
+                        vehicle_model: p.vehicle_model || 'Toyota Vios',
+                        pickup: p.pickup || 'Metro Manila Hub',
+                        dropoff: p.dropoff || 'Bonifacio Global City, Taguig',
+                        total_fare: p.total_fare || p.amount || 150,
+                        payment_method: p.payment_method || 'GCash',
+                        payment_status: 'completed',
+                        status: 'completed',
+                        created_at: p.created_at || new Date().toISOString().replace('T', ' ').substring(0, 19),
+                        duration_min: 22,
+                        distance_km: 6.8
+                    });
+                }
+            });
+        }
 
         return bookings;
     },

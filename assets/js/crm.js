@@ -16,8 +16,20 @@ const CRMModule = {
             if (u.full_name && u.full_name.trim()) return u.full_name.trim();
             if (u.email && u.email.trim()) return u.email.trim().split('@')[0];
         }
+        try {
+            const saved = localStorage.getItem('hirna_auth_user') || sessionStorage.getItem('hirna_auth_user');
+            if (saved) {
+                const u = JSON.parse(saved);
+                if (u.name && u.name.trim()) return u.name.trim();
+                if (u.full_name && u.full_name.trim()) return u.full_name.trim();
+                if (u.email && u.email.trim()) return u.email.trim().split('@')[0];
+            }
+        } catch(e) {}
         const local = localStorage.getItem('hirna_user_name');
         if (local && local.trim()) return local.trim();
+        if (typeof BookingModule !== 'undefined' && BookingModule.passengerName && BookingModule.passengerName.trim()) {
+            return BookingModule.passengerName.trim();
+        }
         return 'Customer';
     },
 
@@ -175,8 +187,9 @@ const CRMModule = {
             const shouldHighlightDate = query && (this.filters.searchChoice === 'date' || this.filters.searchChoice === 'all');
             const shouldHighlightCategory = query && (this.filters.searchChoice === 'classification' || this.filters.searchChoice === 'all');
 
+            const passengerName = f.passenger || f.passenger_name || 'Passenger';
             const highlightedComment = this.highlightText(f.comment, query, shouldHighlightWords);
-            const highlightedPassenger = this.highlightText(f.passenger, query, shouldHighlightName);
+            const highlightedPassenger = this.highlightText(passengerName, query, shouldHighlightName);
             const highlightedDate = this.highlightText(f.date, query, shouldHighlightDate);
             const highlightedCategory = this.highlightText(f.category, query, shouldHighlightCategory);
 
@@ -185,7 +198,7 @@ const CRMModule = {
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center space-x-2.5">
                             <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-hirna-700 to-hirna-900 text-gold-300 font-bold flex items-center justify-center text-xs shadow-sm">
-                                ${(f.passenger || 'P').charAt(0)}
+                                ${(passengerName || 'P').charAt(0).toUpperCase()}
                             </div>
                             <div>
                                 <span class="font-bold text-slate-900 block leading-tight">${highlightedPassenger}</span>
@@ -215,6 +228,7 @@ const CRMModule = {
                             <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium text-[10px] border border-slate-200">
                                 ${highlightedCategory}
                             </span>
+                        </div>
                         <div class="flex items-center space-x-2 text-[10px] text-slate-400 font-mono">
                             <span>Classification: <span class="text-slate-600 font-semibold">${f.category || 'General'}</span></span>
                             ${(typeof AuthModule !== 'undefined' && AuthModule.isSuperAdmin()) ? `
@@ -528,21 +542,30 @@ const CRMModule = {
             const rating = parseInt(document.getElementById('feedback-rating')?.value || 5);
             const analysis = AIEngines.SentimentNLP.analyzeFeedback(text);
 
+            const uniqueCode = (typeof BookingModule !== 'undefined' && BookingModule.currentBooking && BookingModule.currentBooking.booking_code) 
+                ? BookingModule.currentBooking.booking_code 
+                : `HIRNA-REV-${Date.now().toString().slice(-6)}`;
+
+            const reviewerName = this.getReviewerName();
             const newFb = {
                 id: `fb-${Date.now()}`,
-                booking_code: "TNVS-2026-LIVE",
-                passenger: this.getReviewerName(),
+                booking_code: uniqueCode,
+                passenger: reviewerName,
+                passenger_name: reviewerName,
                 rating: rating,
-                comment: text,
+                comment: text.trim(),
                 sentiment: analysis.sentiment,
                 score: analysis.score,
                 category: analysis.category,
-                date: new Date().toISOString().substring(0, 10)
+                date: new Date().toISOString().substring(0, 10),
+                created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                is_archived: false
             };
 
             SupabaseBridge.insert('feedback', newFb);
             if (textInput) textInput.value = '';
             if (previewBox) previewBox.classList.add('hidden');
+            this.updateReviewerDisplay();
             if (typeof App !== 'undefined' && App.showToast) {
                 App.showToast("Review analyzed by NLP AI and saved!", "success");
             }
