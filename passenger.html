@@ -1277,13 +1277,36 @@
                 </div>
             </div>
 
+            <!-- Passenger Personal Trip Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm">
+                    <span id="pass-pay-kpi-1-label" class="text-xs text-slate-500 font-semibold block">My Total Spent on Rides</span>
+                    <span id="pass-pay-kpi-1-val" class="text-2xl font-black text-hirna-900 font-mono mt-1 block">₱0.00</span>
+                    <span id="pass-pay-kpi-1-sub" class="text-[11px] text-emerald-600 font-medium">0 Settled Trips</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm">
+                    <span id="pass-pay-kpi-2-label" class="text-xs text-slate-500 font-semibold block">My Average Fare per Trip</span>
+                    <span id="pass-pay-kpi-2-val" class="text-2xl font-black text-hirna-800 font-mono mt-1 block">₱0.00</span>
+                    <span id="pass-pay-kpi-2-sub" class="text-[11px] text-slate-500">Personal Spending Average</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm">
+                    <span id="pass-pay-kpi-3-label" class="text-xs text-slate-500 font-semibold block">My Preferred Channel</span>
+                    <span id="pass-pay-kpi-3-val" class="text-2xl font-black text-emerald-600 font-mono mt-1 block">Cashless</span>
+                    <span id="pass-pay-kpi-3-sub" class="text-[11px] text-slate-500">Contactless Settlements</span>
+                </div>
+            </div>
+
             <!-- Transaction Ledger -->
             <div class="bg-white rounded-2xl border border-hirna-100 shadow-sm overflow-hidden">
                 <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-hirna-50/40">
                     <div>
-                        <h3 class="text-sm font-bold text-hirna-900">Fare Collection & Transaction History</h3>
-                        <p class="text-xs text-slate-500">Reconciled payments with automated invoice receipts</p>
+                        <h3 id="pass-pay-ledger-title" class="text-sm font-bold text-hirna-900">My Trip Receipts & Transaction History</h3>
+                        <p id="pass-pay-ledger-desc" class="text-xs text-slate-500">Reconciled personal payments with official electronic receipts</p>
                     </div>
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <svg class="w-3 h-3 mr-1 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        Passenger Privacy Protected
+                    </span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
@@ -1707,6 +1730,15 @@
                 <p class="text-[10px] text-slate-500 font-mono">Scan or verify with any QR Ph BSP-compliant app (GCash/Maya/Bank)</p>
             </div>
 
+
+            <!-- Privacy & Data Protection Compliance Badge -->
+            <div id="rcpt-privacy-badge" class="flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-[10px] text-slate-500">
+                <div class="flex items-center space-x-1.5">
+                    <svg class="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    <span class="font-medium text-slate-700">Passenger Trip Receipt • Privacy Protected</span>
+                </div>
+                <span class="font-mono text-slate-400">RA 10173 • LTFRB DPA</span>
+            </div>
 
             <!-- Actions -->
             <div class="receipt-actions no-print grid grid-cols-2 gap-2 pt-1">

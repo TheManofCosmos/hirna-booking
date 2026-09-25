@@ -11,11 +11,29 @@ const HirnaWallet = {
     STORAGE_KEY: 'hirna_wallet_balance',
     DEFAULT_BALANCE: 2450.00,
 
+    getUserStorageKey() {
+        try {
+            const u = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+            if (u && (u.email || u.id)) {
+                const safeId = (u.email || u.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+                return `hirna_wallet_balance_${safeId}`;
+            }
+        } catch (e) {}
+        return this.STORAGE_KEY;
+    },
+
     getBalance() {
         try {
-            const stored = localStorage.getItem(this.STORAGE_KEY);
+            const userKey = this.getUserStorageKey();
+            const stored = localStorage.getItem(userKey);
             if (stored !== null && !isNaN(parseFloat(stored))) {
                 return parseFloat(stored);
+            }
+            if (userKey !== this.STORAGE_KEY) {
+                const globalStored = localStorage.getItem(this.STORAGE_KEY);
+                if (globalStored !== null && !isNaN(parseFloat(globalStored))) {
+                    return parseFloat(globalStored);
+                }
             }
         } catch (e) {
             console.warn("Error reading wallet balance:", e);
@@ -26,6 +44,8 @@ const HirnaWallet = {
     setBalance(amt) {
         const num = Math.max(0, parseFloat(amt) || 0);
         try {
+            const userKey = this.getUserStorageKey();
+            localStorage.setItem(userKey, num.toFixed(2));
             localStorage.setItem(this.STORAGE_KEY, num.toFixed(2));
         } catch (e) {
             console.warn("Error saving wallet balance:", e);
@@ -336,10 +356,25 @@ const PaymentsModule = {
         this.renderLedger();
     },
 
+    getPaymentMethodsStorageKey() {
+        try {
+            const u = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+            if (u && (u.email || u.id)) {
+                const safeId = (u.email || u.id).replace(/[^a-zA-Z0-9_-]/g, '_');
+                return `hirna_available_payment_methods_${safeId}`;
+            }
+        } catch (e) {}
+        return 'hirna_available_payment_methods';
+    },
+
     getPaymentMethods() {
         let methods = [...this.defaultMethods];
         try {
-            const stored = localStorage.getItem('hirna_available_payment_methods');
+            const userKey = this.getPaymentMethodsStorageKey();
+            let stored = localStorage.getItem(userKey);
+            if (!stored && userKey !== 'hirna_available_payment_methods') {
+                stored = localStorage.getItem('hirna_available_payment_methods');
+            }
             if (stored) {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length > 0) methods = parsed;
@@ -359,6 +394,8 @@ const PaymentsModule = {
 
     savePaymentMethods(methods) {
         try {
+            const userKey = this.getPaymentMethodsStorageKey();
+            localStorage.setItem(userKey, JSON.stringify(methods));
             localStorage.setItem('hirna_available_payment_methods', JSON.stringify(methods));
         } catch (e) {
             console.error("Failed to save payment methods:", e);
@@ -875,6 +912,21 @@ const PaymentsModule = {
     showReceipt(booking, txnRef, invoiceNo, method) {
         if (!booking) return;
 
+        const currentUser = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+        const isPassenger = (typeof AuthModule !== 'undefined' && AuthModule.isPassenger && AuthModule.isPassenger()) ||
+                            (currentUser && (currentUser.role === 'passenger' || currentUser.role === 'customer')) ||
+                            window.location.pathname.includes('passenger.html');
+
+        // Privacy Isolation: Prevent unauthorized passengers from viewing receipts for other users' trips
+        if (isPassenger && currentUser && !this.isRecordOwned(booking, currentUser)) {
+            if (typeof App !== 'undefined' && App.showToast) {
+                App.showToast("Privacy Notice: You are only authorized to view receipts for your own trips.", "warning");
+            }
+            return;
+        }
+
+        this.currentReceiptRecord = booking;
+
         const bookingKey = booking.booking_code || booking.id;
         const now = Date.now();
         if (this._lastShownReceiptId === bookingKey && (now - (this._lastShownReceiptTime || 0)) < 1500) {
@@ -963,10 +1015,19 @@ const PaymentsModule = {
         if (passEl) passEl.innerText = bookerName;
         if (passPhoneEl) passPhoneEl.innerText = `Tel: ${bookerPhone}`;
 
-        // Driver Details
+        // Driver Details with Data Privacy Protection
         const driverName = booking.driver_name || 'Ricardo Dalisay';
         const driverPlate = booking.vehicle_plate || 'TXI-5431';
-        const driverPhone = booking.driver_phone || '+63 920 555 1234';
+        let driverPhone = booking.driver_phone || '+63 920 555 1234';
+
+        if (isPassenger) {
+            const dDigits = driverPhone.replace(/\D/g, '');
+            if (dDigits.length >= 10) {
+                driverPhone = `+63 ${dDigits.slice(-10, -7)} ••• ${dDigits.slice(-4)} (In-App Relay)`;
+            } else {
+                driverPhone = '+63 9•• ••• •••• (In-App Relay)';
+            }
+        }
 
         if (drivEl) drivEl.innerText = `${driverName} (${driverPlate})`;
         if (drivPhoneEl) drivPhoneEl.innerText = `Tel: ${driverPhone}`;
@@ -1080,33 +1141,13 @@ const PaymentsModule = {
                             (currentUser && (currentUser.role === 'passenger' || currentUser.role === 'customer')) ||
                             window.location.pathname.includes('passenger.html');
 
-        const isRecordOwned = (rec) => {
-            if (!isPassenger || !currentUser) return true;
-            if (typeof BookingModule !== 'undefined' && typeof BookingModule.isTripOwnedByUser === 'function') {
-                return BookingModule.isTripOwnedByUser(rec, currentUser);
-            }
-            const uEmail = (currentUser.email || '').trim().toLowerCase();
-            const uPhone = (currentUser.phone || '').replace(/\D/g, '');
-            const uName = (currentUser.name || '').trim().toLowerCase();
-            if (rec.user_email && uEmail && rec.user_email.trim().toLowerCase() === uEmail) return true;
-            if (rec.user_id && currentUser.id && rec.user_id === currentUser.id) return true;
-            try {
-                const myCodes = JSON.parse(localStorage.getItem('hirna_my_booking_codes') || '[]');
-                const code = rec.booking_code || rec.booking_id || rec.invoice_no || rec.id;
-                if (code && myCodes.includes(code)) return true;
-            } catch(e) {}
-            const bPhone = (rec.passenger_phone || rec.sender_phone || '').replace(/\D/g, '');
-            if (bPhone && uPhone && (bPhone.endsWith(uPhone) || uPhone.endsWith(bPhone))) return true;
-            const bName = (rec.passenger_name || rec.sender_name || '').trim().toLowerCase();
-            if (bName && uName && (bName.includes(uName) || uName.includes(bName))) return true;
-            return false;
-        };
-
         let unifiedList = Array.from(ledgerMap.values());
         if (isPassenger && currentUser) {
-            unifiedList = unifiedList.filter(b => isRecordOwned(b) || (b.rawRecord && isRecordOwned(b.rawRecord)));
+            unifiedList = unifiedList.filter(b => this.isRecordOwned(b, currentUser) || (b.rawRecord && this.isRecordOwned(b.rawRecord, currentUser)));
         }
         unifiedList.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+        this.updateMetrics(unifiedList, isPassenger);
 
         if (unifiedList.length === 0) {
             tbody.innerHTML = `
@@ -1151,6 +1192,126 @@ const PaymentsModule = {
         `).join('');
     },
 
+    isRecordOwned(rec, user = null) {
+        if (!rec) return false;
+        const currentUser = user || ((typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null);
+        const isPassenger = (typeof AuthModule !== 'undefined' && AuthModule.isPassenger && AuthModule.isPassenger()) ||
+                            (currentUser && (currentUser.role === 'passenger' || currentUser.role === 'customer')) ||
+                            window.location.pathname.includes('passenger.html');
+
+        if (!isPassenger || !currentUser) return true;
+
+        if (typeof BookingModule !== 'undefined' && typeof BookingModule.isTripOwnedByUser === 'function') {
+            return BookingModule.isTripOwnedByUser(rec, currentUser);
+        }
+
+        const uEmail = (currentUser.email || '').trim().toLowerCase();
+        const uPhone = (currentUser.phone || '').replace(/\D/g, '');
+        const uName = (currentUser.name || '').trim().toLowerCase();
+
+        if (rec.user_email && uEmail && rec.user_email.trim().toLowerCase() === uEmail) return true;
+        if (rec.user_id && currentUser.id && rec.user_id === currentUser.id) return true;
+        try {
+            const myCodes = JSON.parse(localStorage.getItem('hirna_my_booking_codes') || '[]');
+            const code = rec.booking_code || rec.booking_id || rec.invoice_no || rec.id;
+            if (code && myCodes.includes(code)) return true;
+        } catch(e) {}
+        const bPhone = (rec.passenger_phone || rec.sender_phone || '').replace(/\D/g, '');
+        if (bPhone && uPhone && (bPhone.endsWith(uPhone) || uPhone.endsWith(bPhone))) return true;
+        const bName = (rec.passenger_name || rec.sender_name || '').trim().toLowerCase();
+        if (bName && uName && (bName.includes(uName) || uName.includes(bName))) return true;
+        return false;
+    },
+
+    updateMetrics(unifiedList = [], isPassenger = false) {
+        if (isPassenger) {
+            const totalSpent = unifiedList.reduce((acc, cur) => acc + (parseFloat(cur.total_fare) || 0), 0);
+            const tripCount = unifiedList.length;
+            const avgFare = tripCount > 0 ? (totalSpent / tripCount) : 0;
+
+            const channelCounts = {};
+            unifiedList.forEach(item => {
+                const meth = item.payment_method || 'GCash';
+                channelCounts[meth] = (channelCounts[meth] || 0) + 1;
+            });
+            let topChannel = 'GCash';
+            let maxCount = 0;
+            Object.keys(channelCounts).forEach(ch => {
+                if (channelCounts[ch] > maxCount) {
+                    maxCount = channelCounts[ch];
+                    topChannel = ch;
+                }
+            });
+
+            // Update payments.html KPI cards
+            const kpi1Label = document.getElementById('pay-kpi-1-label');
+            const kpi1Val = document.getElementById('pay-kpi-1-val');
+            const kpi1Sub = document.getElementById('pay-kpi-1-sub');
+            if (kpi1Label) kpi1Label.innerText = "My Total Spent on Rides";
+            if (kpi1Val) kpi1Val.innerText = `₱${totalSpent.toFixed(2)}`;
+            if (kpi1Sub) kpi1Sub.innerText = `${tripCount} Settled ${tripCount === 1 ? 'Trip' : 'Trips'}`;
+
+            const kpi2Label = document.getElementById('pay-kpi-2-label');
+            const kpi2Val = document.getElementById('pay-kpi-2-val');
+            const kpi2Sub = document.getElementById('pay-kpi-2-sub');
+            if (kpi2Label) kpi2Label.innerText = "My Average Fare per Trip";
+            if (kpi2Val) kpi2Val.innerText = `₱${avgFare.toFixed(2)}`;
+            if (kpi2Sub) kpi2Sub.innerText = "Personal Spending Average";
+
+            const kpi3Label = document.getElementById('pay-kpi-3-label');
+            const kpi3Val = document.getElementById('pay-kpi-3-val');
+            const kpi3Sub = document.getElementById('pay-kpi-3-sub');
+            if (kpi3Label) kpi3Label.innerText = "My Preferred Channel";
+            if (kpi3Val) kpi3Val.innerText = topChannel;
+            if (kpi3Sub) kpi3Sub.innerText = "Contactless & Secure Settlements";
+
+            // Update passenger.html KPI cards
+            const passKpi1Val = document.getElementById('pass-pay-kpi-1-val');
+            const passKpi1Sub = document.getElementById('pass-pay-kpi-1-sub');
+            if (passKpi1Val) passKpi1Val.innerText = `₱${totalSpent.toFixed(2)}`;
+            if (passKpi1Sub) passKpi1Sub.innerText = `${tripCount} Settled ${tripCount === 1 ? 'Trip' : 'Trips'}`;
+
+            const passKpi2Val = document.getElementById('pass-pay-kpi-2-val');
+            if (passKpi2Val) passKpi2Val.innerText = `₱${avgFare.toFixed(2)}`;
+
+            const passKpi3Val = document.getElementById('pass-pay-kpi-3-val');
+            if (passKpi3Val) passKpi3Val.innerText = topChannel;
+
+            // Update ledger titles
+            const ledgerTitle = document.getElementById('pay-ledger-title');
+            const ledgerDesc = document.getElementById('pay-ledger-desc');
+            if (ledgerTitle) ledgerTitle.innerText = "My Trip Receipts & Transaction History";
+            if (ledgerDesc) ledgerDesc.innerText = "Reconciled personal payments with official electronic receipts";
+        } else {
+            const allPayments = (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.getData) ? (SupabaseBridge.getData('payments') || []) : [];
+            let totalPlatform = 0;
+            allPayments.forEach(p => { totalPlatform += parseFloat(p.amount || p.total_fare || 0); });
+            if (totalPlatform === 0) totalPlatform = 343558.40;
+
+            const kpi1Label = document.getElementById('pay-kpi-1-label');
+            const kpi1Val = document.getElementById('pay-kpi-1-val');
+            const kpi1Sub = document.getElementById('pay-kpi-1-sub');
+            if (kpi1Label) kpi1Label.innerText = "Total Fare Collected (Hirna)";
+            if (kpi1Val) kpi1Val.innerText = `₱${totalPlatform.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            if (kpi1Sub) kpi1Sub.innerText = "↑ Verified Gross Platform Collections";
+
+            const kpi2Label = document.getElementById('pay-kpi-2-label');
+            const kpi2Val = document.getElementById('pay-kpi-2-val');
+            if (kpi2Label) kpi2Label.innerText = "Average Fare per Trip";
+            if (kpi2Val) kpi2Val.innerText = "₱168.50";
+
+            const kpi3Label = document.getElementById('pay-kpi-3-label');
+            const kpi3Val = document.getElementById('pay-kpi-3-val');
+            if (kpi3Label) kpi3Label.innerText = "Digital Payment Share";
+            if (kpi3Val) kpi3Val.innerText = "68.4% Cashless";
+
+            const ledgerTitle = document.getElementById('pay-ledger-title');
+            const ledgerDesc = document.getElementById('pay-ledger-desc');
+            if (ledgerTitle) ledgerTitle.innerText = "Fare Collection & Transaction History";
+            if (ledgerDesc) ledgerDesc.innerText = "Reconciled payments with automated invoice receipts";
+        }
+    },
+
     archiveReceipt(id) {
         if (typeof AuthModule !== 'undefined' && !AuthModule.canDeleteRecords()) {
             if (typeof App !== 'undefined') App.showToast("Permission Denied: Only SuperAdmin can archive receipts and financial records.", "error");
@@ -1172,21 +1333,59 @@ const PaymentsModule = {
     printReceipt(id) {
         const bookings = SupabaseBridge.getData('bookings') || [];
         const payments = SupabaseBridge.getData('payments') || [];
-        let b = bookings.find(item => item.id === id || item.booking_code === id);
-        if (!b) {
-            const p = payments.find(item => item.id === id || item.booking_code === id || item.booking_id === id || item.invoice_no === id);
-            if (p) {
-                b = bookings.find(item => item.id === p.booking_id || item.booking_code === p.booking_code) || p;
+        const currentUser = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+        const isPassenger = (typeof AuthModule !== 'undefined' && AuthModule.isPassenger && AuthModule.isPassenger()) ||
+                            (currentUser && (currentUser.role === 'passenger' || currentUser.role === 'customer')) ||
+                            window.location.pathname.includes('passenger.html');
+
+        let b = null;
+        if (id) {
+            b = bookings.find(item => item.id === id || item.booking_code === id);
+            if (!b) {
+                const p = payments.find(item => item.id === id || item.booking_code === id || item.booking_id === id || item.invoice_no === id);
+                if (p) {
+                    b = bookings.find(item => item.id === p.booking_id || item.booking_code === p.booking_code) || p;
+                }
             }
         }
-        if (!b) b = this.activeBooking || bookings[0] || payments[0];
-        if (b) {
-            const codeNum = (b.booking_code || '').replace(/\D/g, '') || '88219';
-            const invoiceNo = b.invoice_no || `INV-2026-${codeNum.slice(-5) || '88219'}`;
-            const cleanCode = (b.payment_method || 'GCASH').toUpperCase().replace(/[^A-Z0-9]/g, '');
-            const txnRef = b.txn_ref || `TXN-${cleanCode}-${codeNum.slice(-6) || '994120'}`;
-            this.showReceipt(b, txnRef, invoiceNo, b.payment_method || 'GCash');
+
+        // Privacy Isolation Check: If passenger, verify ownership
+        if (b && isPassenger && currentUser) {
+            if (!this.isRecordOwned(b, currentUser)) {
+                if (typeof App !== 'undefined' && App.showToast) {
+                    App.showToast("Privacy Notice: You are only authorized to view receipts for your own trips.", "warning");
+                }
+                return;
+            }
         }
+
+        // Fallback: If no ID or record specified, only fall back to passenger's OWN active or recent booking
+        if (!b) {
+            if (isPassenger && currentUser) {
+                if (this.activeBooking && this.isRecordOwned(this.activeBooking, currentUser)) {
+                    b = this.activeBooking;
+                } else {
+                    const myBookings = bookings.filter(item => this.isRecordOwned(item, currentUser));
+                    const myPayments = payments.filter(item => this.isRecordOwned(item, currentUser));
+                    b = myBookings[0] || myPayments[0];
+                }
+            } else {
+                b = this.activeBooking || bookings[0] || payments[0];
+            }
+        }
+
+        if (!b) {
+            if (typeof App !== 'undefined' && App.showToast) {
+                App.showToast("No electronic receipt found for this trip.", "info");
+            }
+            return;
+        }
+
+        const codeNum = (b.booking_code || '').replace(/\D/g, '') || '88219';
+        const invoiceNo = b.invoice_no || `INV-2026-${codeNum.slice(-5) || '88219'}`;
+        const cleanCode = (b.payment_method || 'GCASH').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        const txnRef = b.txn_ref || `TXN-${cleanCode}-${codeNum.slice(-6) || '994120'}`;
+        this.showReceipt(b, txnRef, invoiceNo, b.payment_method || 'GCash');
     },
 
     printReceiptDocument() {
@@ -1195,6 +1394,20 @@ const PaymentsModule = {
         if (!receiptCard || !modal) {
             window.print();
             return;
+        }
+
+        const currentUser = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+        const isPassenger = (typeof AuthModule !== 'undefined' && AuthModule.isPassenger && AuthModule.isPassenger()) ||
+                            (currentUser && (currentUser.role === 'passenger' || currentUser.role === 'customer')) ||
+                            window.location.pathname.includes('passenger.html');
+
+        if (isPassenger && currentUser && this.currentReceiptRecord) {
+            if (!this.isRecordOwned(this.currentReceiptRecord, currentUser)) {
+                if (typeof App !== 'undefined' && App.showToast) {
+                    App.showToast("Privacy Notice: You cannot print receipts belonging to another user.", "warning");
+                }
+                return;
+            }
         }
 
         const clone = receiptCard.cloneNode(true);
