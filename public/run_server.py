@@ -195,7 +195,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
     def do_GET(self):
-        if self.path.startswith('/api/send-otp'):
+        if self.path.startswith('/api/send-otp') or self.path.startswith('/api/send_otp'):
             query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             email = query.get('email', ['User'])[0]
             code = query.get('code', ['123456'])[0]
