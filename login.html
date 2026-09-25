@@ -442,7 +442,7 @@
 
             // Dispatch via backend Gmail SMTP mailer
             const apiBase = (window.location.protocol === 'file:') ? 'http://localhost:8000' : '';
-            fetch(`${apiBase}/api/send-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}&purpose=${encodeURIComponent(purpose)}`)
+            fetch(`${apiBase}/api/send_otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}&purpose=${encodeURIComponent(purpose)}`)
                 .then(r => r.json())
                 .then(d => {
                     console.log(`[Hirna Mailer] OTP (${purpose}) dispatched to:`, d.email, "via sender:", d.sender);
@@ -774,7 +774,7 @@
             sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
 
             const apiBase = (window.location.protocol === 'file:') ? 'http://localhost:8000' : '';
-            fetch(`${apiBase}/api/send-otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(activeResetOtp)}&purpose=reset`)
+            fetch(`${apiBase}/api/send_otp?email=${encodeURIComponent(email)}&code=${encodeURIComponent(activeResetOtp)}&purpose=reset`)
                 .then(r => r.json())
                 .then(d => {
                     console.log("[Hirna Reset Mailer] Code dispatched to:", d.email);

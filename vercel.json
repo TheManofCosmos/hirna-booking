@@ -1,9 +1,10 @@
 {
   "rewrites": [
-    { "source": "/api/send-otp", "destination": "/api/send_otp.py" },
-    { "source": "/api/route", "destination": "/api/route.py" },
-    { "source": "/api/db", "destination": "/api/sync_db.py" },
-    { "source": "/api/sync-db", "destination": "/api/sync_db.py" },
+    { "source": "/api/send-otp", "destination": "/api/send_otp" },
+    { "source": "/api/route", "destination": "/api/route" },
+    { "source": "/api/db", "destination": "/api/sync_db" },
+    { "source": "/api/sync-db", "destination": "/api/sync_db" },
     { "source": "/", "destination": "/login.html" }
   ]
 }
+
