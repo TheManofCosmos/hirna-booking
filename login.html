@@ -1421,8 +1421,8 @@
                 AuthModule.setSession(pendingUser, rememberMe);
 
                 setTimeout(() => {
-                    if (pendingUser.role === 'passenger') {
-                        window.location.href = "passenger.html";
+                    if (pendingUser.role === 'passenger' || pendingUser.role === 'customer') {
+                        window.location.href = "booking.html";
                     } else {
                         window.location.href = "main.html";
                     }

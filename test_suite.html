@@ -130,6 +130,33 @@
                 AuthModule.setSession(superAdminUser);
                 assert(localStorage.getItem('hirna_auth_user') !== null || sessionStorage.getItem('hirna_auth_user') !== null, "Session is stored permanently in storage");
 
+                // TEST 9: Customer Navigation Filtering (Only Booking and Fare & Payments)
+                const passengerUser = defaultAccs.find(a => a.role === 'passenger');
+                AuthModule.currentUser = passengerUser;
+                const dummySidebar = document.createElement('aside');
+                dummySidebar.id = 'app-sidebar';
+                document.body.appendChild(dummySidebar);
+                AuthModule.renderSidebar();
+                const passengerHtml = dummySidebar.innerHTML;
+                assert(passengerHtml.includes('href="booking.html"'), "Customer sidebar includes Booking & Dispatch");
+                assert(passengerHtml.includes('href="payments.html"'), "Customer sidebar includes Fare & Payments");
+                assert(!passengerHtml.includes('href="main.html"'), "Customer sidebar excludes Dashboard");
+                assert(!passengerHtml.includes('href="crm.html"'), "Customer sidebar excludes Customer CRM");
+                assert(!passengerHtml.includes('href="gps.html"'), "Customer sidebar excludes GPS Telematics");
+                assert(!passengerHtml.includes('href="analytics.html"'), "Customer sidebar excludes Fleet Analytics");
+                assert(!passengerHtml.includes('href="audit.html"'), "Customer sidebar excludes SOP & Audit Logs");
+                assert(!passengerHtml.includes('href="sso.html"'), "Customer sidebar excludes SuperAdmin SSO");
+
+                // TEST 10: SuperAdmin Module Access
+                AuthModule.currentUser = superAdminUser;
+                AuthModule.renderSidebar();
+                const superAdminHtml = dummySidebar.innerHTML;
+                assert(superAdminHtml.includes('href="main.html"'), "SuperAdmin sidebar includes Dashboard");
+                assert(superAdminHtml.includes('href="booking.html"'), "SuperAdmin sidebar includes Booking & Dispatch");
+                assert(superAdminHtml.includes('href="payments.html"'), "SuperAdmin sidebar includes Fare & Payments");
+                assert(superAdminHtml.includes('href="sso.html"'), "SuperAdmin sidebar includes SuperAdmin SSO");
+                dummySidebar.remove();
+
             } catch (err) {
                 results.push(`[ERROR] Exception during tests: ${err.message}\n${err.stack}`);
             }

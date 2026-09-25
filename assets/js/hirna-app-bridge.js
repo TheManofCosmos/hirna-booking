@@ -141,8 +141,8 @@ const HirnaAppBridge = {
         const isAndroid = /Android/i.test(navigator.userAgent);
         
         if (isAndroid) {
-            // Attempt Android Intent with fallback to passenger.html
-            const fallbackUrl = window.location.origin + '/passenger.html';
+            // Attempt Android Intent with fallback to booking.html
+            const fallbackUrl = window.location.origin + '/booking.html';
             const intentUrl = `intent://open#Intent;scheme=hirna;package=com.hirna.customer;S.browser_fallback_url=${encodeURIComponent(fallbackUrl)};end`;
             
             const start = Date.now();
@@ -151,12 +151,12 @@ const HirnaAppBridge = {
             // Fallback if app not reachable within timeout
             setTimeout(() => {
                 if (Date.now() - start < 2000) {
-                    window.location.href = "passenger.html";
+                    window.location.href = "booking.html";
                 }
             }, 1200);
         } else {
             // Desktop/Web simulation
-            window.open('passenger.html', '_blank');
+            window.open('booking.html', '_blank');
         }
     },
 
@@ -249,7 +249,7 @@ const HirnaAppBridge = {
                     <button type="button" onclick="HirnaAppBridge.launchApp(); HirnaAppBridge.closeTooltip();" class="hover:text-gold-300 transition underline cursor-pointer">
                         Already installed? Open
                     </button>
-                    <a href="passenger.html" target="_blank" onclick="HirnaAppBridge.closeTooltip()" class="hover:text-white transition flex items-center space-x-1">
+                    <a href="booking.html" target="_blank" onclick="HirnaAppBridge.closeTooltip()" class="hover:text-white transition flex items-center space-x-1">
                         <span>Web Simulator</span>
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                     </a>

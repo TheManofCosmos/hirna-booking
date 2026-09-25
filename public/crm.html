@@ -14,8 +14,8 @@
                     return;
                 }
                 var user = JSON.parse(raw);
-                if (user && user.role === 'passenger') {
-                    window.location.replace('passenger.html');
+                if (user && (user.role === 'passenger' || user.role === 'customer')) {
+                    window.location.replace('booking.html');
                 }
             } catch (e) {
                 window.location.replace('login.html');

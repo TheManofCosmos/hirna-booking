@@ -13,10 +13,6 @@
                     window.location.replace('login.html');
                     return;
                 }
-                var user = JSON.parse(raw);
-                if (user && user.role === 'passenger') {
-                    window.location.replace('passenger.html');
-                }
             } catch (e) {
                 window.location.replace('login.html');
             }

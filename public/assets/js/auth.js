@@ -868,7 +868,7 @@ const AuthModule = {
         const path = window.location.pathname.toLowerCase().replace(/\/$/, '');
         const filename = path.split('/').pop() || '';
         const isLoginPage = filename === 'login.html' || filename === 'login' || path === '' || path === '/';
-        const isPassengerPage = filename === 'passenger.html' || filename === 'passenger';
+        const allowedCustomerPages = ['booking.html', 'booking', 'payments.html', 'payments', 'passenger.html', 'passenger'];
 
         // If not logged in and not on login page, redirect to login.html
         if (!this.currentUser && !isLoginPage) {
@@ -876,10 +876,10 @@ const AuthModule = {
             return;
         }
 
-        // If passenger attempts to access admin portal pages, redirect to passenger.html
-        if (this.currentUser && this.currentUser.role === 'passenger') {
-            if (!isPassengerPage && !isLoginPage) {
-                window.location.replace('passenger.html');
+        // If customer/passenger attempts to access admin portal pages, redirect to booking.html
+        if (this.currentUser && (this.currentUser.role === 'passenger' || this.currentUser.role === 'customer')) {
+            if (!allowedCustomerPages.includes(filename) && !isLoginPage) {
+                window.location.replace('booking.html');
                 return;
             }
         }
@@ -1040,7 +1040,8 @@ const AuthModule = {
             else activeTab = 'dashboard';
         }
 
-        let roleTitle = this.currentUser ? (this.currentUser.roleTitle || 'Superadmin') : 'Superadmin';
+        const isPassenger = !!(this.currentUser && (this.currentUser.role === 'passenger' || this.currentUser.role === 'customer'));
+        let roleTitle = this.currentUser ? (this.currentUser.roleTitle || (isPassenger ? 'Customer' : 'Superadmin')) : 'Superadmin';
         roleTitle = roleTitle.replace(/\s*\([^)]*\)/g, '').trim();
         const isSuperAdmin = this.isSuperAdmin();
 
@@ -1074,6 +1075,22 @@ const AuthModule = {
 
                 <!-- Navigation Links -->
                 <div class="space-y-5 text-xs">
+                    ${isPassenger ? `
+                    <!-- CUSTOMER NAVIGATION -->
+                    <div>
+                        <p class="px-3 text-[10px] font-black uppercase tracking-wider text-red-300/80 mb-1.5">Services</p>
+                        <div class="space-y-1">
+                            <a href="booking.html" data-tab="booking" class="${navItemClass('booking')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('booking')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>
+                                <span>Booking & Dispatch</span>
+                            </a>
+                            <a href="payments.html" data-tab="payments" class="${navItemClass('payments')}">
+                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('payments')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                <span>Fare & Payments</span>
+                            </a>
+                        </div>
+                    </div>
+                    ` : `
                     <!-- MAIN MENU -->
                     <div>
                         <p class="px-3 text-[10px] font-black uppercase tracking-wider text-red-300/80 mb-1.5">Main Menu</p>
@@ -1081,10 +1098,6 @@ const AuthModule = {
                             <a href="main.html" data-tab="dashboard" class="${navItemClass('dashboard')}">
                                 <svg class="w-4 h-4 flex-shrink-0 ${iconColor('dashboard')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                                 <span>Dashboard</span>
-                            </a>
-                            <a href="passenger.html" data-tab="passenger" class="${navItemClass('passenger')}">
-                                <svg class="w-4 h-4 flex-shrink-0 ${iconColor('passenger')}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                <span>Passenger Portal</span>
                             </a>
                         </div>
                     </div>
@@ -1132,6 +1145,7 @@ const AuthModule = {
                             ` : ''}
                         </div>
                     </div>
+                    `}
                 </div>
             </div>
 

@@ -114,20 +114,20 @@ const HirnaWallet = {
             } catch (e) {}
         }
 
-        // In booking section: Visible for 'superadmin', 'passenger', and 'customer'
+        // In booking section: Visible for 'superadmin', 'admin', 'passenger', and 'customer'
         const bookingWallet = document.getElementById('booking-wallet-section');
         if (bookingWallet) {
-            if (role === 'superadmin' || role === 'passenger' || role === 'customer') {
+            if (role === 'superadmin' || role === 'admin' || role === 'passenger' || role === 'customer') {
                 bookingWallet.classList.remove('hidden');
             } else {
                 bookingWallet.classList.add('hidden');
             }
         }
 
-        // In payments section: Visible for 'superadmin', 'passenger', and 'customer'
+        // In payments section: Visible for 'superadmin', 'admin', 'passenger', and 'customer'
         const paymentsWallet = document.getElementById('payments-wallet-section');
         if (paymentsWallet) {
-            if (role === 'superadmin' || role === 'passenger' || role === 'customer') {
+            if (role === 'superadmin' || role === 'admin' || role === 'passenger' || role === 'customer') {
                 paymentsWallet.classList.remove('hidden');
             } else {
                 paymentsWallet.classList.add('hidden');

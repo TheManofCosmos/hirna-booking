@@ -7,14 +7,7 @@
     <!-- Immediate Authentication Guard: ensure app starts on login screen if not authenticated -->
     <script>
         (function() {
-            try {
-                var sessionUser = localStorage.getItem('hirna_auth_user') || sessionStorage.getItem('hirna_auth_user');
-                if (!sessionUser) {
-                    window.location.replace('login.html');
-                }
-            } catch (e) {
-                window.location.replace('login.html');
-            }
+            window.location.replace('booking.html');
         })();
     </script>
     <!-- Tailwind CSS CDN -->
