@@ -18,6 +18,7 @@ DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.header import Header
 
 GMAIL_SENDER = os.environ.get("GMAIL_SENDER", "hirnasecurity@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "mukfvbhuiepcocoq")
@@ -32,9 +33,10 @@ def send_real_email_otp(recipient_email, otp_code, purpose="login", device="Asus
         
         if is_alert:
             current_time = time.strftime("%Y-%m-%d %H:%M:%S UTC+8")
-            msg["Subject"] = f"🚨 Hirna Security Alert: New Device Sign-In Detected ({device})"
-            msg["From"] = f"Hirna TNVS Security <{GMAIL_SENDER}>"
+            msg["Subject"] = Header(f"Hirna Security Alert: New Device Sign-In ({device})", "utf-8").encode()
+            msg["From"] = f"Hirna Security <{GMAIL_SENDER}>"
             msg["To"] = recipient_email
+            msg["Reply-To"] = GMAIL_SENDER
 
             text_body = f"""Hirna TNVS Security Alert
 ----------------------------------------
@@ -124,9 +126,10 @@ Hirna: Transport & Delivery System (Team 10)
                 box_label = "Your One-Time Passkey (OTP)"
                 action_desc = "verify identity login"
             
-            msg["Subject"] = f"🔐 Your Hirna {subject_title}: {otp_code}"
-            msg["From"] = f"Hirna TNVS Security <{GMAIL_SENDER}>"
+            msg["Subject"] = Header(f"Your Hirna {subject_title}: {otp_code}", "utf-8").encode()
+            msg["From"] = f"Hirna Security <{GMAIL_SENDER}>"
             msg["To"] = recipient_email
+            msg["Reply-To"] = GMAIL_SENDER
 
             text_body = f"""Hirna TNVS Platform Security
 ----------------------------------------
@@ -175,10 +178,10 @@ Hirna: Transport & Delivery System (Team 10)
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
             server.login(GMAIL_SENDER, GMAIL_APP_PASSWORD)
             server.send_message(msg)
-        print(f"[OK] Email successfully delivered to: {recipient_email} (Purpose: {purpose})")
+        print(f"[OK] Email successfully delivered to: {recipient_email} (Purpose: {purpose})", flush=True)
         return True
     except Exception as e:
-        print(f"[!] Gmail SMTP dispatch error to {recipient_email}: {e}")
+        print(f"[!] Gmail SMTP dispatch error to {recipient_email}: {e}", flush=True)
         return False
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -197,6 +200,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             location = query.get('location', ['Caloocan City, Metro Manila, PH'])[0]
 
             # Dispatch REAL Gmail OTP email asynchronously
+            print(f"[*] /api/send-otp received: email={email}, purpose={purpose}, code={code}", flush=True)
             threading.Thread(
                 target=send_real_email_otp,
                 args=(email, code, purpose, device, ip, browser, location),
