@@ -22,9 +22,23 @@ from email.mime.text import MIMEText
 from email.header import Header
 from email.utils import make_msgid, formatdate
 
+# Load .env file if present
+env_file = os.path.join(DIRECTORY, '.env')
+if os.path.exists(env_file):
+    try:
+        with open(env_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    k, v = line.split('=', 1)
+                    k, v = k.strip(), v.strip()
+                    if k and v and k not in os.environ:
+                        os.environ[k] = v
+    except Exception:
+        pass
+
 GMAIL_SENDER = os.environ.get("GMAIL_SENDER", "hirnasecurity@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "mukfvbhuiepcocoq")
-
 MAPBOX_ACCESS_TOKEN = os.environ.get("MAPBOX_ACCESS_TOKEN", "").strip()
 
 def send_real_email_otp(recipient_email, otp_code, purpose="login", device="Asus TUF Gaming F15 (Windows 11)", ip="120.28.17.44", browser="Edge", location="Caloocan City, Metro Manila, PH"):

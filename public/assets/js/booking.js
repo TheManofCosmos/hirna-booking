@@ -5235,7 +5235,7 @@ const BookingModule = {
         const endLng = endCoords[1];
         const endLat = endCoords[0];
 
-        // 1. Try local proxy (with optional Mapbox token) and public OSRM API endpoints
+        // 1. Try local proxy (with optional Mapbox token from client session) and public OSRM API endpoints
         const storedMbToken = localStorage.getItem('hirna_mapbox_token') || '';
         const proxyUrl = storedMbToken
             ? `/api/route?start=${startLat},${startLng}&end=${endLat},${endLng}&steps=true&token=${encodeURIComponent(storedMbToken)}`
