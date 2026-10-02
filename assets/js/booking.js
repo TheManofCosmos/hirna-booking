@@ -5235,9 +5235,14 @@ const BookingModule = {
         const endLng = endCoords[1];
         const endLat = endCoords[0];
 
-        // 1. Try local proxy and public OSRM API endpoints
+        // 1. Try local proxy (with optional Mapbox token) and public OSRM API endpoints
+        const storedMbToken = localStorage.getItem('hirna_mapbox_token') || '';
+        const proxyUrl = storedMbToken
+            ? `/api/route?start=${startLat},${startLng}&end=${endLat},${endLng}&steps=true&token=${encodeURIComponent(storedMbToken)}`
+            : `/api/route?start=${startLat},${startLng}&end=${endLat},${endLng}&steps=true`;
+
         const endpoints = [
-            `/api/route?start=${startLat},${startLng}&end=${endLat},${endLng}&steps=true`,
+            proxyUrl,
             `http://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson&steps=true`
         ];
 
@@ -5281,7 +5286,10 @@ const BookingModule = {
                             distanceKm: parseFloat((distanceMeters / 1000).toFixed(2)),
                             durationMin: Math.max(1, Math.round(durationSeconds / 60)),
                             isRealRoad: true,
-                            stepMilestones
+                            stepMilestones,
+                            provider: data.provider || 'osrm',
+                            trafficAware: Boolean(data.traffic_aware),
+                            trafficTelemetry: data.traffic_telemetry || null
                         };
                         this._routeCache.set(cacheKey, result);
                         return result;
@@ -5447,11 +5455,20 @@ const BookingModule = {
                 });
             } catch(e) {}
 
-            // Draw polyline following real street route curves (not straight displacement)
+            // Draw polyline following real street route curves with traffic-aware coloring
+            let routeColor = '#dc2626'; // Default red
+            if (routeData.trafficTelemetry && routeData.trafficTelemetry.congestion_level) {
+                const lvl = routeData.trafficTelemetry.congestion_level;
+                if (lvl === 'severe') routeColor = '#b91c1c'; // Deep Crimson
+                else if (lvl === 'heavy') routeColor = '#ea580c'; // Amber Orange
+                else if (lvl === 'moderate') routeColor = '#eab308'; // Amber Gold
+                else routeColor = '#10b981'; // Emerald Green (Smooth)
+            }
+
             this.routeLine = L.polyline(routeData.waypoints, {
-                color: '#dc2626',
+                color: routeColor,
                 weight: 5,
-                opacity: 0.85
+                opacity: 0.90
             }).addTo(this.map);
             this.routeLine._isHirnaRoute = true;
 
@@ -5498,7 +5515,8 @@ const BookingModule = {
         // Real-Time AI Dynamic Surge Calculation (Traffic, Weather, Demand)
         const quote = AIEngines.DynamicPricing.calculateFare(vehicleClass, distKm, durMin, {
             pickupCoords: this.pickupCoords,
-            dropoffCoords: this.dropoffCoords
+            dropoffCoords: this.dropoffCoords,
+            trafficTelemetry: this.currentRouteData ? this.currentRouteData.trafficTelemetry : null
         });
         this.currentQuote = quote;
 

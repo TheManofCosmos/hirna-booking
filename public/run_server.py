@@ -25,6 +25,8 @@ from email.utils import make_msgid, formatdate
 GMAIL_SENDER = os.environ.get("GMAIL_SENDER", "hirnasecurity@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "mukfvbhuiepcocoq")
 
+MAPBOX_ACCESS_TOKEN = os.environ.get("MAPBOX_ACCESS_TOKEN", "").strip()
+
 def send_real_email_otp(recipient_email, otp_code, purpose="login", device="Asus TUF Gaming F15 (Windows 11)", ip="120.28.17.44", browser="Edge", location="Caloocan City, Metro Manila, PH"):
     """Send real OTP email or Security Alert to Gmail inbox using Google App Password."""
     try:
@@ -246,28 +248,146 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 end = query.get('end', [''])[0].split(',')
                 lat1, lng1 = float(start[0]), float(start[1])
                 lat2, lng2 = float(end[0]), float(end[1])
-                osrm_url = f"http://router.project-osrm.org/route/v1/driving/{lng1},{lat1};{lng2},{lat2}?overview=full&geometries=geojson&steps=true"
-                req = urllib.request.Request(osrm_url, headers={'User-Agent': 'HirnaTNVS/1.0'})
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    data = resp.read()
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', str(len(data)))
-                self.end_headers()
-                self.wfile.write(data)
+                
+                # Check for Mapbox token (from query or environment)
+                mb_token = query.get('token', [''])[0].strip() or MAPBOX_ACCESS_TOKEN
+                route_json = None
+                
+                # 1. Attempt Mapbox driving-traffic if token provided
+                if mb_token:
+                    try:
+                        mapbox_url = (
+                            f"https://api.mapbox.com/directions/v5/mapbox/driving-traffic/"
+                            f"{lng1},{lat1};{lng2},{lat2}"
+                            f"?overview=full&geometries=geojson&steps=true"
+                            f"&annotations=congestion,duration,distance"
+                            f"&access_token={mb_token}"
+                        )
+                        mb_req = urllib.request.Request(mapbox_url, headers={'User-Agent': 'HirnaTNVS/1.0'})
+                        with urllib.request.urlopen(mb_req, timeout=6) as mb_resp:
+                            if mb_resp.status == 200:
+                                mb_data = json.loads(mb_resp.read().decode('utf-8'))
+                                if mb_data.get('code') == 'Ok' and mb_data.get('routes'):
+                                    mb_route = mb_data['routes'][0]
+                                    duration_traffic = mb_route.get('duration', 0)
+                                    duration_typical = mb_route.get('duration_typical', duration_traffic)
+                                    
+                                    # Aggregate congestion annotations from legs
+                                    congestions = []
+                                    for leg in mb_route.get('legs', []):
+                                        ann = leg.get('annotation', {})
+                                        congestions.extend(ann.get('congestion', []))
+                                    
+                                    # Summarize overall traffic severity
+                                    heavy_count = sum(1 for c in congestions if c in ['heavy', 'severe'])
+                                    mod_count = sum(1 for c in congestions if c == 'moderate')
+                                    total_segs = max(1, len(congestions))
+                                    
+                                    congestion_level = 'low'
+                                    if (heavy_count / total_segs) > 0.20:
+                                        congestion_level = 'severe'
+                                    elif (heavy_count / total_segs) > 0.08 or (mod_count / total_segs) > 0.25:
+                                        congestion_level = 'heavy'
+                                    elif (mod_count / total_segs) > 0.10:
+                                        congestion_level = 'moderate'
+
+                                    route_json = {
+                                        'code': 'Ok',
+                                        'provider': 'mapbox',
+                                        'traffic_aware': True,
+                                        'traffic_telemetry': {
+                                            'congestion_level': congestion_level,
+                                            'duration_traffic_sec': duration_traffic,
+                                            'duration_typical_sec': duration_typical,
+                                            'congestion_ratio': round(duration_traffic / max(1, duration_typical), 2)
+                                        },
+                                        'routes': mb_data['routes'],
+                                        'waypoints': mb_data.get('waypoints', [])
+                                    }
+                    except Exception as mb_err:
+                        print(f"[*] Mapbox routing request failed, falling back to OSRM: {mb_err}", flush=True)
+
+                # 2. OSRM fallback if Mapbox not configured or failed
+                if not route_json:
+                    osrm_urls = [
+                        f"http://router.project-osrm.org/route/v1/driving/{lng1},{lat1};{lng2},{lat2}?overview=full&geometries=geojson&steps=true",
+                        f"http://router.project-osrm.org/route/v1/driving/{lng1},{lat1};{lng2},{lat2}?overview=full&geometries=geojson"
+                    ]
+                    for url in osrm_urls:
+                        try:
+                            req = urllib.request.Request(url, headers={'User-Agent': 'HirnaTNVS/1.0'})
+                            with urllib.request.urlopen(req, timeout=3.5) as resp:
+                                raw_data = resp.read()
+                                parsed = json.loads(raw_data.decode('utf-8'))
+                                if parsed.get('code') == 'Ok' and parsed.get('routes'):
+                                    parsed['provider'] = 'osrm'
+                                    parsed['traffic_aware'] = False
+                                    route_json = parsed
+                                    break
+                        except Exception:
+                            continue
+
+                # 3. Guaranteed synthetic geometry fallback if all external routing calls fail
+                if not route_json:
+                    # Calculate great-circle distance with road winding factor
+                    import math
+                    R = 6371000
+                    dlat = math.radians(lat2 - lat1)
+                    dlng = math.radians(lng2 - lng1)
+                    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng/2)**2
+                    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+                    dist_m = round(R * c * 1.35)
+                    dur_s = round(dist_m / 8.33) # ~30 km/h average city speed
+                    
+                    route_json = {
+                        'code': 'Ok',
+                        'provider': 'synthetic_fallback',
+                        'traffic_aware': False,
+                        'routes': [{
+                            'distance': dist_m,
+                            'duration': dur_s,
+                            'geometry': {
+                                'type': 'LineString',
+                                'coordinates': [
+                                    [lng1, lat1],
+                                    [lng1 + (lng2 - lng1) * 0.25, lat1 + (lat2 - lat1) * 0.10],
+                                    [lng1 + (lng2 - lng1) * 0.50, lat1 + (lat2 - lat1) * 0.60],
+                                    [lng1 + (lng2 - lng1) * 0.75, lat1 + (lat2 - lat1) * 0.90],
+                                    [lng2, lat2]
+                                ]
+                            },
+                            'legs': [{
+                                'distance': dist_m,
+                                'duration': dur_s,
+                                'steps': []
+                            }]
+                        }],
+                        'waypoints': [{'location': [lng1, lat1]}, {'location': [lng2, lat2]}]
+                    }
+
+                data = json.dumps(route_json).encode('utf-8')
                 try:
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Content-Length', str(len(data)))
+                    self.end_headers()
+                    self.wfile.write(data)
                     self.wfile.flush()
-                except Exception:
+                except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
                     pass
+                return
+            except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
                 return
             except Exception as e:
                 err_body = json.dumps({'code': 'Error', 'message': str(e)}).encode('utf-8')
-                self.send_response(500)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', str(len(err_body)))
-                self.end_headers()
-                self.wfile.write(err_body)
                 try:
+                    self.send_response(500)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')
+                    self.send_header('Content-Length', str(len(err_body)))
+                    self.end_headers()
+                    self.wfile.write(err_body)
                     self.wfile.flush()
                 except Exception:
                     pass

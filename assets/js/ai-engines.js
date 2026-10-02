@@ -72,17 +72,41 @@ const AIEngines = {
             let demandStatus = "Normal Base";
 
             // 1. REAL-TIME ROAD TRAFFIC / CONGESTION ANALYSIS
+            const trafficTelemetry = options.trafficTelemetry || options.traffic_telemetry;
             const speedKmh = (distanceKm > 0 && durationMin > 0) ? (distanceKm / (durationMin / 60)) : 30;
-            if (speedKmh < 15) {
-                multiplier += 0.20;
-                trafficStatus = `Heavy Delay (${Math.round(speedKmh)} km/h)`;
-                reasons.push(`Traffic Congestion: Slow corridor flow (<15 km/h)`);
-            } else if (speedKmh < 24) {
-                multiplier += 0.10;
-                trafficStatus = `Moderate (~${Math.round(speedKmh)} km/h)`;
-                reasons.push(`Moderate Traffic Corridor (~${Math.round(speedKmh)} km/h)`);
+
+            if (trafficTelemetry && trafficTelemetry.congestion_level) {
+                // Mapbox Live Traffic Congestion Profile
+                const level = trafficTelemetry.congestion_level;
+                const ratio = trafficTelemetry.congestion_ratio || 1.0;
+                if (level === 'severe' || ratio >= 1.60) {
+                    multiplier += 0.30;
+                    trafficStatus = `Severe Gridlock (${Math.round(speedKmh)} km/h • Live Traffic)`;
+                    reasons.push(`Mapbox Live Traffic: Severe corridor gridlock (+${Math.round((ratio - 1) * 100)}% delay)`);
+                } else if (level === 'heavy' || ratio >= 1.30) {
+                    multiplier += 0.20;
+                    trafficStatus = `Heavy Delay (${Math.round(speedKmh)} km/h • Live Traffic)`;
+                    reasons.push(`Mapbox Live Traffic: Heavy congestion slowdown`);
+                } else if (level === 'moderate' || ratio >= 1.15) {
+                    multiplier += 0.10;
+                    trafficStatus = `Moderate Flow (~${Math.round(speedKmh)} km/h • Live Traffic)`;
+                    reasons.push(`Mapbox Live Traffic: Moderate traffic slowdown`);
+                } else {
+                    trafficStatus = `Smooth Flow (${Math.round(speedKmh)} km/h • Live Traffic)`;
+                }
             } else {
-                trafficStatus = `Smooth (${Math.round(speedKmh)} km/h)`;
+                // Fallback: Effective Corridor Speed Analysis
+                if (speedKmh < 15) {
+                    multiplier += 0.20;
+                    trafficStatus = `Heavy Delay (${Math.round(speedKmh)} km/h)`;
+                    reasons.push(`Traffic Congestion: Slow corridor flow (<15 km/h)`);
+                } else if (speedKmh < 24) {
+                    multiplier += 0.10;
+                    trafficStatus = `Moderate (~${Math.round(speedKmh)} km/h)`;
+                    reasons.push(`Moderate Traffic Corridor (~${Math.round(speedKmh)} km/h)`);
+                } else {
+                    trafficStatus = `Smooth (${Math.round(speedKmh)} km/h)`;
+                }
             }
 
             // 2. REAL-TIME WEATHER DETECTION
