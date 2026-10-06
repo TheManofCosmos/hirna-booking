@@ -30,15 +30,17 @@ const AIEngines = {
 
         _weatherCache: {},
         currentWeather: 'clear',
+        predictedWeather: 'clear',
+        weatherForecastSummary: null,
 
         fetchLiveWeather(lat, lng) {
-            if (!lat || !lng) return Promise.resolve(this.currentWeather || 'clear');
+            if (!lat || !lng) return Promise.resolve({ current: this.currentWeather || 'clear', predicted: this.predictedWeather || 'clear' });
             const key = `${parseFloat(lat).toFixed(2)},${parseFloat(lng).toFixed(2)}`;
             const now = Date.now();
             if (this._weatherCache[key] && (now - this._weatherCache[key].time < 15 * 60 * 1000)) {
-                return Promise.resolve(this._weatherCache[key].condition);
+                return Promise.resolve(this._weatherCache[key].result);
             }
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=precipitation,rain,showers,weather_code&timezone=Asia%2FManila`;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=precipitation,rain,showers,weather_code&hourly=precipitation_probability,precipitation,weather_code&forecast_hours=3&timezone=Asia%2FManila`;
             return fetch(url)
                 .then(r => r.json())
                 .then(data => {
@@ -51,11 +53,32 @@ const AIEngines = {
                     } else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82) || precip > 0.3) {
                         cond = 'rain';
                     }
-                    this._weatherCache[key] = { condition: cond, time: now };
+
+                    // Predict upcoming weather within next 1-2 hours
+                    let predCond = cond;
+                    let forecastText = null;
+                    if (data.hourly && Array.isArray(data.hourly.precipitation_probability)) {
+                        const probs = data.hourly.precipitation_probability.slice(0, 3);
+                        const hourlyPrecip = (data.hourly.precipitation || []).slice(0, 3);
+                        const maxProb = Math.max(...probs, 0);
+                        const maxPrecip = Math.max(...hourlyPrecip, 0);
+
+                        if (maxProb >= 65 || maxPrecip >= 4.0) {
+                            predCond = maxPrecip >= 5.0 ? 'storm' : 'rain';
+                            if (cond === 'clear') {
+                                forecastText = `Rain expected within 60 mins (${maxProb}% prob)`;
+                            }
+                        }
+                    }
+
+                    const res = { current: cond, predicted: predCond, forecastText };
+                    this._weatherCache[key] = { result: res, time: now };
                     this.currentWeather = cond;
-                    return cond;
+                    this.predictedWeather = predCond;
+                    this.weatherForecastSummary = forecastText;
+                    return res;
                 })
-                .catch(() => this.currentWeather || 'clear');
+                .catch(() => ({ current: this.currentWeather || 'clear', predicted: this.predictedWeather || 'clear' }));
         },
 
         calculateFare(vehicleClass, distanceKm, durationMin, options = {}) {
@@ -109,10 +132,13 @@ const AIEngines = {
                 }
             }
 
-            // 2. REAL-TIME WEATHER DETECTION
+            // 2. REAL-TIME & PREDICTIVE WEATHER DETECTION
             const activeWeather = (typeof options === 'string') 
                 ? options 
                 : (options.weather || this.currentWeather || 'clear');
+            const predWeather = options.predictedWeather || this.predictedWeather || activeWeather;
+            const forecastText = options.weatherForecastSummary || this.weatherForecastSummary;
+
             if (activeWeather === 'storm') {
                 multiplier += 0.30;
                 weatherStatus = "Heavy Downpour / Storm";
@@ -121,29 +147,59 @@ const AIEngines = {
                 multiplier += 0.15;
                 weatherStatus = "Passing Showers / Rain";
                 reasons.push("Adverse Weather: Rain detected along route");
+            } else if (predWeather === 'storm' || predWeather === 'rain') {
+                // Predictive Weather Surge Buffer (Way A)
+                const rainSurge = predWeather === 'storm' ? 0.20 : 0.10;
+                multiplier += rainSurge;
+                weatherStatus = `Forecast Rain Alert (${predWeather === 'storm' ? 'Storm Imminent' : 'Showers in ~45m'})`;
+                reasons.push(`AI Weather Forecast: Impending precipitation anticipated (+${Math.round(rainSurge*100)}%)`);
             } else {
                 weatherStatus = "Clear / Fair Weather";
             }
 
-            // 3. REAL-TIME DEMAND & RUSH-HOUR SURGE (Based on Philippine local time)
+            // 3. REAL-TIME & PREDICTIVE DEMAND & RUSH-HOUR SURGE (Based on Philippine local time)
             const now = new Date();
             const hour = now.getHours();
             const min = now.getMinutes();
             const timeVal = hour + (min / 60);
             const day = now.getDay();
             
-            if (timeVal >= 7.0 && timeVal <= 9.5) {
-                multiplier += 0.25;
-                demandStatus = "Morning Commute Rush (To Work/School)";
-                reasons.push("Morning Peak Commute Demand (7:00 AM - 9:30 AM)");
-            } else if (timeVal >= 11.5 && timeVal <= 13.5) {
-                multiplier += 0.20;
-                demandStatus = "Midday Rush (Lunch & Errands)";
-                reasons.push("Noon / Midday Rush Demand (11:30 AM - 1:30 PM)");
-            } else if (timeVal >= 17.0 && timeVal <= 20.5) {
-                multiplier += 0.30;
-                demandStatus = "Evening Commute Rush (Heading Home)";
-                reasons.push("Evening Post-Work Rush Demand (5:00 PM - 8:30 PM)");
+            // Define windows: [startHour, endHour, surgeAmount, label, reasonText]
+            const rushWindows = [
+                { start: 7.0, end: 9.5, surge: 0.25, name: "Morning Commute Rush", detail: "Morning Peak Commute Demand (7:00 AM - 9:30 AM)" },
+                { start: 11.5, end: 13.5, surge: 0.20, name: "Midday Rush (Lunch)", detail: "Noon / Midday Rush Demand (11:30 AM - 1:30 PM)" },
+                { start: 17.0, end: 20.5, surge: 0.30, name: "Evening Commute Rush", detail: "Evening Post-Work Rush Demand (5:00 PM - 8:30 PM)" }
+            ];
+
+            let activeRush = null;
+            let impendingRush = null;
+            let minsToImpending = 0;
+
+            for (const rw of rushWindows) {
+                if (timeVal >= rw.start && timeVal <= rw.end) {
+                    activeRush = rw;
+                    break;
+                } else if (timeVal < rw.start) {
+                    const diffMins = Math.round((rw.start - timeVal) * 60);
+                    if (diffMins > 0 && diffMins <= 35) { // Within 35-min prediction window
+                        if (!impendingRush || diffMins < minsToImpending) {
+                            impendingRush = rw;
+                            minsToImpending = diffMins;
+                        }
+                    }
+                }
+            }
+
+            if (activeRush) {
+                multiplier += activeRush.surge;
+                demandStatus = `${activeRush.name} (Active)`;
+                reasons.push(activeRush.detail);
+            } else if (impendingRush) {
+                // Predictive Demand Surge (Way A): Impending rush window auto-calculated buffer
+                const predFactor = minsToImpending <= 15 ? 0.15 : 0.10;
+                multiplier += predFactor;
+                demandStatus = `Impending ${impendingRush.name} (in ~${minsToImpending}m)`;
+                reasons.push(`AI Predictive Demand: Anticipating ${impendingRush.name} starting in ${minsToImpending} mins (+${Math.round(predFactor*100)}%)`);
             } else if ((day === 5 || day === 6) && (hour >= 21 || hour <= 1)) {
                 multiplier += 0.15;
                 demandStatus = "Weekend Night Peak";

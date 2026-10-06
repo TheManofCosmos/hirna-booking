@@ -5520,13 +5520,16 @@ const BookingModule = {
         });
         this.currentQuote = quote;
 
-        // Fetch live weather; if it differs from what this quote used, recompute so the fare is accurate
+        // Fetch live & predictive weather; if it differs from what this quote used, recompute so the fare is accurate
         const usedWeather = AIEngines.DynamicPricing.currentWeather || 'clear';
+        const usedPred = AIEngines.DynamicPricing.predictedWeather || 'clear';
         if (this.pickupCoords && AIEngines.DynamicPricing.fetchLiveWeather) {
             const pickupKey = this.pickupCoords.join(',');
-            AIEngines.DynamicPricing.fetchLiveWeather(this.pickupCoords[0], this.pickupCoords[1]).then(w => {
-                const resolved = w || AIEngines.DynamicPricing.currentWeather || 'clear';
-                if (resolved !== usedWeather && this.pickupCoords && this.pickupCoords.join(',') === pickupKey
+            AIEngines.DynamicPricing.fetchLiveWeather(this.pickupCoords[0], this.pickupCoords[1]).then(res => {
+                const resolvedCur = (res && typeof res === 'object') ? (res.current || 'clear') : (res || 'clear');
+                const resolvedPred = (res && typeof res === 'object') ? (res.predicted || 'clear') : (AIEngines.DynamicPricing.predictedWeather || 'clear');
+                if ((resolvedCur !== usedWeather || resolvedPred !== usedPred) 
+                    && this.pickupCoords && this.pickupCoords.join(',') === pickupKey
                     && this.currentQuote === quote) {
                     this.calculateFareQuote(distKm, durMin);
                 }
