@@ -176,13 +176,30 @@ const GPSModule = {
             }
         } catch (e) {}
 
-        // Also integrate payments table records so any paid trip/receipt is immediately visible in GPS Playback
+        // Exclude all template records, dummy seed data, and archived bookings
+        const TEMPLATE_CODES_AND_IDS = [
+            'TNVS-2026-0091', 'TNVS-2026-0092', 'HIRNA-PCL-892104', 'HIRNA-ARC-99120',
+            'c0000001-0000-0000-0000-000000000001', 'c0000001-0000-0000-0000-000000000002',
+            'c0000001-0000-0000-0000-000000000003', 'b-archived-01', 'test-bk-999'
+        ];
+
+        bookings = bookings.filter(b => {
+            if (!b) return false;
+            if (b.is_archived) return false;
+            if (TEMPLATE_CODES_AND_IDS.includes(b.booking_code) || TEMPLATE_CODES_AND_IDS.includes(b.id)) return false;
+            return true;
+        });
+
+        // Also integrate payments table records so any paid live trip/receipt is immediately visible in GPS Playback
         if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.getData) {
             const payments = SupabaseBridge.getData('payments') || [];
             payments.forEach(p => {
                 const code = p.booking_code || p.invoice_no;
+                if (!code) return;
+                if (TEMPLATE_CODES_AND_IDS.includes(code) || TEMPLATE_CODES_AND_IDS.includes(p.booking_id) || TEMPLATE_CODES_AND_IDS.includes(p.id)) return;
+                if (p.is_archived) return;
                 const exists = bookings.some(b => (b.booking_code && b.booking_code === code) || b.id === p.booking_id || b.id === p.id);
-                if (!exists && code) {
+                if (!exists) {
                     bookings.push({
                         id: p.booking_id || p.id || `b-${p.invoice_no}`,
                         booking_code: code,

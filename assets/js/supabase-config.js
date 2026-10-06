@@ -173,40 +173,7 @@ const DEFAULT_INITIAL_DATA = {
       "total_trips": 720
     }
   ],
-  "bookings": [
-    {
-      "id": "c0000001-0000-0000-0000-000000000003",
-      "booking_code": "HIRNA-PCL-892104",
-      "service_type": "parcel",
-      "passenger_name": "Danilo Cruz (Sender)",
-      "sender_name": "Danilo Cruz",
-      "sender_phone": "+63 928 345 6789",
-      "passenger_phone": "+63 928 345 6789",
-      "recipient_name": "Ana Patricia Non",
-      "recipient_phone": "+63 917 555 4321",
-      "driver_name": "Arnel Bautista",
-      "vehicle_plate": "MC-8109",
-      "vehicle_model": "Honda Wave 125i (Sport Red)",
-      "vehicle_class": "Parcel Courier (Motorcycle)",
-      "pickup": "Maginhawa St, Teachers Village, QC",
-      "pickup_coords": [14.6465, 121.0588],
-      "dropoff": "Ateneo de Manila University, Katipunan Ave, QC",
-      "dropoff_coords": [14.6393, 121.0772],
-      "distance_km": 3.4,
-      "duration_min": 14,
-      "base_fare": 60.00,
-      "distance_fare": 45.00,
-      "time_fare": 15.00,
-      "surge_multiplier": 1.0,
-      "surge_reason": "Standard parcel courier tariff",
-      "total_fare": 120.00,
-      "payment_method": "GCash",
-      "payment_status": "completed",
-      "status": "completed",
-      "created_at": "2026-08-20 14:20:00",
-      "safety_score": 100
-    }
-  ],
+  "bookings": [],
   "telemetry_routes": {
   "c0000001-0000-0000-0000-000000000001": [
     {
@@ -5335,7 +5302,13 @@ const DEFAULT_INITIAL_DATA = {
       "sentiment": "Critical",
       "score": -0.92,
       "category": "Driver Conduct",
-      "date": "2026-09-21"
+      "date": "2026-09-21",
+      "status": "Under Investigation",
+      "escalated_ticket_id": "TCK-2026-0097",
+      "driver_flagged": true,
+      "operator_reply": "Dear Roselle, we take safety and cashless payment rights very seriously. We have escalated this incident to fleet safety for disciplinary action and opened an investigation ticket.",
+      "replied_by": "Safety Compliance Team",
+      "replied_at": "2026-09-21 16:40"
     },
     {
       "id": "fb-005",
@@ -5346,7 +5319,11 @@ const DEFAULT_INITIAL_DATA = {
       "sentiment": "Positive",
       "score": 0.96,
       "category": "Vehicle Condition & Cleanliness",
-      "date": "2026-09-19"
+      "date": "2026-09-19",
+      "status": "Responded",
+      "operator_reply": "Thank you for your heartwarming feedback, Bea! We have notified your driver about your 5-star review.",
+      "replied_by": "Hirna Support Operations",
+      "replied_at": "2026-09-19 14:15"
     },
     {
       "id": "fb-006",
@@ -5357,7 +5334,11 @@ const DEFAULT_INITIAL_DATA = {
       "sentiment": "Positive",
       "score": 0.82,
       "category": "Driver Conduct",
-      "date": "2026-09-12"
+      "date": "2026-09-12",
+      "status": "Resolved",
+      "operator_reply": "Great to hear your trip was smooth and punctual, Carlos!",
+      "replied_by": "Customer Relations Desk",
+      "replied_at": "2026-09-12 18:20"
     },
     {
       "id": "fb-008",
@@ -5368,7 +5349,8 @@ const DEFAULT_INITIAL_DATA = {
       "sentiment": "Neutral",
       "score": -0.05,
       "category": "Safety & Route Navigation",
-      "date": "2026-09-08"
+      "date": "2026-09-08",
+      "status": "Pending Review"
     },
     {
       "id": "fb-004",
@@ -5379,7 +5361,12 @@ const DEFAULT_INITIAL_DATA = {
       "sentiment": "Negative",
       "score": -0.58,
       "category": "Driver Conduct",
-      "date": "2026-09-02"
+      "date": "2026-09-02",
+      "status": "Resolved",
+      "compensation": "₱50 Goodwill Voucher + 50 Loyalty Pts",
+      "operator_reply": "Hi Angelo, apologies for the warm AC and detour. A ₱50 goodwill credit has been applied to your account.",
+      "replied_by": "Hirna Customer Relations",
+      "replied_at": "2026-09-02 11:30"
     },
     {
       "id": "fb-003",
@@ -5390,7 +5377,8 @@ const DEFAULT_INITIAL_DATA = {
       "sentiment": "Neutral",
       "score": 0.10,
       "category": "Fare & Billing Dispute",
-      "date": "2026-08-25"
+      "date": "2026-08-25",
+      "status": "Pending Review"
     },
     {
       "id": "fb-001",
@@ -5401,7 +5389,11 @@ const DEFAULT_INITIAL_DATA = {
       "sentiment": "Positive",
       "score": 0.94,
       "category": "Driver Attitude & Cleanliness",
-      "date": "2026-08-20"
+      "date": "2026-08-20",
+      "status": "Responded",
+      "operator_reply": "Thank you Kuya Juan! Kuya Ricardo appreciates your kind words.",
+      "replied_by": "Hirna Support Operations",
+      "replied_at": "2026-08-20 12:00"
     },
     {
       "id": "fb-002",
@@ -5412,10 +5404,20 @@ const DEFAULT_INITIAL_DATA = {
       "sentiment": "Positive",
       "score": 0.78,
       "category": "Route & Safety",
-      "date": "2026-08-20"
+      "date": "2026-08-20",
+      "status": "Resolved"
     }
   ],
   "support_tickets": [
+    {
+      "id": "TCK-2026-0097",
+      "user": "Roselle Tan",
+      "subject": "Review Escalation: Driver Conduct & Route Harassment",
+      "category": "Driver Conduct",
+      "priority": "High",
+      "status": "In Progress",
+      "date": "2026-09-21"
+    },
     {
       "id": "TCK-2026-0044",
       "user": "Maria Santos",
@@ -5730,14 +5732,18 @@ const SupabaseBridge = {
     },
 
     hydrateAllFromLocalStorage() {
-        // One-time cleanup: purge removed default sample bookings from localStorage cache
+        // One-time cleanup: purge removed default template bookings from localStorage cache & in-memory DB
         try {
             const _PURGE_BOOKING_IDS = [
                 'c0000001-0000-0000-0000-000000000001', // TNVS-2026-0091 (removed)
                 'c0000001-0000-0000-0000-000000000002', // TNVS-2026-0092 (removed)
+                'c0000001-0000-0000-0000-000000000003', // HIRNA-PCL-892104 (removed)
+                'b-archived-01',                         // HIRNA-ARC-99120 (removed)
                 'test-bk-999'                           // TEST-2026-999  (orphan)
             ];
-            const _PURGE_BOOKING_CODES = ['TNVS-2026-0091', 'TNVS-2026-0092', 'TEST-2026-999'];
+            const _PURGE_BOOKING_CODES = [
+                'TNVS-2026-0091', 'TNVS-2026-0092', 'HIRNA-PCL-892104', 'HIRNA-ARC-99120', 'TEST-2026-999'
+            ];
             const _storedBookings = localStorage.getItem('hirna_db_bookings');
             if (_storedBookings) {
                 const _parsed = JSON.parse(_storedBookings);
@@ -5751,11 +5757,38 @@ const SupabaseBridge = {
                     }
                 }
             }
+            const _storedPayments = localStorage.getItem('hirna_db_payments');
+            if (_storedPayments) {
+                const _parsedP = JSON.parse(_storedPayments);
+                if (Array.isArray(_parsedP)) {
+                    const _cleanedP = _parsedP.filter(p =>
+                        !_PURGE_BOOKING_IDS.includes(p.booking_id) &&
+                        !_PURGE_BOOKING_IDS.includes(p.id) &&
+                        !_PURGE_BOOKING_CODES.includes(p.booking_code)
+                    );
+                    if (_cleanedP.length !== _parsedP.length) {
+                        localStorage.setItem('hirna_db_payments', JSON.stringify(_cleanedP));
+                    }
+                }
+            }
+            if (this.db && Array.isArray(this.db.bookings)) {
+                this.db.bookings = this.db.bookings.filter(b =>
+                    !_PURGE_BOOKING_IDS.includes(b.id) &&
+                    !_PURGE_BOOKING_CODES.includes(b.booking_code)
+                );
+            }
         } catch(e) {}
 
         this.loadPersistedAuditLogs();
         const tables = ['bookings', 'feedback', 'support_tickets', 'payments', 'users', 'drivers', 'vehicles'];
         tables.forEach(t => this.loadPersistedData(t));
+
+        // Ensure post-load in-memory purge
+        if (this.db && Array.isArray(this.db.bookings)) {
+            const _PURGE_CODES = ['TNVS-2026-0091', 'TNVS-2026-0092', 'HIRNA-PCL-892104', 'HIRNA-ARC-99120', 'TEST-2026-999'];
+            const _PURGE_IDS = ['c0000001-0000-0000-0000-000000000001', 'c0000001-0000-0000-0000-000000000002', 'c0000001-0000-0000-0000-000000000003', 'b-archived-01', 'test-bk-999'];
+            this.db.bookings = this.db.bookings.filter(b => !_PURGE_CODES.includes(b.booking_code) && !_PURGE_IDS.includes(b.id));
+        }
     },
 
     async init() {

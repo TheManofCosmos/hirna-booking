@@ -182,15 +182,55 @@
                 </div>
             </div>
 
-            <!-- Recent Feedback Feed with Filter System -->
+            <!-- Review Management KPI Summary Bar -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 font-bold flex items-center justify-center text-sm shadow-2xs">
+                        📁
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Reviews</div>
+                        <div id="crm-kpi-total" class="text-base font-black text-slate-800">8</div>
+                    </div>
+                </div>
+                <div class="p-3.5 bg-amber-50/40 rounded-2xl border border-amber-200/80 shadow-2xs flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 font-bold flex items-center justify-center text-sm shadow-2xs">
+                        ⏳
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Pending Action</div>
+                        <div id="crm-kpi-pending" class="text-base font-black text-amber-700">2</div>
+                    </div>
+                </div>
+                <div class="p-3.5 bg-sky-50/40 rounded-2xl border border-sky-200/80 shadow-2xs flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-sky-100 text-sky-800 font-bold flex items-center justify-center text-sm shadow-2xs">
+                        🔍
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold text-sky-600 uppercase tracking-wider">Under Investigation</div>
+                        <div id="crm-kpi-investigating" class="text-base font-black text-sky-700">1</div>
+                    </div>
+                </div>
+                <div class="p-3.5 bg-emerald-50/40 rounded-2xl border border-emerald-200/80 shadow-2xs flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-sm shadow-2xs">
+                        ✅
+                    </div>
+                    <div>
+                        <div class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Resolved / Handled</div>
+                        <div id="crm-kpi-resolved" class="text-base font-black text-emerald-700">5</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Feedback Feed & Review Management Operations -->
             <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm space-y-4">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                             <div>
                                 <h4 class="text-xs font-bold text-hirna-900 uppercase tracking-wider flex items-center gap-1.5">
                                     <svg class="w-4 h-4 text-hirna-700 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
-                                    <span>Customer Feedback & Ratings Directory</span>
+                                    <span>Customer Feedback & Review Management Console</span>
                                 </h4>
-                                <p class="text-[11px] text-slate-500">Filter reviews by star ratings, sort by date, and search by customer name, date, words, or AI classification</p>
+                                <p class="text-[11px] text-slate-500">Manage review lifecycle: Reply to passengers, escalate dispute tickets, issue goodwill credits, and flag drivers</p>
                             </div>
                             <div id="crm-feedback-count-badge" class="px-2.5 py-1 bg-hirna-50 text-hirna-800 rounded-lg text-xs font-bold border border-hirna-200 whitespace-nowrap self-start sm:self-auto shadow-sm">
                                 Showing all reviews
@@ -203,12 +243,12 @@
                             <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
                                 <div class="sm:col-span-4">
                                     <label class="block text-[11px] font-bold text-slate-600 mb-1">Search Choice:</label>
-                                    <select id="crm-search-choice" class="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 font-medium text-slate-700 focus:ring-2 focus:ring-hirna-500 focus:outline-none shadow-sm">
-                                        <option value="all">Search All Fields</option>
-                                        <option value="name">Search by Name</option>
-                                        <option value="date">Search by Date</option>
-                                        <option value="words">Search by Words</option>
-                                        <option value="classification">Search by Classification</option>
+                                    <select id="crm-search-choice" class="w-full text-xs bg-white border border-slate-300 rounded-lg p-2 font-medium text-slate-700 focus:ring-2 focus:ring-hirna-500 focus:outline-none shadow-sm cursor-pointer">
+                                        <option value="all">🔍 Search All Fields</option>
+                                        <option value="name">👤 Search by Name</option>
+                                        <option value="date">📅 Search by Date</option>
+                                        <option value="words">💬 Search by Words</option>
+                                        <option value="classification">🏷️ Search by Classification</option>
                                     </select>
                                 </div>
                                 <div class="sm:col-span-8">
@@ -221,27 +261,39 @@
                                 </div>
                             </div>
 
-                            <!-- Row 2: Star Filter + Date Sort (Newest / Oldest) + Reset -->
+                            <!-- Row 2: Star Filter + Lifecycle Status + Date Sort + Reset -->
                             <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200/80">
                                 <!-- Star Rating Filter Pills -->
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <span class="text-[11px] font-bold text-slate-600 mr-1">Stars:</span>
                                     <button type="button" data-star-filter="all" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-hirna-700 text-white shadow-sm transition">All</button>
-                                    <button type="button" data-star-filter="5" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">5 </button>
-                                    <button type="button" data-star-filter="4" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">4 </button>
-                                    <button type="button" data-star-filter="3" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">3 </button>
-                                    <button type="button" data-star-filter="2" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">2 </button>
-                                    <button type="button" data-star-filter="1" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">1 </button>
+                                    <button type="button" data-star-filter="5" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">5 ★</button>
+                                    <button type="button" data-star-filter="4" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">4 ★</button>
+                                    <button type="button" data-star-filter="3" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">3 ★</button>
+                                    <button type="button" data-star-filter="2" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">2 ★</button>
+                                    <button type="button" data-star-filter="1" class="crm-star-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition">1 ★</button>
                                 </div>
 
-                                <!-- Date Sort & Reset Controls -->
-                                <div class="flex items-center gap-2">
-                                    <label class="text-[11px] font-bold text-slate-600">Date Sort:</label>
-                                    <select id="crm-date-sort" class="text-xs bg-white border border-slate-300 rounded-lg p-1.5 font-medium text-slate-700 focus:ring-2 focus:ring-hirna-500 focus:outline-none shadow-sm">
-                                        <option value="desc"> Newest to Oldest</option>
-                                        <option value="asc"> Oldest to Newest</option>
-                                    </select>
-                                    <button id="crm-reset-filters-btn" type="button" class="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm" title="Reset all filters">
+                                <!-- Lifecycle Status Filter + Date Sort & Reset Controls -->
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <div class="flex items-center gap-1.5">
+                                        <label class="text-[11px] font-bold text-slate-600">Status:</label>
+                                        <select id="crm-status-filter" class="text-xs bg-white border border-slate-300 rounded-lg p-1.5 font-medium text-slate-700 focus:ring-2 focus:ring-hirna-500 focus:outline-none shadow-xs cursor-pointer">
+                                            <option value="all">All Statuses</option>
+                                            <option value="Pending Review">⏳ Pending Review</option>
+                                            <option value="Under Investigation">🔍 Under Investigation</option>
+                                            <option value="Responded">💬 Responded</option>
+                                            <option value="Resolved">✅ Resolved</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <label class="text-[11px] font-bold text-slate-600">Sort:</label>
+                                        <select id="crm-date-sort" class="text-xs bg-white border border-slate-300 rounded-lg p-1.5 font-medium text-slate-700 focus:ring-2 focus:ring-hirna-500 focus:outline-none shadow-sm cursor-pointer">
+                                            <option value="desc">📅 Newest to Oldest</option>
+                                            <option value="asc">📅 Oldest to Newest</option>
+                                        </select>
+                                    </div>
+                                    <button id="crm-reset-filters-btn" type="button" class="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm cursor-pointer" title="Reset all filters">
                                         <span>↺</span> Reset
                                     </button>
                                 </div>
@@ -856,17 +908,77 @@
 
 
 
+    <!-- OFFICIAL OPERATOR RESPONSE MODAL -->
+    <div id="crm-reply-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div class="px-5 py-4 bg-gradient-to-r from-hirna-900 to-hirna-800 text-white flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-gold-400 font-bold">
+                        💬
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black text-white">Official Hirna Customer Relations Reply</h3>
+                        <p class="text-[11px] text-hirna-200">Post verified response visible on passenger feedback</p>
+                    </div>
+                </div>
+                <button type="button" onclick="CRMModule.closeReplyModal()" class="text-white/70 hover:text-white p-1 rounded-lg text-lg leading-none cursor-pointer" title="Close modal">&times;</button>
+            </div>
+            
+            <div class="p-5 space-y-4 text-xs">
+                <!-- Review Snippet Context -->
+                <div id="crm-modal-review-snippet" class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-700 space-y-1"></div>
+
+                <!-- Quick Response Templates -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1.5">Quick Action Templates:</label>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="CRMModule.applyTemplate('apology')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition cursor-pointer">
+                            🙏 Apology & Investigation
+                        </button>
+                        <button type="button" onclick="CRMModule.applyTemplate('driver_coaching')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition cursor-pointer">
+                            ⚠️ Driver Cautioned
+                        </button>
+                        <button type="button" onclick="CRMModule.applyTemplate('appreciation')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold transition cursor-pointer">
+                            ⭐ Praise & Thanks
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Custom Response Textarea -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Official Response Message:</label>
+                    <textarea id="crm-modal-reply-text" rows="4" class="w-full text-xs p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 focus:outline-none leading-relaxed" placeholder="Type your formal response to the passenger..."></textarea>
+                </div>
+
+                <!-- Resolution Option -->
+                <div class="flex items-center space-x-2 pt-1">
+                    <input type="checkbox" id="crm-modal-auto-resolve" class="rounded text-hirna-700 focus:ring-hirna-500 cursor-pointer" checked>
+                    <label for="crm-modal-auto-resolve" class="text-xs text-slate-600 cursor-pointer">Mark this review as <b>Resolved / Handled</b> upon publishing response</label>
+                </div>
+            </div>
+
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end space-x-2">
+                <button type="button" onclick="CRMModule.closeReplyModal()" class="px-3.5 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl text-xs font-bold transition cursor-pointer">
+                    Cancel
+                </button>
+                <button type="button" onclick="CRMModule.submitReply()" class="px-4 py-1.5 bg-hirna-700 hover:bg-hirna-800 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1 cursor-pointer">
+                    <span>Publish Response →</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2"></div>
 
     <!-- JAVASCRIPT BUNDLE (Cache-Busted) -->
     <script src="assets/js/ai-engines.js?v=20260916_rev1"></script>
-    <script src="assets/js/supabase-config.js?v=20260916_rev1"></script>
+    <script src="assets/js/supabase-config.js?v=20261006_rev2"></script>
     <script src="assets/js/auth.js?v=20260916_rev1"></script>
     <script src="assets/js/sso-gateway.js?v=20260916_rev1"></script>
     <script src="assets/js/booking.js?v=20260921_routefix"></script>
     <script src="assets/js/payments.js?v=20260919_pay1"></script>
-    <script src="assets/js/crm.js?v=20260916_rev1"></script>
+    <script src="assets/js/crm.js?v=20261006_rev2"></script>
     <script src="assets/js/gps-playback.js?v=20260916_rev1"></script>
     <script src="assets/js/analytics.js?v=20260916_rev1"></script>
     <script src="assets/js/audit.js?v=20260916_rev1"></script>

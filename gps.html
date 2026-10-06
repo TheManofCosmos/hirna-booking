@@ -154,7 +154,7 @@
                         <p class="text-xs text-slate-500 mt-1">Select a recorded passenger ride or parcel delivery to view high-resolution GPS telemetry playback and road replay.</p>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <span id="trip-count-badge" class="px-3 py-1.5 bg-slate-900 text-gold-400 text-xs font-mono font-bold rounded-xl shadow-xs">3 Trips Recorded</span>
+                        <span id="trip-count-badge" class="px-3 py-1.5 bg-slate-900 text-gold-400 text-xs font-mono font-bold rounded-xl shadow-xs">0 Trips Recorded</span>
                     </div>
                 </div>
 
@@ -195,11 +195,11 @@
                                 <svg class="w-4 h-4 text-emerald-600 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
                                 <span id="playback-trip-title">Hirna GPS Telemetry & Historical Trip Playback</span>
                             </h3>
-                            <p id="playback-route-subtitle" class="text-xs text-slate-500">Replaying Trip: Ayala Malls Circuit → BGC High Street</p>
+                            <p id="playback-route-subtitle" class="text-xs text-slate-500">Replaying Trip: Select a recorded trip</p>
                         </div>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <span id="playback-booking-badge" class="px-3 py-1 bg-hirna-50 text-hirna-800 font-mono text-xs font-bold rounded-xl border border-hirna-200 shadow-xs">#TNVS-2026-0091</span>
+                        <span id="playback-booking-badge" class="px-3 py-1 bg-hirna-50 text-hirna-800 font-mono text-xs font-bold rounded-xl border border-hirna-200 shadow-xs">--</span>
                     </div>
                 </div>
 
@@ -287,11 +287,11 @@
                             <div class="grid grid-cols-2 gap-3 text-center">
                                 <div class="p-3 bg-hirna-950/70 rounded-xl border border-hirna-800">
                                     <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Booking Code</span>
-                                    <span id="detail-booking-code" class="text-sm font-black text-gold-400 font-mono mt-0.5 block truncate">TNVS-2026-0091</span>
+                                    <span id="detail-booking-code" class="text-sm font-black text-gold-400 font-mono mt-0.5 block truncate">--</span>
                                 </div>
                                 <div class="p-3 bg-hirna-950/70 rounded-xl border border-hirna-800">
                                     <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Trip Duration</span>
-                                    <span id="detail-trip-duration" class="text-sm font-black text-emerald-400 font-mono mt-0.5 block">22 mins</span>
+                                    <span id="detail-trip-duration" class="text-sm font-black text-emerald-400 font-mono mt-0.5 block">-- mins</span>
                                 </div>
                             </div>
 
@@ -303,11 +303,11 @@
                                 <div class="space-y-1">
                                     <div class="flex justify-between">
                                         <span class="text-slate-400">Name:</span>
-                                        <span id="detail-booker-name" class="text-white font-bold">Juan Dela Cruz</span>
+                                        <span id="detail-booker-name" class="text-white font-bold">--</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-400">Contact:</span>
-                                        <span id="detail-booker-phone" class="text-gold-300 font-mono font-semibold">+63 917 123 4567</span>
+                                        <span id="detail-booker-phone" class="text-gold-300 font-mono font-semibold">--</span>
                                     </div>
                                 </div>
                             </div>
@@ -323,11 +323,11 @@
                                 <div class="space-y-1">
                                     <div class="flex justify-between">
                                         <span class="text-slate-400">Recipient Name:</span>
-                                        <span id="detail-recipient-name" class="text-amber-200 font-bold">Ana Patricia Non</span>
+                                        <span id="detail-recipient-name" class="text-amber-200 font-bold">--</span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-slate-400">Recipient Contact:</span>
-                                        <span id="detail-recipient-phone" class="text-gold-300 font-mono font-semibold">+63 917 555 4321</span>
+                                        <span id="detail-recipient-phone" class="text-gold-300 font-mono font-semibold">--</span>
                                     </div>
                                 </div>
                             </div>
@@ -336,15 +336,15 @@
                             <div class="p-3 bg-hirna-950/70 rounded-xl border border-hirna-800 text-xs space-y-1.5">
                                 <div class="flex justify-between text-slate-300">
                                     <span class="text-slate-400">Assigned Driver:</span>
-                                    <span id="detail-driver-name" class="text-white font-semibold">Ricardo Dalisay</span>
+                                    <span id="detail-driver-name" class="text-white font-semibold">--</span>
                                 </div>
                                 <div class="flex justify-between text-slate-300">
                                     <span class="text-slate-400">Vehicle / Plate:</span>
-                                    <span id="detail-vehicle-info" class="text-white font-semibold">Toyota Vios (NFD-8892)</span>
+                                    <span id="detail-vehicle-info" class="text-white font-semibold">--</span>
                                 </div>
                                 <div class="flex justify-between text-slate-300">
                                     <span class="text-slate-400">Distance Traveled:</span>
-                                    <span id="detail-distance" class="text-white font-mono font-semibold">5.8 km</span>
+                                    <span id="detail-distance" class="text-white font-mono font-semibold">-- km</span>
                                 </div>
                             </div>
 
@@ -359,8 +359,8 @@
                                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                                         <span>Current Location</span>
                                     </span>
-                                    <span id="hud-current-location" class="text-xs font-bold text-white mt-0.5 block truncate">Ayala Malls Circuit, Makati</span>
-                                    <span id="hud-coords" class="text-[10px] font-mono text-slate-400 block mt-0.5 truncate">14.5758, 121.0183</span>
+                                    <span id="hud-current-location" class="text-xs font-bold text-white mt-0.5 block truncate">--</span>
+                                    <span id="hud-coords" class="text-[10px] font-mono text-slate-400 block mt-0.5 truncate">0.0000, 0.0000</span>
                                 </div>
                             </div>
 
@@ -505,7 +505,7 @@
             <div class="bg-gradient-to-r from-hirna-800 to-hirna-900 p-5 text-white flex items-center justify-between">
                 <div>
                     <h3 class="text-sm font-bold text-white">Hirna Official e-Receipt & Payment</h3>
-                    <p class="text-xs text-hirna-200">Booking Code: <span id="legacy-pay-modal-code" class="font-mono font-bold text-gold-400">TNVS-2026-0091</span></p>
+                    <p class="text-xs text-hirna-200">Booking Code: <span id="legacy-pay-modal-code" class="font-mono font-bold text-gold-400">--</span></p>
                 </div>
                 <button id="btn-close-legacy-pay-modal" onclick="document.getElementById('legacy-payment-modal')?.classList.add('hidden')" class="text-white hover:text-slate-200 transition p-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
