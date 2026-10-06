@@ -58,34 +58,6 @@ const AIEngines = {
                 .catch(() => this.currentWeather || 'clear');
         },
 
-        getLiveDemandSupply(pickupCoords, vehicleClass) {
-            try {
-                if (!Array.isArray(pickupCoords) || pickupCoords.length !== 2) return null;
-                if (typeof SupabaseBridge === 'undefined' || !SupabaseBridge.getData) return null;
-                const bookings = SupabaseBridge.getData('bookings') || [];
-                const drivers = SupabaseBridge.getData('drivers') || [];
-                const dist = (a, b, c, d) => (typeof BookingModule !== 'undefined' && BookingModule.calculateDistance)
-                    ? BookingModule.calculateDistance(a, b, c, d) : 999;
-                const [pLat, pLng] = pickupCoords;
-                const cutoff = Date.now() - 30 * 60 * 1000;
-                const openStates = ['pending', 'searching', 'dispatched', 'requested'];
-                const requests = bookings.filter(b => {
-                    if (!openStates.includes(String(b.status || '').toLowerCase())) return false;
-                    const t = Date.parse(String(b.created_at || '').replace(' ', 'T'));
-                    if (!isNaN(t) && t < cutoff) return false;
-                    const pc = b.pickup_coords;
-                    return Array.isArray(pc) && pc.length === 2 && dist(pLat, pLng, pc[0], pc[1]) <= 3;
-                }).length;
-                const supply = drivers.filter(d => {
-                    if (String(d.status || '').toLowerCase() !== 'available') return false;
-                    if (typeof d.lat !== 'number' || typeof d.lng !== 'number') return false;
-                    return dist(pLat, pLng, d.lat, d.lng) <= 5;
-                }).length;
-                if (requests === 0 && supply === 0) return null;
-                return { requests, drivers: supply, ratio: requests / Math.max(1, supply) };
-            } catch (e) { return null; }
-        },
-
         calculateFare(vehicleClass, distanceKm, durationMin, options = {}) {
             const config = this.rates[vehicleClass] || this.rates["Motorcycle (1-Passenger)"] || this.rates["Sedan (4-Seater)"];
             const baseFare = config.base;
@@ -156,25 +128,31 @@ const AIEngines = {
             // 3. REAL-TIME DEMAND & RUSH-HOUR SURGE (Based on Philippine local time)
             const now = new Date();
             const hour = now.getHours();
+            const min = now.getMinutes();
+            const timeVal = hour + (min / 60);
             const day = now.getDay();
             
-            if (hour >= 7 && hour <= 9) {
+            if (timeVal >= 7.0 && timeVal <= 9.5) {
                 multiplier += 0.25;
-                demandStatus = "Morning Peak (Rush)";
-                reasons.push("Morning Commuter Peak Demand");
-            } else if (hour >= 17 && hour <= 20) {
+                demandStatus = "Morning Commute Rush (To Work/School)";
+                reasons.push("Morning Peak Commute Demand (7:00 AM - 9:30 AM)");
+            } else if (timeVal >= 11.5 && timeVal <= 13.5) {
+                multiplier += 0.20;
+                demandStatus = "Midday Rush (Lunch & Errands)";
+                reasons.push("Noon / Midday Rush Demand (11:30 AM - 1:30 PM)");
+            } else if (timeVal >= 17.0 && timeVal <= 20.5) {
                 multiplier += 0.30;
-                demandStatus = "Evening Peak (Rush)";
-                reasons.push("Evening Rush Hour Corridor Surge");
+                demandStatus = "Evening Commute Rush (Heading Home)";
+                reasons.push("Evening Post-Work Rush Demand (5:00 PM - 8:30 PM)");
             } else if ((day === 5 || day === 6) && (hour >= 21 || hour <= 1)) {
                 multiplier += 0.15;
                 demandStatus = "Weekend Night Peak";
-                reasons.push("Weekend Night Demand Surge");
+                reasons.push("Weekend Night Life Demand Surge");
             } else {
-                demandStatus = "Normal Activity";
+                demandStatus = "Normal Commute Hours (Standard Demand)";
             }
 
-            // Hotspot Proximity Check
+            // Commercial / CBD Hotspot Proximity Check
             const pickupCoords = options.pickupCoords || (Array.isArray(options) ? options : null);
             if (pickupCoords && Array.isArray(pickupCoords) && pickupCoords.length === 2) {
                 const [pLat, pLng] = pickupCoords;
@@ -185,28 +163,12 @@ const AIEngines = {
                             : 999;
                         if (d <= 2.5) {
                             multiplier += 0.10;
-                            demandStatus = `Hotspot: ${zone.name}`;
+                            demandStatus += ` • Hub: ${zone.name}`;
                             reasons.push(`High Activity Hub: ${zone.name}`);
                             break;
                         }
                     }
                 }
-            }
-
-            // Live Demand vs Supply (open booking requests vs available drivers near pickup)
-            const liveDS = this.getLiveDemandSupply(pickupCoords, vehicleClass);
-            if (liveDS) {
-                const { requests, drivers, ratio } = liveDS;
-                let dsBoost = 0;
-                if (ratio >= 3) dsBoost = 0.40;
-                else if (ratio >= 2) dsBoost = 0.30;
-                else if (ratio >= 1) dsBoost = 0.20;
-                else if (ratio >= 0.5) dsBoost = 0.10;
-                if (dsBoost > 0) {
-                    multiplier += dsBoost;
-                    reasons.push(`Live Demand: ${requests} open request(s) vs ${drivers} driver(s) nearby`);
-                }
-                demandStatus = `${requests} request(s) / ${drivers} driver(s) nearby` + (dsBoost > 0 ? ' • High demand' : ' • Balanced');
             }
 
             // Regulatory cap between 1.00x and 2.50x
