@@ -313,7 +313,7 @@ const CRMModule = {
 
                         ${f.driver_flagged ? `
                             <span class="inline-flex items-center space-x-1 px-2.5 py-1 bg-rose-50 text-rose-700 rounded-lg text-[10px] font-bold border border-rose-200">
-                                <span>⚠️ Driver Flagged for Safety Coaching</span>
+                                <span>⚠️ Driver Flagged: ${this.escapeHtml(f.driver_flag_reason || 'Safety Coaching')}</span>
                             </span>
                         ` : ''}
                     </div>
@@ -365,21 +365,31 @@ const CRMModule = {
                             ` : ''}
 
                             ${!f.compensation ? `
-                                <button onclick="CRMModule.issueCompensation('${f.id}')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[11px] font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer" title="Credit Goodwill Points or Voucher">
+                                <button onclick="CRMModule.promptIssueCompensation('${f.id}')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[11px] font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer" title="Credit Goodwill Points or Voucher">
                                     <span>🎁</span>
                                     <span>Issue Voucher</span>
                                 </button>
-                            ` : ''}
+                            ` : `
+                                <button onclick="CRMModule.promptRevokeCompensation('${f.id}')" class="px-2 py-1 bg-emerald-50/60 hover:bg-rose-50 text-emerald-800 hover:text-rose-700 border border-emerald-200 hover:border-rose-300 rounded-lg text-[10px] font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer" title="Revoke Issued Voucher (Mistake Reversal)">
+                                    <span>↩️</span>
+                                    <span>Revoke Voucher</span>
+                                </button>
+                            `}
 
                             ${!f.driver_flagged ? `
-                                <button onclick="CRMModule.flagDriver('${f.id}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer" title="Flag Driver for Safety Retraining">
+                                <button onclick="CRMModule.promptFlagDriver('${f.id}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer" title="Flag Driver for Safety Retraining (Reason Required)">
                                     <span>⚠️</span>
                                     <span>Flag Driver</span>
                                 </button>
-                            ` : ''}
+                            ` : `
+                                <button onclick="CRMModule.promptRevokeFlag('${f.id}')" class="px-2 py-1 bg-rose-50/60 hover:bg-slate-100 text-rose-700 hover:text-slate-800 border border-rose-200 hover:border-slate-300 rounded-lg text-[10px] font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer" title="Revoke Driver Flag (Mistake Reversal)">
+                                    <span>↩️</span>
+                                    <span>Revoke Flag</span>
+                                </button>
+                            `}
 
                             ${(typeof AuthModule !== 'undefined' && AuthModule.isSuperAdmin()) ? `
-                                <button onclick="CRMModule.archiveFeedback('${f.id}')" class="px-2 py-1 text-slate-400 hover:text-amber-800 hover:bg-amber-50 rounded text-[11px] font-medium cursor-pointer" title="Move to Archives">
+                                <button onclick="CRMModule.promptArchiveFeedback('${f.id}')" class="px-2 py-1 text-slate-400 hover:text-amber-800 hover:bg-amber-50 rounded text-[11px] font-medium cursor-pointer" title="Move to Archives">
                                     🗄️ Archive
                                 </button>
                             ` : ''}
@@ -696,7 +706,71 @@ const CRMModule = {
         }
     },
 
-    // 1-Click Goodwill Compensation (Credit + Points)
+    // Pending Confirmation State
+    pendingAction: null,
+    activeFlagReviewId: null,
+
+    // Modal Control: Generic Confirmation Modal
+    openConfirmModal({ title, desc, detailsHtml, icon = '⚠️', confirmBtnText = 'Confirm', confirmBtnClass = 'bg-hirna-700 hover:bg-hirna-800 text-white', onConfirm }) {
+        const modal = document.getElementById('crm-action-confirm-modal');
+        if (!modal) return;
+
+        const titleEl = document.getElementById('crm-confirm-title');
+        const descEl = document.getElementById('crm-confirm-desc');
+        const detailsEl = document.getElementById('crm-confirm-details');
+        const iconEl = document.getElementById('crm-confirm-icon-container');
+        const actionBtn = document.getElementById('crm-confirm-action-btn');
+
+        if (titleEl) titleEl.textContent = title;
+        if (descEl) descEl.textContent = desc;
+        if (detailsEl) detailsEl.innerHTML = detailsHtml || '';
+        if (iconEl) iconEl.textContent = icon;
+        if (actionBtn) {
+            actionBtn.textContent = confirmBtnText;
+            actionBtn.className = `w-full py-2.5 px-4 rounded-xl text-xs font-black shadow-lg transition cursor-pointer ${confirmBtnClass}`;
+        }
+
+        this.pendingAction = onConfirm;
+        modal.classList.remove('hidden');
+    },
+
+    closeConfirmModal() {
+        const modal = document.getElementById('crm-action-confirm-modal');
+        if (modal) modal.classList.add('hidden');
+        this.pendingAction = null;
+    },
+
+    executeConfirmedAction() {
+        if (typeof this.pendingAction === 'function') {
+            const action = this.pendingAction;
+            this.pendingAction = null;
+            action();
+        }
+        this.closeConfirmModal();
+    },
+
+    // 1. Issue Voucher: Confirmation Prompt
+    promptIssueCompensation(id) {
+        const feedbackList = SupabaseBridge.getData('feedback') || [];
+        const f = feedbackList.find(item => item.id === id);
+        if (!f) return;
+
+        const passengerName = f.passenger || f.passenger_name || 'Passenger';
+        this.openConfirmModal({
+            title: "Issue Goodwill Voucher & Points?",
+            desc: `Are you sure you want to credit a ₱50 goodwill voucher and 50 loyalty points to ${passengerName}?`,
+            detailsHtml: `
+                <div><span class="text-slate-400">Recipient:</span> <b>${this.escapeHtml(passengerName)}</b></div>
+                <div><span class="text-slate-400">Compensation:</span> <b class="text-emerald-700">₱50 Discount Voucher + 50 Loyalty Points</b></div>
+                <div><span class="text-slate-400">Review:</span> <i class="text-slate-500">"${this.escapeHtml(f.comment)}"</i></div>
+            `,
+            icon: "🎁",
+            confirmBtnText: "Yes, Issue Voucher",
+            confirmBtnClass: "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30",
+            onConfirm: () => this.issueCompensation(id)
+        });
+    },
+
     issueCompensation(id) {
         const feedbackList = SupabaseBridge.getData('feedback') || [];
         const f = feedbackList.find(item => item.id === id);
@@ -732,8 +806,132 @@ const CRMModule = {
         }
     },
 
-    // 1-Click Driver Coaching & Safety Flag
-    flagDriver(id) {
+    // 2. Revoke Issued Voucher (Mistake Reversal)
+    promptRevokeCompensation(id) {
+        const feedbackList = SupabaseBridge.getData('feedback') || [];
+        const f = feedbackList.find(item => item.id === id);
+        if (!f || !f.compensation) return;
+
+        const passengerName = f.passenger || f.passenger_name || 'Passenger';
+        this.openConfirmModal({
+            title: "Revoke Goodwill Voucher?",
+            desc: `Mistake reversal: Are you sure you want to revoke the goodwill voucher issued to ${passengerName}?`,
+            detailsHtml: `
+                <div><span class="text-slate-400">Recipient:</span> <b>${this.escapeHtml(passengerName)}</b></div>
+                <div><span class="text-slate-400">Current Voucher:</span> <b class="text-amber-700">${this.escapeHtml(f.compensation)}</b></div>
+                <div class="text-[11px] text-rose-600 font-bold mt-1">⚠️ 50 loyalty points will be deducted back from the passenger's account balance.</div>
+            `,
+            icon: "↩️",
+            confirmBtnText: "Revoke Voucher",
+            confirmBtnClass: "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30",
+            onConfirm: () => this.revokeCompensation(id)
+        });
+    },
+
+    revokeCompensation(id) {
+        const feedbackList = SupabaseBridge.getData('feedback') || [];
+        const f = feedbackList.find(item => item.id === id);
+        if (!f) return;
+
+        const passengerName = f.passenger || f.passenger_name || 'Passenger';
+        const users = SupabaseBridge.getData('users') || [];
+        const userObj = users.find(u => u.full_name && u.full_name.toLowerCase() === passengerName.toLowerCase()) || users[0];
+
+        if (userObj) {
+            const currentPoints = parseInt(userObj.loyalty_points) || 0;
+            const updatedPoints = Math.max(0, currentPoints - 50);
+            SupabaseBridge.update('users', userObj.id, { loyalty_points: updatedPoints });
+        }
+
+        SupabaseBridge.update('feedback', id, {
+            compensation: null
+        });
+
+        SupabaseBridge.logAudit("Customer Relations", "GOODWILL_VOUCHER_REVOKED", f.id, "CRM_Supervisor", {
+            passenger: passengerName,
+            revoked_voucher: '₱50 Goodwill Voucher',
+            deducted_points: 50
+        });
+
+        this.renderProfiles();
+        this.renderMetrics();
+        this.renderFeedback();
+
+        if (typeof App !== 'undefined' && App.showToast) {
+            App.showToast(`Goodwill voucher revoked and points restored for ${passengerName}.`, "info");
+        }
+    },
+
+    // 3. Flag Driver: Requires Reason Modal
+    promptFlagDriver(id) {
+        const feedbackList = SupabaseBridge.getData('feedback') || [];
+        const f = feedbackList.find(item => item.id === id);
+        if (!f) return;
+
+        this.activeFlagReviewId = id;
+        const modal = document.getElementById('crm-flag-driver-modal');
+        const snippet = document.getElementById('crm-flag-review-snippet');
+        const reasonInput = document.getElementById('crm-flag-reason-input');
+        const categorySelect = document.getElementById('crm-flag-category-select');
+        const errorEl = document.getElementById('crm-flag-reason-error');
+
+        if (snippet) {
+            const passengerName = f.passenger || f.passenger_name || 'Passenger';
+            snippet.innerHTML = `
+                <div class="flex items-center justify-between font-bold text-slate-800">
+                    <span>Passenger: ${this.escapeHtml(passengerName)}</span>
+                    <span class="text-amber-500 font-bold">${'★'.repeat(f.rating)} (${f.rating}★)</span>
+                </div>
+                <div class="text-[11px] text-slate-600 italic">"${this.escapeHtml(f.comment)}"</div>
+                <div class="text-[10px] text-slate-400">Booking: ${f.booking_code || 'N/A'} • Date: ${f.date || 'N/A'}</div>
+            `;
+        }
+
+        if (categorySelect) categorySelect.value = "Reckless Driving & Speeding";
+        if (reasonInput) {
+            reasonInput.value = "Driver exhibited unsafe driving maneuvers reported by passenger.";
+        }
+        if (errorEl) errorEl.classList.add('hidden');
+        if (modal) modal.classList.remove('hidden');
+    },
+
+    onFlagCategoryChange(cat) {
+        const reasonInput = document.getElementById('crm-flag-reason-input');
+        if (!reasonInput) return;
+        const defaults = {
+            'Reckless Driving & Speeding': 'Driver exhibited unsafe driving maneuvers and exceeded speed limits.',
+            'Rude / Unprofessional Conduct': 'Driver displayed discourteous, aggressive, or unprofessional behavior during trip.',
+            'Route Deviation / Detour Disregard': 'Driver took unauthorized longer detours and refused navigation advice.',
+            'Fare Overcharging / Cash Dispute': 'Driver demanded excess fare or refused legitimate change.',
+            'Vehicle Cleanliness & Safety Hazard': 'Vehicle failed comfort, sanitation, or basic seatbelt/safety standards.',
+            'Custom Reason': ''
+        };
+        reasonInput.value = defaults[cat] || '';
+        reasonInput.focus();
+    },
+
+    closeFlagDriverModal() {
+        const modal = document.getElementById('crm-flag-driver-modal');
+        if (modal) modal.classList.add('hidden');
+        this.activeFlagReviewId = null;
+    },
+
+    submitFlagDriver() {
+        if (!this.activeFlagReviewId) return;
+        const id = this.activeFlagReviewId;
+        const reasonInput = document.getElementById('crm-flag-reason-input');
+        const categorySelect = document.getElementById('crm-flag-category-select');
+        const errorEl = document.getElementById('crm-flag-reason-error');
+
+        const reason = reasonInput ? reasonInput.value.trim() : '';
+        const category = categorySelect ? categorySelect.value : 'Safety Coaching';
+
+        if (!reason) {
+            if (errorEl) errorEl.classList.remove('hidden');
+            if (reasonInput) reasonInput.focus();
+            return;
+        }
+
         const feedbackList = SupabaseBridge.getData('feedback') || [];
         const f = feedbackList.find(item => item.id === id);
         if (!f) return;
@@ -742,6 +940,7 @@ const CRMModule = {
 
         SupabaseBridge.update('feedback', id, {
             driver_flagged: true,
+            driver_flag_reason: `${category}: ${reason}`,
             driver_flagged_at: nowStr,
             status: 'Under Investigation'
         });
@@ -749,16 +948,89 @@ const CRMModule = {
         SupabaseBridge.logAudit("Fleet Operations", "DRIVER_SAFETY_COACHING_FLAGGED", f.id, "Safety_Compliance", {
             review_id: f.id,
             booking_code: f.booking_code,
-            category: f.category,
+            category: category,
+            reason: reason,
             comment: f.comment
+        });
+
+        this.closeFlagDriverModal();
+        this.renderMetrics();
+        this.renderFeedback();
+
+        if (typeof App !== 'undefined' && App.showToast) {
+            App.showToast(`Driver flagged: "${category}" recorded for Safety Coaching Review.`, "warning");
+        }
+    },
+
+    // 4. Revoke Driver Flag (Mistake Reversal)
+    promptRevokeFlag(id) {
+        const feedbackList = SupabaseBridge.getData('feedback') || [];
+        const f = feedbackList.find(item => item.id === id);
+        if (!f || !f.driver_flagged) return;
+
+        this.openConfirmModal({
+            title: "Revoke Driver Safety Flag?",
+            desc: "Mistake reversal: Are you sure you want to dismiss the safety flag on this driver?",
+            detailsHtml: `
+                <div><span class="text-slate-400">Current Flag Reason:</span> <b class="text-rose-700">${this.escapeHtml(f.driver_flag_reason || 'Safety Coaching')}</b></div>
+                <div><span class="text-slate-400">Flagged At:</span> <span>${f.driver_flagged_at || 'Recent'}</span></div>
+                <div class="text-[11px] text-slate-500 mt-1">The flag will be lifted, and the compliance record will be marked as dismissed.</div>
+            `,
+            icon: "↩️",
+            confirmBtnText: "Revoke Driver Flag",
+            confirmBtnClass: "bg-slate-800 hover:bg-slate-900 text-white",
+            onConfirm: () => this.revokeDriverFlag(id)
+        });
+    },
+
+    revokeDriverFlag(id) {
+        const feedbackList = SupabaseBridge.getData('feedback') || [];
+        const f = feedbackList.find(item => item.id === id);
+        if (!f) return;
+
+        SupabaseBridge.update('feedback', id, {
+            driver_flagged: false,
+            driver_flag_reason: null
+        });
+
+        SupabaseBridge.logAudit("Fleet Operations", "DRIVER_FLAG_REVOKED", f.id, "Safety_Compliance", {
+            review_id: f.id,
+            booking_code: f.booking_code,
+            dismissed_flag: true
         });
 
         this.renderMetrics();
         this.renderFeedback();
 
         if (typeof App !== 'undefined' && App.showToast) {
-            App.showToast("Driver flagged for Safety Coaching & SOP Retraining Review.", "warning");
+            App.showToast("Driver safety flag successfully revoked.", "info");
         }
+    },
+
+    // 5. Archiving: Confirmation Prompt
+    promptArchiveFeedback(id) {
+        if (typeof AuthModule !== 'undefined' && !AuthModule.canDeleteRecords()) {
+            if (typeof App !== 'undefined') App.showToast("Permission Denied: Only SuperAdmin can archive feedback records.", "error");
+            return;
+        }
+
+        const feedbackList = SupabaseBridge.getData('feedback') || [];
+        const f = feedbackList.find(item => item.id === id);
+        const passengerName = f ? (f.passenger || f.passenger_name || 'Passenger') : 'Record';
+
+        this.openConfirmModal({
+            title: "Archive Review Record?",
+            desc: "SuperAdmin Action: Are you sure you want to move this customer review to Compliance Archives?",
+            detailsHtml: `
+                <div><span class="text-slate-400">Review ID:</span> <b>${id}</b></div>
+                <div><span class="text-slate-400">Passenger:</span> <b>${this.escapeHtml(passengerName)}</b></div>
+                <div class="text-[11px] text-slate-500 mt-1">Archived reviews are safely stored in Regulatory & Compliance Archives.</div>
+            `,
+            icon: "🗄️",
+            confirmBtnText: "Yes, Archive Review",
+            confirmBtnClass: "bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/30",
+            onConfirm: () => this.archiveFeedback(id)
+        });
     },
 
     highlightText(text, query, shouldHighlight) {
@@ -836,16 +1108,14 @@ const CRMModule = {
             if (typeof App !== 'undefined') App.showToast("Permission Denied: Only SuperAdmin can archive feedback records.", "error");
             return;
         }
-        if (confirm(`SuperAdmin Action: Are you sure you want to archive this customer feedback record? It will be moved to Compliance Archives.`)) {
-            SupabaseBridge.archive('feedback', id, 'Archived from Customer Feedback');
-            this.renderFeedback();
-            this.renderMetrics();
-            if (typeof App !== 'undefined') App.showToast(`Feedback record safely moved to Compliance Archives.`, 'success');
-        }
+        SupabaseBridge.archive('feedback', id, 'Archived from Customer Feedback');
+        this.renderFeedback();
+        this.renderMetrics();
+        if (typeof App !== 'undefined') App.showToast(`Feedback record safely moved to Compliance Archives.`, 'success');
     },
 
     deleteFeedback(id) {
-        this.archiveFeedback(id);
+        this.promptArchiveFeedback(id);
     },
 
     bindEvents() {
