@@ -58,6 +58,34 @@ const AIEngines = {
                 .catch(() => this.currentWeather || 'clear');
         },
 
+        getLiveDemandSupply(pickupCoords, vehicleClass) {
+            try {
+                if (!Array.isArray(pickupCoords) || pickupCoords.length !== 2) return null;
+                if (typeof SupabaseBridge === 'undefined' || !SupabaseBridge.getData) return null;
+                const bookings = SupabaseBridge.getData('bookings') || [];
+                const drivers = SupabaseBridge.getData('drivers') || [];
+                const dist = (a, b, c, d) => (typeof BookingModule !== 'undefined' && BookingModule.calculateDistance)
+                    ? BookingModule.calculateDistance(a, b, c, d) : 999;
+                const [pLat, pLng] = pickupCoords;
+                const cutoff = Date.now() - 30 * 60 * 1000;
+                const openStates = ['pending', 'searching', 'dispatched', 'requested'];
+                const requests = bookings.filter(b => {
+                    if (!openStates.includes(String(b.status || '').toLowerCase())) return false;
+                    const t = Date.parse(String(b.created_at || '').replace(' ', 'T'));
+                    if (!isNaN(t) && t < cutoff) return false;
+                    const pc = b.pickup_coords;
+                    return Array.isArray(pc) && pc.length === 2 && dist(pLat, pLng, pc[0], pc[1]) <= 3;
+                }).length;
+                const supply = drivers.filter(d => {
+                    if (String(d.status || '').toLowerCase() !== 'available') return false;
+                    if (typeof d.lat !== 'number' || typeof d.lng !== 'number') return false;
+                    return dist(pLat, pLng, d.lat, d.lng) <= 5;
+                }).length;
+                if (requests === 0 && supply === 0) return null;
+                return { requests, drivers: supply, ratio: requests / Math.max(1, supply) };
+            } catch (e) { return null; }
+        },
+
         calculateFare(vehicleClass, distanceKm, durationMin, options = {}) {
             const config = this.rates[vehicleClass] || this.rates["Motorcycle (1-Passenger)"] || this.rates["Sedan (4-Seater)"];
             const baseFare = config.base;
@@ -163,6 +191,22 @@ const AIEngines = {
                         }
                     }
                 }
+            }
+
+            // Live Demand vs Supply (open booking requests vs available drivers near pickup)
+            const liveDS = this.getLiveDemandSupply(pickupCoords, vehicleClass);
+            if (liveDS) {
+                const { requests, drivers, ratio } = liveDS;
+                let dsBoost = 0;
+                if (ratio >= 3) dsBoost = 0.40;
+                else if (ratio >= 2) dsBoost = 0.30;
+                else if (ratio >= 1) dsBoost = 0.20;
+                else if (ratio >= 0.5) dsBoost = 0.10;
+                if (dsBoost > 0) {
+                    multiplier += dsBoost;
+                    reasons.push(`Live Demand: ${requests} open request(s) vs ${drivers} driver(s) nearby`);
+                }
+                demandStatus = `${requests} request(s) / ${drivers} driver(s) nearby` + (dsBoost > 0 ? ' • High demand' : ' • Balanced');
             }
 
             // Regulatory cap between 1.00x and 2.50x

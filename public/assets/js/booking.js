@@ -5520,13 +5520,15 @@ const BookingModule = {
         });
         this.currentQuote = quote;
 
-        // Fetch live weather in background to refresh telemetry if available
+        // Fetch live weather; if it differs from what this quote used, recompute so the fare is accurate
+        const usedWeather = AIEngines.DynamicPricing.currentWeather || 'clear';
         if (this.pickupCoords && AIEngines.DynamicPricing.fetchLiveWeather) {
-            AIEngines.DynamicPricing.fetchLiveWeather(this.pickupCoords[0], this.pickupCoords[1]).then(() => {
-                const telWeather = document.getElementById('telemetry-weather');
-                if (telWeather && AIEngines.DynamicPricing.currentWeather) {
-                    const w = AIEngines.DynamicPricing.currentWeather;
-                    telWeather.innerText = w === 'storm' ? 'Heavy Downpour' : (w === 'rain' ? 'Passing Showers' : 'Clear Skies');
+            const pickupKey = this.pickupCoords.join(',');
+            AIEngines.DynamicPricing.fetchLiveWeather(this.pickupCoords[0], this.pickupCoords[1]).then(w => {
+                const resolved = w || AIEngines.DynamicPricing.currentWeather || 'clear';
+                if (resolved !== usedWeather && this.pickupCoords && this.pickupCoords.join(',') === pickupKey
+                    && this.currentQuote === quote) {
+                    this.calculateFareQuote(distKm, durMin);
                 }
             });
         }
