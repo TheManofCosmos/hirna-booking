@@ -5236,20 +5236,26 @@ const BookingModule = {
         const endLat = endCoords[0];
 
         // 1. Try local proxy (with optional Mapbox token from client session) and public OSRM API endpoints
-        const storedMbToken = localStorage.getItem('hirna_mapbox_token') || '';
+        const storedMbToken = localStorage.getItem('hirna_mapbox_token') || (window.HIRNA_MAPBOX_TOKEN || '');
         const proxyUrl = storedMbToken
             ? `/api/route?start=${startLat},${startLng}&end=${endLat},${endLng}&steps=true&token=${encodeURIComponent(storedMbToken)}`
             : `/api/route?start=${startLat},${startLng}&end=${endLat},${endLng}&steps=true`;
 
+        const directMapboxUrl = storedMbToken
+            ? `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson&steps=true&annotations=congestion,duration,distance&access_token=${encodeURIComponent(storedMbToken)}`
+            : null;
+
         const endpoints = [
             proxyUrl,
+            directMapboxUrl,
+            `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson&steps=true`,
             `http://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson&steps=true`
-        ];
+        ].filter(Boolean);
 
         for (const url of endpoints) {
             try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 1800);
+                const timeoutId = setTimeout(() => controller.abort(), 4500);
 
                 const resp = await fetch(url, { signal: controller.signal });
                 clearTimeout(timeoutId);
@@ -5279,6 +5285,31 @@ const BookingModule = {
                             };
                         });
 
+                        const isMapboxDirect = url.includes('api.mapbox.com');
+                        let trafficTelemetry = data.traffic_telemetry || null;
+                        if (!trafficTelemetry && isMapboxDirect && primaryRoute) {
+                            const durationTraffic = primaryRoute.duration || 0;
+                            const durationTypical = primaryRoute.duration_typical || durationTraffic;
+                            const congestions = [];
+                            for (const leg of (primaryRoute.legs || [])) {
+                                const ann = leg.annotation || {};
+                                if (Array.isArray(ann.congestion)) congestions.push(...ann.congestion);
+                            }
+                            const heavyCount = congestions.filter(c => c === 'heavy' || c === 'severe').length;
+                            const modCount = congestions.filter(c => c === 'moderate').length;
+                            const totalSegs = Math.max(1, congestions.length);
+                            let congestionLevel = 'low';
+                            if ((heavyCount / totalSegs) > 0.20) congestionLevel = 'severe';
+                            else if ((heavyCount / totalSegs) > 0.08 || (modCount / totalSegs) > 0.25) congestionLevel = 'heavy';
+                            else if ((modCount / totalSegs) > 0.10) congestionLevel = 'moderate';
+                            trafficTelemetry = {
+                                congestion_level: congestionLevel,
+                                duration_traffic_sec: durationTraffic,
+                                duration_typical_sec: durationTypical,
+                                congestion_ratio: parseFloat((durationTraffic / Math.max(1, durationTypical)).toFixed(2))
+                            };
+                        }
+
                         const result = {
                             waypoints,
                             distanceMeters,
@@ -5287,9 +5318,9 @@ const BookingModule = {
                             durationMin: Math.max(1, Math.round(durationSeconds / 60)),
                             isRealRoad: true,
                             stepMilestones,
-                            provider: data.provider || 'osrm',
-                            trafficAware: Boolean(data.traffic_aware),
-                            trafficTelemetry: data.traffic_telemetry || null
+                            provider: isMapboxDirect ? 'mapbox' : (data.provider || 'osrm'),
+                            trafficAware: Boolean(isMapboxDirect || data.traffic_aware),
+                            trafficTelemetry: trafficTelemetry
                         };
                         this._routeCache.set(cacheKey, result);
                         return result;
