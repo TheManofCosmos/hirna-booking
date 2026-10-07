@@ -353,32 +353,69 @@ const AIEngines = {
     // 4. INTELLIGENT REVENUE & FLEET TIME-SERIES FORECASTER
     // --------------------------------------------------------------------------
     RevenueForecast: {
-        generate7DayForecast(past7DaysRevenue = [42500, 46100, 48900, 51200, 58400, 64200, 61800]) {
-            const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-            const alpha = 0.4; // Exponential smoothing constant
-            let smoothed = past7DaysRevenue[0];
+        generate7DayForecast(past7DaysRevenue = null, startDate = new Date()) {
+            const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             
-            for (let i = 1; i < past7DaysRevenue.length; i++) {
-                smoothed = alpha * past7DaysRevenue[i] + (1 - alpha) * smoothed;
+            // Build dynamic past 7 calendar days up to today
+            const historicalDays = [];
+            const defaultPastRevenue = [42500, 46100, 48900, 51200, 58400, 64200, 61800];
+            const baseRev = past7DaysRevenue && past7DaysRevenue.length === 7 ? past7DaysRevenue : defaultPastRevenue;
+
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(startDate.getTime() - i * 24 * 60 * 60 * 1000);
+                const dayName = dayNames[d.getDay()];
+                const dateLabel = `${monthNames[d.getMonth()]} ${d.getDate()} (${dayName})`;
+                const isToday = i === 0;
+                historicalDays.push({
+                    date: d,
+                    label: isToday ? `Today (${dayName})` : dateLabel,
+                    shortLabel: isToday ? 'Today' : `${monthNames[d.getMonth()]} ${d.getDate()}`,
+                    revenue: baseRev[6 - i]
+                });
             }
 
-            const projectedNext7Days = days.map((day, idx) => {
-                // Weekend bump factor
-                const weekendMultiplier = (day === 'Fri' || day === 'Sat' || day === 'Sun') ? 1.22 : 1.05;
-                const baseEstimate = smoothed * weekendMultiplier;
-                const noise = (Math.random() - 0.5) * 2500;
-                const forecastVal = Math.round(baseEstimate + noise);
+            // Exponential smoothing on historical values
+            const alpha = 0.45; // Smoothing weight
+            let smoothed = historicalDays[0].revenue;
+            for (let i = 1; i < historicalDays.length; i++) {
+                smoothed = alpha * historicalDays[i].revenue + (1 - alpha) * smoothed;
+            }
 
-                return {
-                    day: `Next ${day}`,
+            // Generate projected metrics for the next 7 upcoming days
+            const projectedNext7Days = [];
+            for (let i = 1; i <= 7; i++) {
+                const d = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+                const dayOfWeek = d.getDay();
+                const dayName = dayNames[dayOfWeek];
+                const dateLabel = `${monthNames[d.getMonth()]} ${d.getDate()} (${dayName})`;
+                
+                // Real-world weekend & peak commute multipliers
+                const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                const isFriday = (dayOfWeek === 5);
+                const demandMultiplier = isFriday ? 1.25 : (isWeekend ? 1.18 : 1.06);
+                
+                // Add minor deterministic variance so values look natural yet consistent
+                const seedVariance = Math.sin((d.getDate() * 13) + dayOfWeek) * 1800;
+                const forecastVal = Math.round(smoothed * demandMultiplier + seedVariance);
+                const tripsEst = Math.round(forecastVal / 242);
+
+                projectedNext7Days.push({
+                    date: d,
+                    day: dateLabel,
+                    shortLabel: `${monthNames[d.getMonth()]} ${d.getDate()} (Pred)`,
                     projectedRevenue: forecastVal,
-                    lowerBound: Math.round(forecastVal * 0.93),
-                    upperBound: Math.round(forecastVal * 1.07),
-                    estimatedTrips: Math.round(forecastVal / 240)
-                };
-            });
+                    lowerBound: Math.round(forecastVal * 0.92),
+                    upperBound: Math.round(forecastVal * 1.08),
+                    estimatedTrips: tripsEst,
+                    surgeRatio: isFriday ? 1.45 : (isWeekend ? 1.35 : 1.20)
+                });
+            }
 
-            return projectedNext7Days;
+            return {
+                historical: historicalDays,
+                forecast: projectedNext7Days
+            };
         }
     },
 

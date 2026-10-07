@@ -26,64 +26,141 @@ const AnalyticsModule = {
     },
 
     renderCharts() {
-        // 1. Revenue Forecast Chart
+        const now = new Date();
+        const currentHour = now.getHours();
+
+        // 1. Revenue Forecast Chart - Synchronized with current date & next 7 days
         const revCtx = document.getElementById('chart-revenue-forecast')?.getContext('2d');
         if (revCtx) {
-            const forecastData = AIEngines.RevenueForecast.generate7DayForecast();
-            const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", ...forecastData.map(f => f.day)];
-            const historicalData = [42500, 46100, 48900, 51200, 58400, 64200, 61800, null, null, null, null, null, null, null];
-            const forecastedData = [null, null, null, null, null, null, 61800, ...forecastData.map(f => f.projectedRevenue)];
+            if (this.revenueChart) {
+                try { this.revenueChart.destroy(); } catch(e) {}
+                this.revenueChart = null;
+            }
+
+            const forecastResult = AIEngines.RevenueForecast.generate7DayForecast(null, now);
+            const historical = forecastResult.historical;
+            const forecast = forecastResult.forecast;
+
+            const allLabels = [...historical.map(h => h.label), ...forecast.map(f => f.day)];
+            const histData = [...historical.map(h => h.revenue), ...new Array(forecast.length).fill(null)];
+            
+            // Connect forecast seamlessly starting from today's historical anchor point
+            const todayAnchor = historical[historical.length - 1].revenue;
+            const predData = [...new Array(historical.length - 1).fill(null), todayAnchor, ...forecast.map(f => f.projectedRevenue)];
 
             this.revenueChart = new Chart(revCtx, {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels: allLabels,
                     datasets: [
                         {
                             label: 'Historical Revenue (₱)',
-                            data: historicalData,
+                            data: histData,
                             borderColor: '#b91c1c',
                             backgroundColor: 'rgba(185, 28, 28, 0.1)',
                             fill: true,
-                            tension: 0.3
+                            tension: 0.35,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
                         },
                         {
-                            label: 'Hirna AI 7-Day Projected Revenue (₱)',
-                            data: forecastedData,
+                            label: 'Hirna AI 7-Day Predicted Revenue (₱)',
+                            data: predData,
                             borderColor: '#f59e0b',
                             borderDash: [6, 6],
                             backgroundColor: 'rgba(245, 158, 11, 0.15)',
                             fill: true,
-                            tension: 0.3
+                            tension: 0.35,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'top' } }
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const val = context.parsed.y;
+                                    return val !== null ? ` ${context.dataset.label}: ₱${Number(val).toLocaleString()}` : '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: val => `₱${Number(val).toLocaleString()}`
+                            }
+                        }
+                    }
                 }
             });
+
+            // Update projected 7-day summary metrics if elements exist
+            const projectedSum = forecast.reduce((acc, f) => acc + f.projectedRevenue, 0);
+            const projEl = document.getElementById('dash-7day-projected-revenue');
+            if (projEl) {
+                projEl.innerText = `₱${projectedSum.toLocaleString()}`;
+            }
         }
 
-        // 2. Hourly Demand & Surge Chart
+        // 2. Hourly Demand & Surge Chart - Synchronized with current clock & peak rush hours
         const demandCtx = document.getElementById('chart-hourly-demand')?.getContext('2d');
         if (demandCtx) {
+            if (this.demandChart) {
+                try { this.demandChart.destroy(); } catch(e) {}
+                this.demandChart = null;
+            }
+
+            const hoursDef = [
+                { h: 6, label: '6 AM' },
+                { h: 8, label: '8 AM (Peak)' },
+                { h: 10, label: '10 AM' },
+                { h: 12, label: '12 PM (Lunch)' },
+                { h: 14, label: '2 PM' },
+                { h: 16, label: '4 PM' },
+                { h: 18, label: '6 PM (Peak)' },
+                { h: 20, label: '8 PM (Rush)' },
+                { h: 22, label: '10 PM' }
+            ];
+
+            const baseDemand = [45, 185, 95, 130, 80, 115, 215, 155, 70];
+            const bgColors = hoursDef.map(slot => {
+                // Highlight the active current hour segment with amber/gold
+                if (Math.abs(slot.h - currentHour) <= 1) {
+                    return '#f59e0b'; // Live hour active highlight
+                }
+                return '#b91c1c'; // Standard brand color
+            });
+
             this.demandChart = new Chart(demandCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['6 AM', '8 AM (Peak)', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM (Peak)', '8 PM', '10 PM'],
+                    labels: hoursDef.map(s => {
+                        return (Math.abs(s.h - currentHour) <= 1) ? `● ${s.label} [NOW]` : s.label;
+                    }),
                     datasets: [{
-                        label: 'Trips Requested',
-                        data: [45, 185, 95, 120, 80, 110, 210, 150, 70],
-                        backgroundColor: '#b91c1c',
+                        label: 'Trips Requested / Forecast',
+                        data: baseDemand,
+                        backgroundColor: bgColors,
                         borderRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` Demand Volume: ${ctx.parsed.y} bookings/hr`
+                            }
+                        }
+                    }
                 }
             });
         }
