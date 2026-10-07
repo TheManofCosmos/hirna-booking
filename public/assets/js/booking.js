@@ -5576,10 +5576,45 @@ const BookingModule = {
             const el = document.getElementById(id);
             if (el) el.innerText = `${quote.durationMin} mins`;
         });
+        // Granular component price elements
+        const flagdownEl = document.getElementById('quote-flagdown');
+        if (flagdownEl) flagdownEl.innerText = `₱${quote.baseFare.toFixed(2)}`;
+
+        const distFareEl = document.getElementById('quote-dist-fare');
+        if (distFareEl) distFareEl.innerText = `₱${quote.distanceFare.toFixed(2)}`;
+
+        const distRateEl = document.getElementById('quote-dist-rate');
+        if (distRateEl) {
+            const distRate = quote.ratePerKm != null ? quote.ratePerKm : (quote.distanceFare / (quote.distanceKm || 1));
+            distRateEl.innerText = `₱${distRate.toFixed(2)}/km`;
+        }
+
+        const timeFareEl = document.getElementById('quote-time-fare');
+        if (timeFareEl) timeFareEl.innerText = `₱${quote.timeFare.toFixed(2)}`;
+
+        const timeRateEl = document.getElementById('quote-time-rate');
+        if (timeRateEl) {
+            const timeRate = quote.ratePerMin != null ? quote.ratePerMin : (quote.timeFare / (quote.durationMin || 1));
+            timeRateEl.innerText = `₱${timeRate.toFixed(2)}/min`;
+        }
+
+        // Standard subtotal before AI Surge
+        const standardSub = quote.standardSubtotal != null ? quote.standardSubtotal : quote.baseFare;
         ['quote-base', 'parcel-quote-base'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.innerText = `₱${quote.baseFare.toFixed(2)}`;
+            if (el) el.innerText = `₱${standardSub.toFixed(2)}`;
         });
+
+        // Surge adjustment delta in Pesos
+        const surgeDeltaEl = document.getElementById('quote-surge-delta');
+        if (surgeDeltaEl) {
+            const delta = quote.surgeDelta != null ? quote.surgeDelta : Math.max(0, quote.totalFare - standardSub);
+            surgeDeltaEl.innerText = delta > 0 ? `+₱${delta.toFixed(2)}` : `+₱0.00`;
+            surgeDeltaEl.className = delta > 0 
+                ? "font-mono text-xs text-amber-300 font-bold" 
+                : "font-mono text-xs text-emerald-300";
+        }
+
         ['quote-total', 'parcel-quote-total', 'step2-quote-total'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerText = `₱${quote.totalFare.toFixed(2)}`;

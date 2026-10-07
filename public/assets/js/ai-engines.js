@@ -230,6 +230,7 @@ const AIEngines = {
             // Regulatory cap between 1.00x and 2.50x
             multiplier = Math.min(2.5, Math.max(1.0, parseFloat(multiplier.toFixed(2))));
             const totalFare = parseFloat((standardSubtotal * multiplier).toFixed(2));
+            const surgeDelta = parseFloat((totalFare - standardSubtotal).toFixed(2));
 
             return {
                 vehicleClass,
@@ -238,6 +239,10 @@ const AIEngines = {
                 baseFare: parseFloat(baseFare.toFixed(2)),
                 distanceFare: parseFloat(distanceFare.toFixed(2)),
                 timeFare: parseFloat(timeFare.toFixed(2)),
+                ratePerKm: config.perKm,
+                ratePerMin: config.perMin,
+                standardSubtotal: parseFloat(standardSubtotal.toFixed(2)), // Base tariff before surge
+                surgeDelta: Math.max(0, surgeDelta), // Surge adjustment amount in Pesos
                 surgeMultiplier: multiplier,
                 surgeReason: reasons.length > 0 ? reasons.join(" • ") : "Standard Rate (Optimal Road, Weather & Demand Conditions)",
                 totalFare,

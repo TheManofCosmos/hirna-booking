@@ -267,13 +267,30 @@
                                 <span class="text-hirna-200">Estimated Distance & Time</span>
                                 <span class="font-bold text-white"><span id="quote-dist">-- km</span> • <span id="quote-time">-- mins</span></span>
                             </div>
-                            <div class="flex items-center justify-between text-xs">
-                                <span class="text-hirna-200">Base + Distance Tariff</span>
-                                <span id="quote-base" class="font-mono text-white">₱0.00</span>
+                            <div class="space-y-1.5 text-xs border-b border-hirna-700/80 pb-2">
+                                <div class="flex items-center justify-between text-slate-300">
+                                    <span class="text-hirna-200">Flagdown Base Fare</span>
+                                    <span id="quote-flagdown" class="font-mono text-white">₱0.00</span>
+                                </div>
+                                <div class="flex items-center justify-between text-slate-300">
+                                    <span class="text-hirna-200">Distance Charge (<span id="quote-dist-rate">₱0/km</span>)</span>
+                                    <span id="quote-dist-fare" class="font-mono text-white">₱0.00</span>
+                                </div>
+                                <div class="flex items-center justify-between text-slate-300">
+                                    <span class="text-hirna-200">Duration Time Charge (<span id="quote-time-rate">₱0/min</span>)</span>
+                                    <span id="quote-time-fare" class="font-mono text-white">₱0.00</span>
+                                </div>
+                                <div class="flex items-center justify-between font-bold text-amber-200 pt-1 border-t border-hirna-700/40">
+                                    <span>Standard Subtotal (Before AI Surge)</span>
+                                    <span id="quote-base" class="font-mono text-gold-300">₱0.00</span>
+                                </div>
                             </div>
                             <div class="flex items-center justify-between text-xs">
-                                <span class="text-hirna-200">Hirna AI Real-Time Surge:</span>
-                                <span id="quote-surge-badge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">1.00x Surge</span>
+                                <span class="text-hirna-200">AI Surge & Prediction Multiplier:</span>
+                                <div class="flex items-center space-x-1.5">
+                                    <span id="quote-surge-delta" class="font-mono text-xs text-amber-300">+₱0.00</span>
+                                    <span id="quote-surge-badge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">1.00x Surge</span>
+                                </div>
                             </div>
                             <p id="quote-surge-reason" class="text-[10px] text-gold-300 italic">Select pickup and dropoff to calculate route fare</p>
                             
