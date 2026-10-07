@@ -957,13 +957,21 @@
                 </div>
             </div>
 
-            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end space-x-2">
-                <button type="button" onclick="CRMModule.closeReplyModal()" class="px-3.5 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl text-xs font-bold transition cursor-pointer">
-                    Cancel
-                </button>
-                <button type="button" onclick="CRMModule.submitReply()" class="px-4 py-1.5 bg-hirna-700 hover:bg-hirna-800 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1 cursor-pointer">
-                    <span>Publish Response →</span>
-                </button>
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                <div>
+                    <button type="button" id="crm-modal-remove-reply-btn" onclick="CRMModule.promptRemoveReply(CRMModule.activeReplyId)" class="hidden px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1">
+                        <span>🗑️</span>
+                        <span>Remove Response</span>
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="CRMModule.closeReplyModal()" class="px-3.5 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl text-xs font-bold transition cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="CRMModule.submitReply()" class="px-4 py-1.5 bg-hirna-700 hover:bg-hirna-800 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-1 cursor-pointer">
+                        <span>Publish Response →</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1052,7 +1060,7 @@
     <script src="assets/js/sso-gateway.js?v=20260916_rev1"></script>
     <script src="assets/js/booking.js?v=20260921_routefix"></script>
     <script src="assets/js/payments.js?v=20260919_pay1"></script>
-    <script src="assets/js/crm.js?v=20261006_rev3"></script>
+    <script src="assets/js/crm.js?v=20261007_rev1"></script>
     <script src="assets/js/gps-playback.js?v=20260916_rev1"></script>
     <script src="assets/js/analytics.js?v=20260916_rev1"></script>
     <script src="assets/js/audit.js?v=20260916_rev1"></script>

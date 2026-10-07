@@ -329,9 +329,15 @@ const CRMModule = {
                                 <span class="text-[10px] text-amber-700 font-mono">${f.replied_at || ''} • By ${f.replied_by || 'Customer Relations'}</span>
                             </div>
                             <p class="text-slate-800 italic pl-5 leading-relaxed">"${this.escapeHtml(f.operator_reply)}"</p>
-                            <div class="flex justify-end pt-0.5">
-                                <button onclick="CRMModule.openReplyModal('${f.id}')" class="text-[10px] text-amber-800 hover:text-amber-950 font-bold underline cursor-pointer">
-                                    Edit Official Response
+                            <div class="flex items-center justify-end space-x-2.5 pt-1 border-t border-amber-200/50 mt-1">
+                                <button onclick="CRMModule.openReplyModal('${f.id}')" class="text-[10px] text-amber-800 hover:text-amber-950 font-bold underline cursor-pointer flex items-center space-x-0.5">
+                                    <span>✏️</span>
+                                    <span>Edit Response</span>
+                                </button>
+                                <span class="text-slate-300 text-[10px]">•</span>
+                                <button onclick="CRMModule.promptRemoveReply('${f.id}')" class="text-[10px] text-rose-600 hover:text-rose-800 font-bold underline cursor-pointer flex items-center space-x-0.5">
+                                    <span>🗑️</span>
+                                    <span>Remove Response</span>
                                 </button>
                             </div>
                         </div>
@@ -596,6 +602,15 @@ const CRMModule = {
             resolveCheckbox.checked = true;
         }
 
+        const removeBtn = document.getElementById('crm-modal-remove-reply-btn');
+        if (removeBtn) {
+            if (f.operator_reply) {
+                removeBtn.classList.remove('hidden');
+            } else {
+                removeBtn.classList.add('hidden');
+            }
+        }
+
         if (modal) {
             modal.classList.remove('hidden');
         }
@@ -604,6 +619,8 @@ const CRMModule = {
     closeReplyModal() {
         const modal = document.getElementById('crm-reply-modal');
         if (modal) modal.classList.add('hidden');
+        const removeBtn = document.getElementById('crm-modal-remove-reply-btn');
+        if (removeBtn) removeBtn.classList.add('hidden');
         this.activeReplyId = null;
     },
 
@@ -652,6 +669,68 @@ const CRMModule = {
 
         if (typeof App !== 'undefined' && App.showToast) {
             App.showToast("Official response published successfully!", "success");
+        }
+    },
+
+    // Remove / Retract Official Operator Response
+    promptRemoveReply(id) {
+        if (!id) return;
+        const feedbackList = SupabaseBridge.getData('feedback') || [];
+        const f = feedbackList.find(item => item.id === id);
+        if (!f || !f.operator_reply) return;
+
+        const passengerName = f.passenger || f.passenger_name || 'Passenger';
+        
+        // If the reply modal was open, close it first
+        this.closeReplyModal();
+
+        this.openConfirmModal({
+            title: "Remove Operator Response?",
+            desc: `Are you sure you want to delete and unpublish the official response to ${passengerName}'s review?`,
+            detailsHtml: `
+                <div><span class="text-slate-400">Recipient:</span> <b>${this.escapeHtml(passengerName)}</b></div>
+                <div><span class="text-slate-400">Response to Remove:</span> <i class="text-amber-800">"${this.escapeHtml(f.operator_reply)}"</i></div>
+                <div class="text-[11px] text-slate-500 mt-1">The public response will be cleared. If review was marked "Responded", its status will revert to "Pending Review".</div>
+            `,
+            icon: "🗑️",
+            confirmBtnText: "Yes, Remove Response",
+            confirmBtnClass: "bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30",
+            onConfirm: () => this.removeReply(id)
+        });
+    },
+
+    removeReply(id) {
+        const feedbackList = SupabaseBridge.getData('feedback') || [];
+        const f = feedbackList.find(item => item.id === id);
+        if (!f) return;
+
+        const operatorName = (typeof AuthModule !== 'undefined' && AuthModule.currentUser && AuthModule.currentUser.full_name) 
+            ? AuthModule.currentUser.full_name 
+            : "Hirna Customer Relations";
+
+        const previousReply = f.operator_reply;
+        const currentStatus = f.status || 'Pending Review';
+        const newStatus = (currentStatus === 'Responded') ? 'Pending Review' : currentStatus;
+
+        SupabaseBridge.update('feedback', id, {
+            operator_reply: null,
+            replied_by: null,
+            replied_at: null,
+            status: newStatus
+        });
+
+        SupabaseBridge.logAudit("Customer Relations", "REVIEW_REPLY_REMOVED", id, operatorName, {
+            review_id: id,
+            passenger: f.passenger || f.passenger_name,
+            retracted_reply: previousReply,
+            status_reverted_to: newStatus
+        });
+
+        this.renderMetrics();
+        this.renderFeedback();
+
+        if (typeof App !== 'undefined' && App.showToast) {
+            App.showToast("Official response removed successfully.", "info");
         }
     },
 
