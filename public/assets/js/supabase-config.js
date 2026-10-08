@@ -5442,9 +5442,9 @@ const DEFAULT_INITIAL_DATA = {
 
 const SupabaseBridge = {
     config: {
-        supabaseUrl: "https://your-project.supabase.co",
-        supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_key",
-        useCloud: false
+        supabaseUrl: "https://ahynbvdqtvaevasyeeui.supabase.co",
+        supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoeW5idmRxdHZhZXZhc3llZXVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0NTY0NTAsImV4cCI6MjEwNzAzMjQ1MH0.QVnJRQuV0MeVvByw4f4EUkpXXIsAzZSq91JZ8u3vcmQ",
+        useCloud: true
     },
 
     db: JSON.parse(JSON.stringify(DEFAULT_INITIAL_DATA)),
@@ -5797,6 +5797,33 @@ const SupabaseBridge = {
 
         let apiBase = this.getApiBase();
         // 1. First fetch central server database (/api/db or database/data.json)
+        // 1. Fetch live cloud database from Supabase REST API
+        if (this.config.useCloud && this.config.supabaseUrl && this.config.supabaseAnonKey) {
+            try {
+                const tablesToFetch = ['bookings', 'payments', 'audit_logs', 'sessions'];
+                for (const tbl of tablesToFetch) {
+                    const cloudRes = await fetch(`${this.config.supabaseUrl}/rest/v1/${tbl}?select=*`, {
+                        headers: {
+                            'apikey': this.config.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.config.supabaseAnonKey}`
+                        },
+                        cache: 'no-store'
+                    }).catch(() => null);
+
+                    if (cloudRes && cloudRes.ok) {
+                        const records = await cloudRes.json();
+                        if (Array.isArray(records)) {
+                            this.mergeTableRecords(tbl, records);
+                        }
+                    }
+                }
+                console.log("[SupabaseBridge] Synced directly with Supabase Cloud database.");
+            } catch(cloudErr) {
+                console.warn("[SupabaseBridge] Cloud fetch notice:", cloudErr);
+            }
+        }
+
+        // 1b. Fallback to local server database if available
         try {
             let res = await fetch(`${apiBase}/api/db`, { cache: 'no-store' }).catch(() => null);
             if (!res || !res.ok) {
@@ -5822,35 +5849,19 @@ const SupabaseBridge = {
                 const serverDb = await res.json();
                 if (serverDb && typeof serverDb === 'object') {
                     if (!this.db) this.db = {};
-                    // Merge tables from central server
-                    let hasMergedAny = false;
                     Object.keys(serverDb).forEach(tbl => {
                         if (Array.isArray(serverDb[tbl])) {
-                            const changed = this.mergeTableRecords(tbl, serverDb[tbl]);
-                            if (changed) {
-                                hasMergedAny = true;
-                                this.refreshActiveModules(tbl);
-                            }
+                            this.mergeTableRecords(tbl, serverDb[tbl]);
                         }
                     });
-                    if (hasMergedAny) {
-                        try {
-                            window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { action: 'initial_remote_sync' } }));
-                        } catch(e) {}
-                    }
-                    console.log("[SupabaseBridge] Synced with central cloud/server database.");
                 }
-            } else {
-                console.log("[SupabaseBridge] Using embedded in-memory database.");
             }
-        } catch (e) {
-            console.log("[SupabaseBridge] Using embedded in-memory database.");
-        }
+        } catch (e) {}
 
         // 2. Load persisted local tables and merge them
         this.hydrateAllFromLocalStorage();
 
-        // 3. Sync local data up to central database so any offline/previous records are universally shared
+        // 3. Sync local data up to central database
         this.syncAllToRemote();
 
         // 4. Setup periodic poll for fresh data from other devices (every 3s)
@@ -6001,6 +6012,26 @@ const SupabaseBridge = {
             }
         } catch (e) {
             console.warn(`Could not persist ${table} to localStorage:`, e);
+        }
+
+        // Push update to Supabase Cloud directly
+        if (this.config.useCloud && this.config.supabaseUrl && this.config.supabaseAnonKey) {
+            try {
+                const cloudPayload = this.db[table];
+                if (Array.isArray(cloudPayload) && ['bookings', 'payments', 'audit_logs', 'sessions'].includes(table)) {
+                    fetch(`${this.config.supabaseUrl}/rest/v1/${table}?on_conflict=id`, {
+                        method: 'POST',
+                        keepalive: true,
+                        headers: {
+                            'apikey': this.config.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.config.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'resolution=merge-duplicates'
+                        },
+                        body: JSON.stringify(cloudPayload)
+                    }).catch(() => null);
+                }
+            } catch(e) {}
         }
 
         // Push update to central server so all other devices see it

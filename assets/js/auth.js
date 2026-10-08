@@ -126,11 +126,84 @@ const AuthModule = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(deduplicated)
             }).catch(() => {});
+
+            // Also persist directly to Supabase Cloud profiles table
+            if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.config && SupabaseBridge.config.supabaseUrl && SupabaseBridge.config.supabaseAnonKey) {
+                const profilesPayload = deduplicated.map(a => ({
+                    email: (a.email || '').toLowerCase().trim(),
+                    password: a.password || '',
+                    pin: a.pin || null,
+                    name: a.name || '',
+                    role: a.role || 'passenger',
+                    role_title: a.roleTitle || '',
+                    phone: a.phone || '+63 917 888 9999',
+                    avatar: a.avatar || 'U',
+                    badge_class: a.badgeClass || ''
+                }));
+                fetch(`${SupabaseBridge.config.supabaseUrl}/rest/v1/profiles?on_conflict=email`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SupabaseBridge.config.supabaseAnonKey,
+                        'Authorization': `Bearer ${SupabaseBridge.config.supabaseAnonKey}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify(profilesPayload)
+                }).catch(() => {});
+            }
         }
     },
 
     async fetchAccountsFromServer() {
         if (typeof fetch === 'undefined') return this.accounts;
+
+        // 1. First attempt to fetch from Supabase Cloud profiles table
+        if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.config && SupabaseBridge.config.supabaseUrl && SupabaseBridge.config.supabaseAnonKey) {
+            try {
+                const cloudRes = await fetch(`${SupabaseBridge.config.supabaseUrl}/rest/v1/profiles?select=*`, {
+                    headers: {
+                        'apikey': SupabaseBridge.config.supabaseAnonKey,
+                        'Authorization': `Bearer ${SupabaseBridge.config.supabaseAnonKey}`
+                    },
+                    cache: 'no-store'
+                });
+                if (cloudRes.ok) {
+                    const cloudProfiles = await cloudRes.json();
+                    if (Array.isArray(cloudProfiles) && cloudProfiles.length > 0) {
+                        const uniqueMap = new Map();
+                        this.accounts.forEach(a => { if (a && a.email) uniqueMap.set(a.email.toLowerCase(), a); });
+                        cloudProfiles.forEach(cp => {
+                            if (cp && cp.email) {
+                                const e = cp.email.toLowerCase();
+                                const accObj = {
+                                    email: cp.email,
+                                    password: cp.password,
+                                    pin: cp.pin,
+                                    name: cp.name,
+                                    role: cp.role,
+                                    roleTitle: cp.role_title,
+                                    phone: cp.phone,
+                                    avatar: cp.avatar,
+                                    badgeClass: cp.badge_class,
+                                    wallet_balance: cp.wallet_balance != null ? parseFloat(cp.wallet_balance) : 2450.00,
+                                    payment_methods: cp.payment_methods || [],
+                                    saved_addresses: cp.saved_addresses || []
+                                };
+                                const existing = uniqueMap.get(e);
+                                uniqueMap.set(e, existing ? { ...existing, ...accObj } : accObj);
+                            }
+                        });
+                        const merged = Array.from(uniqueMap.values());
+                        this.accounts = merged;
+                        localStorage.setItem('hirna_custom_accounts', JSON.stringify(merged));
+                        return merged;
+                    }
+                }
+            } catch(cloudErr) {
+                console.warn("[AuthModule] Cloud accounts sync notice:", cloudErr);
+            }
+        }
+
         try {
             const res = await fetch('/api/accounts', { cache: 'no-store' });
             if (res.ok) {
@@ -146,6 +219,7 @@ const AuthModule = {
                         }
                     });
                     const merged = Array.from(uniqueMap.values());
+                    this.accounts = merged;
                     localStorage.setItem('hirna_custom_accounts', JSON.stringify(merged));
                     return merged;
                 }
@@ -166,6 +240,7 @@ const AuthModule = {
                             }
                         });
                         const merged = Array.from(uniqueMap.values());
+                        this.accounts = merged;
                         localStorage.setItem('hirna_custom_accounts', JSON.stringify(merged));
                         return merged;
                     }

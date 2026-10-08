@@ -77,6 +77,10 @@ const SavedAddressManager = {
     },
     getSaved() {
         try {
+            const u = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+            if (u && Array.isArray(u.saved_addresses) && u.saved_addresses.length > 0) {
+                return u.saved_addresses;
+            }
             const saved = localStorage.getItem('hirna_saved_addresses');
             return saved ? JSON.parse(saved) : [
                 { name: "SM Fairview, Quezon City", city: "Quezon City", lat: 14.7344, lng: 121.0583, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>', label: "Favorite SM Mall" }
@@ -90,8 +94,36 @@ const SavedAddressManager = {
     saveAddress(place, label) {
         try {
             const list = this.getSaved().filter(x => x.name !== place.name);
-            list.unshift({ ...place, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>', label: label || place.name });
-            localStorage.setItem('hirna_saved_addresses', JSON.stringify(list.slice(0, 10)));
+            const updated = [{ ...place, icon: '<svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>', label: label || place.name }, ...list].slice(0, 10);
+            localStorage.setItem('hirna_saved_addresses', JSON.stringify(updated));
+
+            // Sync with AuthModule and Supabase profiles cloud database
+            const u = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+            if (u && u.email) {
+                u.saved_addresses = updated;
+                if (typeof AuthModule.saveCurrentUser === 'function') {
+                    AuthModule.saveCurrentUser(u);
+                }
+                const acc = AuthModule.accounts && AuthModule.accounts.find(a => a.email.toLowerCase() === u.email.toLowerCase());
+                if (acc) {
+                    acc.saved_addresses = updated;
+                    if (typeof AuthModule.saveAccounts === 'function') {
+                        AuthModule.saveAccounts();
+                    }
+                }
+                if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.config && SupabaseBridge.config.supabaseUrl && SupabaseBridge.config.supabaseAnonKey) {
+                    fetch(`${SupabaseBridge.config.supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(u.email.toLowerCase())}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SupabaseBridge.config.supabaseAnonKey,
+                            'Authorization': `Bearer ${SupabaseBridge.config.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ saved_addresses: updated })
+                    }).catch(() => {});
+                }
+            }
         } catch (e) {
             console.error("Failed to save address:", e);
         }
@@ -100,6 +132,34 @@ const SavedAddressManager = {
         try {
             const list = this.getSaved().filter(x => x.name !== name);
             localStorage.setItem('hirna_saved_addresses', JSON.stringify(list));
+
+            // Sync deletion with AuthModule and Supabase profiles cloud database
+            const u = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+            if (u && u.email) {
+                u.saved_addresses = list;
+                if (typeof AuthModule.saveCurrentUser === 'function') {
+                    AuthModule.saveCurrentUser(u);
+                }
+                const acc = AuthModule.accounts && AuthModule.accounts.find(a => a.email.toLowerCase() === u.email.toLowerCase());
+                if (acc) {
+                    acc.saved_addresses = list;
+                    if (typeof AuthModule.saveAccounts === 'function') {
+                        AuthModule.saveAccounts();
+                    }
+                }
+                if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.config && SupabaseBridge.config.supabaseUrl && SupabaseBridge.config.supabaseAnonKey) {
+                    fetch(`${SupabaseBridge.config.supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(u.email.toLowerCase())}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SupabaseBridge.config.supabaseAnonKey,
+                            'Authorization': `Bearer ${SupabaseBridge.config.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ saved_addresses: list })
+                    }).catch(() => {});
+                }
+            }
         } catch (e) {
             console.error("Failed to delete address:", e);
         }

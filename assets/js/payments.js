@@ -24,6 +24,10 @@ const HirnaWallet = {
 
     getBalance() {
         try {
+            const u = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+            if (u && u.wallet_balance !== undefined && !isNaN(parseFloat(u.wallet_balance))) {
+                return parseFloat(u.wallet_balance);
+            }
             const userKey = this.getUserStorageKey();
             const stored = localStorage.getItem(userKey);
             if (stored !== null && !isNaN(parseFloat(stored))) {
@@ -50,6 +54,41 @@ const HirnaWallet = {
         } catch (e) {
             console.warn("Error saving wallet balance:", e);
         }
+
+        // Sync with AuthModule currentUser & accounts cache
+        try {
+            const u = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+            if (u && u.email) {
+                u.wallet_balance = num;
+                if (typeof AuthModule.saveCurrentUser === 'function') {
+                    AuthModule.saveCurrentUser(u);
+                }
+                const acc = AuthModule.accounts && AuthModule.accounts.find(a => a.email.toLowerCase() === u.email.toLowerCase());
+                if (acc) {
+                    acc.wallet_balance = num;
+                    if (typeof AuthModule.saveAccounts === 'function') {
+                        AuthModule.saveAccounts();
+                    }
+                }
+
+                // Asynchronously sync directly to Supabase profiles cloud database
+                if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.config && SupabaseBridge.config.supabaseUrl && SupabaseBridge.config.supabaseAnonKey) {
+                    fetch(`${SupabaseBridge.config.supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(u.email.toLowerCase())}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SupabaseBridge.config.supabaseAnonKey,
+                            'Authorization': `Bearer ${SupabaseBridge.config.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ wallet_balance: num })
+                    }).catch(() => {});
+                }
+            }
+        } catch (e) {
+            console.warn("Error syncing wallet balance to cloud profile:", e);
+        }
+
         this.updateUI();
 
         // Update defaultMethods in PaymentsModule if available
@@ -370,14 +409,19 @@ const PaymentsModule = {
     getPaymentMethods() {
         let methods = [...this.defaultMethods];
         try {
-            const userKey = this.getPaymentMethodsStorageKey();
-            let stored = localStorage.getItem(userKey);
-            if (!stored && userKey !== 'hirna_available_payment_methods') {
-                stored = localStorage.getItem('hirna_available_payment_methods');
-            }
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                if (Array.isArray(parsed) && parsed.length > 0) methods = parsed;
+            const u = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+            if (u && Array.isArray(u.payment_methods) && u.payment_methods.length > 0) {
+                methods = u.payment_methods;
+            } else {
+                const userKey = this.getPaymentMethodsStorageKey();
+                let stored = localStorage.getItem(userKey);
+                if (!stored && userKey !== 'hirna_available_payment_methods') {
+                    stored = localStorage.getItem('hirna_available_payment_methods');
+                }
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed) && parsed.length > 0) methods = parsed;
+                }
             }
         } catch (e) {
             console.error("Failed to load payment methods:", e);
@@ -397,6 +441,35 @@ const PaymentsModule = {
             const userKey = this.getPaymentMethodsStorageKey();
             localStorage.setItem(userKey, JSON.stringify(methods));
             localStorage.setItem('hirna_available_payment_methods', JSON.stringify(methods));
+
+            const u = (typeof AuthModule !== 'undefined' && AuthModule.getCurrentUser) ? AuthModule.getCurrentUser() : null;
+            if (u && u.email) {
+                u.payment_methods = methods;
+                if (typeof AuthModule.saveCurrentUser === 'function') {
+                    AuthModule.saveCurrentUser(u);
+                }
+                const acc = AuthModule.accounts && AuthModule.accounts.find(a => a.email.toLowerCase() === u.email.toLowerCase());
+                if (acc) {
+                    acc.payment_methods = methods;
+                    if (typeof AuthModule.saveAccounts === 'function') {
+                        AuthModule.saveAccounts();
+                    }
+                }
+
+                // Asynchronously sync directly to Supabase profiles cloud database
+                if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.config && SupabaseBridge.config.supabaseUrl && SupabaseBridge.config.supabaseAnonKey) {
+                    fetch(`${SupabaseBridge.config.supabaseUrl}/rest/v1/profiles?email=eq.${encodeURIComponent(u.email.toLowerCase())}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'apikey': SupabaseBridge.config.supabaseAnonKey,
+                            'Authorization': `Bearer ${SupabaseBridge.config.supabaseAnonKey}`,
+                            'Content-Type': 'application/json',
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ payment_methods: methods })
+                    }).catch(() => {});
+                }
+            }
         } catch (e) {
             console.error("Failed to save payment methods:", e);
         }
