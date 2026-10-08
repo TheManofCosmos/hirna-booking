@@ -1203,6 +1203,13 @@
                                             <span class="text-slate-500 font-bold">•</span>
                                             <!-- Arrival Clock Time -->
                                             <span id="hud-clock-arrival" class="text-xs md:text-sm font-semibold text-slate-300">3:58 PM</span>
+                                            <span class="text-slate-500 font-bold hidden xs:inline">•</span>
+                                            <!-- Live Road Speedometer & Driving Behavior Badge -->
+                                            <div id="hud-speedometer-badge" class="hidden xs:inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-lg bg-slate-800/90 border border-slate-700/80 text-[11px] font-mono font-bold" title="Live driving speed">
+                                                <span id="hud-speed-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                                <span id="hud-speed-value" class="text-emerald-300">42 km/h</span>
+                                                <span id="hud-speed-mode" class="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-wider pl-0.5">Cruising</span>
+                                            </div>
                                         </div>
 
                                         <!-- Track Current Location Action Button -->
