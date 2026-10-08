@@ -5330,18 +5330,20 @@ const BookingModule = {
                         const distanceMeters = Math.round(primaryRoute.distance);
                         const durationSeconds = Math.round(primaryRoute.duration);
 
-                        // Extract step street milestones with cumulative distance boundaries and maneuvers
+                        // Extract step street milestones with cumulative distance boundaries, maneuvers, and intersection coords
                         const leg = primaryRoute.legs && primaryRoute.legs[0];
                         let runningDist = 0;
                         const stepMilestones = ((leg && leg.steps) || []).map(s => {
                             const startD = runningDist;
                             runningDist += (s.distance || 0);
+                            const loc = s.maneuver && s.maneuver.location ? [s.maneuver.location[1], s.maneuver.location[0]] : null;
                             return {
                                 name: (s.name && s.name.trim()) ? s.name.trim() : null,
                                 startDist: startD,
                                 endDist: runningDist,
                                 distance: s.distance || 0,
-                                maneuver: s.maneuver || null
+                                maneuver: s.maneuver || null,
+                                location: loc
                             };
                         });
 
@@ -5450,7 +5452,8 @@ const BookingModule = {
                 startDist: startD,
                 endDist: runningDist,
                 distance: segDist,
-                maneuver: fallbackManeuvers[i % fallbackManeuvers.length]
+                maneuver: fallbackManeuvers[i % fallbackManeuvers.length],
+                location: waypoints[i+1]
             });
         }
         const dispMeters = this.computeDistanceMeters(start, end);
@@ -5546,6 +5549,14 @@ const BookingModule = {
                 });
             } catch(e) {}
 
+            // Remove previous intersection markers cleanly
+            if (this._intersectionMarkers && Array.isArray(this._intersectionMarkers)) {
+                this._intersectionMarkers.forEach(m => {
+                    try { if (this.map.hasLayer(m)) this.map.removeLayer(m); } catch(e) {}
+                });
+            }
+            this._intersectionMarkers = [];
+
             // Draw polyline following real street route curves with traffic-aware coloring
             let routeColor = '#10b981'; // Default: Emerald Green (Fast / Smooth)
             if (routeData.trafficTelemetry && routeData.trafficTelemetry.congestion_level) {
@@ -5570,6 +5581,47 @@ const BookingModule = {
                 opacity: 0.90
             }).addTo(this.map);
             this.routeLine._isHirnaRoute = true;
+
+            // Render turn intersection markers along the route
+            if (Array.isArray(routeData.stepMilestones)) {
+                const turnMilestones = routeData.stepMilestones.filter((step, idx) => {
+                    // Skip first (departure) and last (arrival) milestones
+                    if (idx === 0 || idx >= routeData.stepMilestones.length - 1) return false;
+                    const mType = step.maneuver ? (step.maneuver.type || '') : '';
+                    const mMod = step.maneuver ? (step.maneuver.modifier || '') : '';
+                    // Keep actual intersection turns / corners
+                    return (mType.includes('turn') || mMod.includes('left') || mMod.includes('right') || mType.includes('fork') || mType.includes('roundabout'));
+                });
+
+                turnMilestones.forEach(step => {
+                    if (step.location && Array.isArray(step.location) && step.location.length === 2) {
+                        const actionName = this.getManeuverActionLabel ? this.getManeuverActionLabel(step.maneuver) : 'Turn';
+                        const streetLabel = step.name ? ` onto ${step.name}` : '';
+                        
+                        const iconHtml = `
+                            <div class="group relative flex items-center justify-center cursor-pointer">
+                                <div class="w-5 h-5 rounded-full bg-white text-hirna-900 border-2 border-hirna-700 shadow-md flex items-center justify-center text-[10px] transform hover:scale-125 transition-all">
+                                    <div class="w-2 h-2 rounded-full bg-hirna-700"></div>
+                                </div>
+                            </div>
+                        `;
+                        const turnIcon = L.divIcon({
+                            html: iconHtml,
+                            className: 'hirna-intersection-marker',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        });
+                        const marker = L.marker(step.location, { icon: turnIcon, zIndexOffset: 250 }).addTo(this.map);
+                        marker._isHirnaRoute = true;
+                        marker.bindTooltip(`<b>${actionName}</b>${streetLabel}`, {
+                            direction: 'top',
+                            offset: [0, -8],
+                            className: 'bg-slate-900 text-white text-[11px] font-bold rounded-lg px-2 py-1 border border-slate-700 shadow-xl'
+                        });
+                        this._intersectionMarkers.push(marker);
+                    }
+                });
+            }
 
             try {
                 const bounds = this.routeLine.getBounds();
