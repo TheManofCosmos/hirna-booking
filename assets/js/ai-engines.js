@@ -104,8 +104,8 @@ const AIEngines = {
                 const ratio = trafficTelemetry.congestion_ratio || 1.0;
                 if (level === 'severe' || ratio >= 1.60) {
                     multiplier += 0.30;
-                    trafficStatus = `Severe Gridlock (${Math.round(speedKmh)} km/h • Live Traffic)`;
-                    reasons.push(`Mapbox Live Traffic: Severe corridor gridlock (+${Math.round((ratio - 1) * 100)}% delay)`);
+                    trafficStatus = `Severe Traffic (${Math.round(speedKmh)} km/h • Live Traffic)`;
+                    reasons.push(`Mapbox Live Traffic: Severe traffic congestion (+${Math.round((ratio - 1) * 100)}% delay)`);
                 } else if (level === 'heavy' || ratio >= 1.30) {
                     multiplier += 0.20;
                     trafficStatus = `Heavy Delay (${Math.round(speedKmh)} km/h • Live Traffic)`;
