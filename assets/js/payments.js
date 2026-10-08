@@ -676,6 +676,19 @@ const PaymentsModule = {
         if (surgeEl) surgeEl.innerText = `${booking.surge_multiplier || 1.0}x`;
         if (reasonEl) reasonEl.innerText = booking.surge_reason || 'Optimal traffic';
 
+        // Senior / PWD Discount display
+        const discRow = document.getElementById('pay-modal-discount-row');
+        const discVal = document.getElementById('pay-modal-discount');
+        const discountAmt = parseFloat(booking.discount_amount || (booking.is_senior_pwd ? 30.00 : 0));
+        if (discRow) {
+            if (discountAmt > 0 || booking.is_senior_pwd) {
+                discRow.classList.remove('hidden');
+                if (discVal) discVal.innerText = `-₱${(discountAmt > 0 ? discountAmt : 30).toFixed(2)}`;
+            } else {
+                discRow.classList.add('hidden');
+            }
+        }
+
         // Render / pre-select active payment method
         this.renderConfirmPaymentMethods(booking.payment_method || 'GCash');
 
@@ -1121,6 +1134,20 @@ const PaymentsModule = {
         if (bDist) bDist.innerText = `₱${parseFloat(booking.distance_fare || 85).toFixed(2)}`;
         if (bTime) bTime.innerText = `₱${parseFloat(booking.time_fare || 25).toFixed(2)}`;
         if (bSurge) bSurge.innerText = `${booking.surge_multiplier || 1.0}x (${booking.surge_reason || 'Normal demand'})`;
+
+        // Senior / PWD Discount display
+        const rcptDiscRow = document.getElementById('rcpt-discount-row');
+        const rcptDiscVal = document.getElementById('rcpt-discount');
+        const rcptDiscAmt = parseFloat(booking.discount_amount || (booking.is_senior_pwd ? 30.00 : 0));
+        if (rcptDiscRow) {
+            if (rcptDiscAmt > 0 || booking.is_senior_pwd) {
+                rcptDiscRow.classList.remove('hidden');
+                if (rcptDiscVal) rcptDiscVal.innerText = `-₱${(rcptDiscAmt > 0 ? rcptDiscAmt : 30).toFixed(2)}`;
+            } else {
+                rcptDiscRow.classList.add('hidden');
+            }
+        }
+
         if (bVat) bVat.innerText = `₱${(totalFare * 0.12).toFixed(2)}`;
         if (bTotal) bTotal.innerText = `₱${totalFare.toFixed(2)}`;
 

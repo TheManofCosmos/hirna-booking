@@ -310,6 +310,31 @@
                                 </div>
                             </div>
                             
+                            <!-- Senior Citizen / PWD Special Discount Toggle (Fixed ₱30.00 Off) -->
+                            <div class="pt-2 pb-1 border-t border-hirna-700/60 flex items-center justify-between text-xs">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-6 h-6 rounded-lg bg-gold-400/20 text-gold-300 border border-gold-400/40 flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    </div>
+                                    <div>
+                                        <span class="text-xs font-bold text-white block leading-tight">Senior / PWD Discount</span>
+                                        <span class="text-[9px] text-hirna-300">Statutory Fare Subsidy (-₱30.00)</span>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="senior-pwd-toggle" onchange="BookingModule.toggleSeniorPwdDiscount(this.checked)" class="sr-only peer">
+                                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold-500"></div>
+                                </label>
+                            </div>
+
+                            <!-- Discount amount badge row (Visible when toggle ON) -->
+                            <div id="quote-discount-row" class="hidden flex items-center justify-between text-xs text-gold-300 font-semibold bg-gold-500/10 px-2.5 py-1 rounded-lg border border-gold-500/30">
+                                <span class="flex items-center space-x-1">
+                                    <span>Special Discount (Senior/PWD):</span>
+                                </span>
+                                <span id="quote-discount-value" class="font-mono text-gold-300 font-bold">-₱30.00</span>
+                            </div>
+                            
                             <div class="flex items-center justify-between pt-2 border-t border-hirna-700/80">
                                 <div>
                                     <span class="text-[10px] text-hirna-300 uppercase tracking-wider block">Total Estimated Fare</span>
@@ -1217,14 +1242,6 @@
                                         </div>
                                     </div>
 
-                                    <!-- Inline Action Bar: Active when Pickup reached -->
-                                    <div id="hud-arrival-action-bar" class="hidden pt-1 border-t border-slate-800">
-                                        <button type="button" onclick="BookingModule.proceedToDropoff()" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/30 transition flex items-center justify-center space-x-2 cursor-pointer animate-pulse">
-                                            <span id="hud-arrival-btn-text">Passenger on Board • Proceed to Dropoff</span>
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                                        </button>
-                                    </div>
-
                                     <!-- Inline Payment Action Bar: Active when Destination reached and Payment Modal is minimized -->
                                     <div id="hud-payment-action-bar" class="hidden pt-1 border-t border-slate-800">
                                         <button type="button" onclick="BookingModule.reopenPaymentModal()" class="w-full py-2.5 px-3 bg-hirna-700 hover:bg-hirna-800 text-white rounded-xl text-xs font-black shadow-md shadow-hirna-700/30 transition flex items-center justify-center space-x-2 cursor-pointer animate-pulse">
@@ -1233,8 +1250,8 @@
                                         </button>
                                     </div>
 
-                                    <!-- Driver Info Strip -->
-                                    <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs">
+                                    <!-- Driver Info Strip & Cancel Ride Button -->
+                                    <div class="pt-2 border-t border-slate-800 flex items-center justify-between text-xs gap-2">
                                         <div class="flex items-center space-x-2 min-w-0">
                                             <div id="hud-driver-avatar" class="w-6 h-6 rounded-md bg-gold-500/20 border border-gold-500/30 text-gold-300 flex items-center justify-center text-xs font-black flex-shrink-0">
                                                 
@@ -1246,8 +1263,11 @@
                                             </div>
                                         </div>
                                         <div class="flex items-center space-x-1.5 flex-shrink-0">
-                                            <span class="text-amber-400 font-bold text-xs">4.9 Rating</span>
-                                            <span id="hud-trip-code" class="text-[10px] font-mono text-slate-400">#HIRNA</span>
+                                            <span class="text-amber-400 font-bold text-xs hidden sm:inline">4.9 ★</span>
+                                            <button type="button" id="btn-hud-cancel-trip" onclick="BookingModule.promptCancelTrip()" class="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 hover:text-white font-bold text-[11px] transition flex items-center space-x-1 cursor-pointer" title="Cancel this ride">
+                                                <svg class="w-3 h-3 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                <span>Cancel</span>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -1554,10 +1574,62 @@
                 </div>
             </div>
 
-            <div class="pt-1">
-                <button type="button" id="btn-pickup-proceed" onclick="BookingModule.proceedToDropoff()" class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-lg shadow-emerald-600/30 transition flex items-center justify-center space-x-2 cursor-pointer">
-                    <span id="pickup-proceed-btn-text">Passenger On Board • Proceed to Dropoff</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            <!-- Auto-Proceeding countdown banner -->
+            <div class="pt-1 space-y-2">
+                <div class="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+                    <div class="flex items-center space-x-2.5 text-left">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">Departing to Destination</span>
+                            <span class="text-[10px] text-slate-500" id="pickup-auto-countdown-text">Preparing departure in 4 seconds...</span>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-black font-mono bg-emerald-600 text-white" id="pickup-auto-countdown-badge">4s</span>
+                </div>
+                <button type="button" onclick="BookingModule.promptCancelTrip()" class="w-full py-2 px-3 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-bold transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span>Cancel Ride</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- RIDE CANCELLATION CONFIRMATION MODAL                              -->
+    <!-- ================================================================= -->
+    <div id="cancel-trip-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-rose-200 max-w-md w-full p-6 space-y-4 text-center transform transition-all animate-in fade-in zoom-in-95 duration-200">
+            <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto shadow-inner text-2xl">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <div>
+                <h3 class="text-base font-black text-slate-900" id="cancel-modal-title">Cancel Ride Request?</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed" id="cancel-modal-desc">
+                    Are you sure you want to cancel this ride?
+                </p>
+            </div>
+
+            <!-- Cancellation Details Box -->
+            <div id="cancel-modal-policy-box" class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 text-left space-y-2 text-xs">
+                <div class="flex items-center justify-between pb-1.5 border-b border-slate-200/80">
+                    <span class="text-slate-500 font-medium">Trip Status:</span>
+                    <span id="cancel-modal-phase-badge" class="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">Driver En Route</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-600 font-medium" id="cancel-modal-fare-label">Cancellation Charge:</span>
+                    <span id="cancel-modal-fare-value" class="font-mono font-black text-emerald-600">₱0.00</span>
+                </div>
+                <p id="cancel-modal-note" class="text-[11px] text-slate-500 leading-normal pt-1">
+                    No cancellation fee charged during driver pickup phase.
+                </p>
+            </div>
+
+            <div class="pt-1 flex items-center space-x-2">
+                <button type="button" onclick="BookingModule.closeCancelTripModal()" class="flex-1 py-2.5 px-3 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition cursor-pointer">
+                    Keep Ride
+                </button>
+                <button type="button" id="btn-confirm-cancel-action" onclick="BookingModule.executeTripCancellation()" class="flex-1 py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-lg shadow-rose-600/30 transition cursor-pointer flex items-center justify-center space-x-1">
+                    <span>Confirm Cancel</span>
                 </button>
             </div>
         </div>
@@ -1613,6 +1685,10 @@
                 <div class="flex justify-between text-slate-600">
                     <span>AI Dynamic Surge</span>
                     <span id="pay-modal-surge" class="font-mono font-bold text-amber-600">1.0x</span>
+                </div>
+                <div id="pay-modal-discount-row" class="hidden flex justify-between text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200">
+                    <span>Senior / PWD Subsidy</span>
+                    <span id="pay-modal-discount" class="font-mono">-₱30.00</span>
                 </div>
                 <div class="pt-1.5 border-t border-slate-200 flex justify-between text-[11px] text-slate-500">
                     <span>Surge Reason</span>
@@ -1762,6 +1838,10 @@
                 <div class="flex justify-between text-slate-600">
                     <span>Dynamic Surge</span>
                     <span id="rcpt-surge" class="font-mono text-amber-700">1.0x (₱0.00)</span>
+                </div>
+                <div id="rcpt-discount-row" class="hidden flex justify-between text-emerald-700 font-bold">
+                    <span>Senior / PWD Subsidy</span>
+                    <span id="rcpt-discount" class="font-mono text-emerald-700">-₱30.00</span>
                 </div>
                 <div class="flex justify-between text-slate-400 text-[10px]">
                     <span>VAT (12% Included)</span>

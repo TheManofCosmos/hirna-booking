@@ -2293,6 +2293,32 @@ const BookingModule = {
     passengerName: '',
     passengerPhone: '',
     stdPaymentMethod: 'GCash',
+    seniorPwdDiscountActive: false,
+
+    toggleSeniorPwdDiscount(isChecked) {
+        this.seniorPwdDiscountActive = !!isChecked;
+        
+        // Sync checkboxes across any other toggle inputs
+        const toggles = document.querySelectorAll('#senior-pwd-toggle');
+        toggles.forEach(t => { if (t.checked !== this.seniorPwdDiscountActive) t.checked = this.seniorPwdDiscountActive; });
+
+        // Update step 1 discount row visibility
+        const discRow = document.getElementById('quote-discount-row');
+        if (discRow) {
+            if (this.seniorPwdDiscountActive) {
+                discRow.classList.remove('hidden');
+            } else {
+                discRow.classList.add('hidden');
+            }
+        }
+
+        // Recompute quote fare if route exists
+        if (this.currentRouteData) {
+            this.calculateFareQuote(this.currentRouteData.distanceKm, this.currentRouteData.durationMin);
+        } else if (this.currentQuote) {
+            this.calculateFareQuote(this.currentQuote.distanceKm, this.currentQuote.durationMin);
+        }
+    },
 
     getIconSvg(icon) {
         if (!icon) return `<svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`;
@@ -5735,10 +5761,26 @@ const BookingModule = {
                 : "font-mono text-xs text-emerald-300";
         }
 
+        // Calculate final fare with Senior/PWD discount if applicable (fixed ₱30.00 discount)
+        const discountAmt = this.seniorPwdDiscountActive ? 30.00 : 0.00;
+        const finalFare = Math.max(quote.baseFare, parseFloat((quote.totalFare - discountAmt).toFixed(2)));
+        this.currentQuote.discountAmount = discountAmt;
+        this.currentQuote.isSeniorPwd = this.seniorPwdDiscountActive;
+        this.currentQuote.finalFare = finalFare;
+
         ['quote-total', 'parcel-quote-total', 'step2-quote-total'].forEach(id => {
             const el = document.getElementById(id);
-            if (el) el.innerText = `₱${quote.totalFare.toFixed(2)}`;
+            if (el) el.innerText = `₱${finalFare.toFixed(2)}`;
         });
+
+        const discRow = document.getElementById('quote-discount-row');
+        if (discRow) {
+            if (this.seniorPwdDiscountActive) {
+                discRow.classList.remove('hidden');
+            } else {
+                discRow.classList.add('hidden');
+            }
+        }
 
         const pill = document.getElementById('quote-surge-badge');
         if (pill) {
@@ -5866,7 +5908,9 @@ const BookingModule = {
             time_fare: this.currentQuote.timeFare,
             surge_multiplier: this.currentQuote.surgeMultiplier,
             surge_reason: this.currentQuote.surgeReason,
-            total_fare: this.currentQuote.totalFare,
+            total_fare: this.currentQuote.finalFare != null ? this.currentQuote.finalFare : this.currentQuote.totalFare,
+            discount_amount: this.currentQuote.discountAmount || (this.seniorPwdDiscountActive ? 30.00 : 0.00),
+            is_senior_pwd: !!(this.currentQuote.isSeniorPwd ?? this.seniorPwdDiscountActive),
             payment_method: paymentMethod,
             payment_status: "pending",
             status: "dispatched",
@@ -5896,12 +5940,14 @@ const BookingModule = {
             user_id: userId,
             passenger_name: passengerName,
             passenger_phone: passengerPhone,
-            amount: parseFloat(this.currentQuote.totalFare || 0),
-            total_fare: parseFloat(this.currentQuote.totalFare || 0),
+            amount: parseFloat(newBooking.total_fare || 0),
+            total_fare: parseFloat(newBooking.total_fare || 0),
             base_fare: parseFloat(this.currentQuote.baseFare || 0),
             distance_fare: parseFloat(this.currentQuote.distanceFare || 0),
             time_fare: parseFloat(this.currentQuote.timeFare || 0),
             surge_multiplier: this.currentQuote.surgeMultiplier || 1.0,
+            discount_amount: newBooking.discount_amount || 0.00,
+            is_senior_pwd: !!newBooking.is_senior_pwd,
             payment_method: paymentMethod,
             payment_status: "pending",
             service_type: this.activeService || 'standard',
@@ -7222,34 +7268,280 @@ const BookingModule = {
         if (modal) {
             modal.classList.remove('hidden');
         } else {
-            // Safety fallback: if modal is missing from DOM, ensure HUD is visible so user can proceed
             if (hud) {
                 hud.classList.remove('hidden');
                 this.checkHudDocking();
             }
-            if (arrivalBar) arrivalBar.classList.remove('hidden');
         }
+
+        // AUTOMATIC DEPARTURE COUNTDOWN (4 Seconds)
+        // Gives passenger or sender realistic time to prepare and board before departure
+        let countdownSec = 4;
+        const countdownBadge = document.getElementById('pickup-auto-countdown-badge');
+        const countdownText = document.getElementById('pickup-auto-countdown-text');
+        if (countdownBadge) countdownBadge.innerText = `${countdownSec}s`;
+        if (countdownText) countdownText.innerText = `Preparing departure in ${countdownSec} seconds...`;
+
+        if (this.tripSimulation._pickupCountdownInterval) {
+            clearInterval(this.tripSimulation._pickupCountdownInterval);
+            this.tripSimulation._pickupCountdownInterval = null;
+        }
+
+        this.tripSimulation._pickupCountdownInterval = setInterval(() => {
+            if (!this.tripSimulation.active || this.tripSimulation.phase !== 'arrived_pickup') {
+                clearInterval(this.tripSimulation._pickupCountdownInterval);
+                this.tripSimulation._pickupCountdownInterval = null;
+                return;
+            }
+
+            countdownSec--;
+            if (countdownBadge) countdownBadge.innerText = `${countdownSec}s`;
+            if (countdownText) countdownText.innerText = `Preparing departure in ${countdownSec} seconds...`;
+
+            if (countdownSec <= 0) {
+                clearInterval(this.tripSimulation._pickupCountdownInterval);
+                this.tripSimulation._pickupCountdownInterval = null;
+                this.proceedToDropoff();
+            }
+        }, 1000);
     },
 
     closePickupArrivalModal() {
         const modal = document.getElementById('pickup-arrival-modal');
         if (modal) modal.classList.add('hidden');
 
-        // If trip is still at arrived_pickup, reveal bottom HUD with "Proceed to Dropoff" button
+        // Reveal bottom HUD if still active
         if (this.tripSimulation && this.tripSimulation.active && this.tripSimulation.phase === 'arrived_pickup') {
-            const booking = this.tripSimulation.booking || {};
-            const isParcel = booking.service_type === 'parcel';
-            const hudArrivalBtnText = document.getElementById('hud-arrival-btn-text');
-            if (hudArrivalBtnText) {
-                hudArrivalBtnText.innerText = isParcel ? "Package Handed Over • Proceed to Dropoff" : "Passenger On Board • Proceed to Dropoff";
-            }
-            const arrivalBar = document.getElementById('hud-arrival-action-bar');
-            if (arrivalBar) arrivalBar.classList.remove('hidden');
             const hud = document.getElementById('active-trip-hud');
             if (hud) {
                 hud.classList.remove('hidden');
                 this.checkHudDocking();
             }
+        }
+    },
+
+    promptCancelTrip() {
+        if (!this.tripSimulation || !this.tripSimulation.active) {
+            if (typeof App !== 'undefined' && App.showToast) App.showToast("No active trip to cancel.", "info");
+            return;
+        }
+
+        const phase = this.tripSimulation.phase;
+        const booking = this.tripSimulation.booking || {};
+        const modal = document.getElementById('cancel-trip-modal');
+        const phaseBadge = document.getElementById('cancel-modal-phase-badge');
+        const fareLabel = document.getElementById('cancel-modal-fare-label');
+        const fareValue = document.getElementById('cancel-modal-fare-value');
+        const noteEl = document.getElementById('cancel-modal-note');
+        const descEl = document.getElementById('cancel-modal-desc');
+
+        if (phase === 'assigning' || phase === 'en_route_pickup' || phase === 'arrived_pickup') {
+            // Pickup Phase: ₱0 Charge, zero transactions
+            if (descEl) descEl.innerText = "Your driver has not departed for your destination yet. You can cancel now with zero fee.";
+            if (phaseBadge) {
+                phaseBadge.innerText = phase === 'arrived_pickup' ? "Driver Waiting at Pickup" : "Driver En Route to Pickup";
+                phaseBadge.className = "font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200";
+            }
+            if (fareLabel) fareLabel.innerText = "Cancellation Charge:";
+            if (fareValue) {
+                fareValue.innerText = "₱0.00";
+                fareValue.className = "font-mono font-black text-emerald-600";
+            }
+            if (noteEl) noteEl.innerText = "No cancellation fee charged during driver pickup phase. No transactions will be created.";
+        } else if (phase === 'en_route_dropoff') {
+            // In-Transit Phase: Prorated Fare Calculation
+            const animElapsed = performance.now() - (this.tripSimulation.legStartTime || performance.now());
+            const durationMs = this.tripSimulation.legDurationMs || 14000;
+            const progress = Math.max(0.05, Math.min(0.98, animElapsed / durationMs));
+
+            const totalDistKm = parseFloat(booking.distance_km || 5.0);
+            const totalDurMin = parseFloat(booking.duration_min || 15);
+            const traveledDistKm = parseFloat((progress * totalDistKm).toFixed(1));
+            const traveledDurMin = Math.max(1, Math.round(progress * totalDurMin));
+
+            const vehicleClass = booking.vehicle_class || "Motorcycle (1-Passenger)";
+            const proratedQuote = AIEngines.DynamicPricing.calculateFare(vehicleClass, traveledDistKm, traveledDurMin, {
+                trafficTelemetry: this.currentRouteData ? this.currentRouteData.trafficTelemetry : null
+            });
+
+            const discountAmt = booking.discount_amount || (booking.is_senior_pwd ? 30.00 : 0.00);
+            const proratedFare = Math.max(proratedQuote.baseFare, parseFloat((proratedQuote.totalFare - discountAmt).toFixed(2)));
+
+            this.tripSimulation._pendingProratedFare = proratedFare;
+            this.tripSimulation._pendingProratedDist = traveledDistKm;
+            this.tripSimulation._pendingProratedTime = traveledDurMin;
+            this.tripSimulation._pendingProratedQuote = proratedQuote;
+
+            if (descEl) descEl.innerText = "Trip is currently in transit. Cancelling now will stop the ride at your current location and calculate a prorated fare for the distance traveled.";
+            if (phaseBadge) {
+                phaseBadge.innerText = `In Transit (${(progress * 100).toFixed(0)}% Completed)`;
+                phaseBadge.className = "font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200";
+            }
+            if (fareLabel) fareLabel.innerText = "Prorated Traveled Fare:";
+            if (fareValue) {
+                fareValue.innerText = `₱${proratedFare.toFixed(2)}`;
+                fareValue.className = "font-mono font-black text-rose-600";
+            }
+            if (noteEl) noteEl.innerText = `Prorated for ${traveledDistKm} km traveled (${traveledDurMin} mins). The ride will complete immediately and settle via payment.`;
+        } else {
+            // Trip already completed or waiting payment
+            if (typeof PaymentsModule !== 'undefined' && booking) {
+                PaymentsModule.openPaymentModal(booking);
+            }
+            return;
+        }
+
+        if (modal) modal.classList.remove('hidden');
+    },
+
+    closeCancelTripModal() {
+        const modal = document.getElementById('cancel-trip-modal');
+        if (modal) modal.classList.add('hidden');
+    },
+
+    executeTripCancellation() {
+        this.closeCancelTripModal();
+
+        if (!this.tripSimulation || !this.tripSimulation.active) return;
+        const phase = this.tripSimulation.phase;
+        const booking = this.tripSimulation.booking || {};
+
+        // Clear any auto-countdown timers immediately
+        if (this.tripSimulation._pickupCountdownInterval) {
+            clearInterval(this.tripSimulation._pickupCountdownInterval);
+            this.tripSimulation._pickupCountdownInterval = null;
+        }
+
+        if (phase === 'assigning' || phase === 'en_route_pickup' || phase === 'arrived_pickup') {
+            // PHASE 1: PICKUP PHASE CANCELLATION (₱0 charge, zero transactions, clean reset)
+            if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
+                SupabaseBridge.logAudit("Booking System", "TRIP_CANCELLED_PICKUP", booking.booking_code || booking.id || "N/A", booking.passenger_name || booking.sender_name || "passenger@hirna.ph", {
+                    booking_code: booking.booking_code,
+                    phase: phase,
+                    cancellation_fee: 0,
+                    status: "CANCELLED_FREE"
+                });
+            }
+
+            // Update booking status in database
+            if (typeof SupabaseBridge !== 'undefined' && booking.id) {
+                SupabaseBridge.update('bookings', booking.id, {
+                    status: 'cancelled',
+                    payment_status: 'cancelled',
+                    cancellation_reason: 'Passenger cancelled during pickup phase (₱0 charge)'
+                });
+            }
+
+            // Remove any pending uncompleted payment record
+            if (typeof SupabaseBridge !== 'undefined' && booking.booking_code) {
+                const payments = SupabaseBridge.getData('payments') || [];
+                const pRec = payments.find(p => p.booking_code === booking.booking_code && p.payment_status === 'pending');
+                if (pRec) {
+                    SupabaseBridge.delete('payments', pRec.id);
+                }
+            }
+
+            this.cleanupTripSimulation();
+            this.goToStep(1, false);
+
+            if (typeof App !== 'undefined' && App.showToast) {
+                App.showToast("Ride request cancelled. No fee was charged.", "info");
+            }
+        } else if (phase === 'en_route_dropoff') {
+            // PHASE 2: IN-TRANSIT MID-TRIP CANCELLATION (Prorated Fare, Treat as Completed Early)
+            if (this.tripSimulation.animRafId) {
+                cancelAnimationFrame(this.tripSimulation.animRafId);
+                this.tripSimulation.animRafId = null;
+            }
+            if (this.tripSimulation.animTimer) {
+                clearInterval(this.tripSimulation.animTimer);
+                this.tripSimulation.animTimer = null;
+            }
+
+            // Freeze vehicle coordinates at current location
+            const curCoords = this.tripSimulation.currentCoords || this.pickupCoords;
+            if (this.tripSimulation.driverMarker && curCoords) {
+                try { this.tripSimulation.driverMarker.setLatLng(curCoords); } catch(e) {}
+            }
+
+            const proratedFare = this.tripSimulation._pendingProratedFare || parseFloat((booking.total_fare * 0.6).toFixed(2));
+            const traveledDistKm = this.tripSimulation._pendingProratedDist || parseFloat((booking.distance_km * 0.6).toFixed(1));
+            const traveledDurMin = this.tripSimulation._pendingProratedTime || Math.round(booking.duration_min * 0.6);
+            const proratedQuote = this.tripSimulation._pendingProratedQuote;
+
+            // Mark booking as completed (early cancellation) with prorated fare
+            booking.total_fare = proratedFare;
+            booking.distance_km = traveledDistKm;
+            booking.duration_min = traveledDurMin;
+            booking.status = 'completed_early';
+            booking.cancellation_note = `Ride ended mid-trip at km ${traveledDistKm} (${traveledDurMin} mins)`;
+
+            if (proratedQuote) {
+                booking.base_fare = proratedQuote.baseFare;
+                booking.distance_fare = proratedQuote.distanceFare;
+                booking.time_fare = proratedQuote.timeFare;
+                booking.surge_multiplier = proratedQuote.surgeMultiplier;
+            }
+
+            if (typeof SupabaseBridge !== 'undefined' && booking.id) {
+                SupabaseBridge.update('bookings', booking.id, {
+                    total_fare: proratedFare,
+                    distance_km: traveledDistKm,
+                    duration_min: traveledDurMin,
+                    status: 'completed_early',
+                    base_fare: booking.base_fare,
+                    distance_fare: booking.distance_fare,
+                    time_fare: booking.time_fare
+                });
+
+                const payments = SupabaseBridge.getData('payments') || [];
+                const pRec = payments.find(p => p.booking_code === booking.booking_code);
+                if (pRec) {
+                    SupabaseBridge.update('payments', pRec.id, {
+                        amount: proratedFare,
+                        total_fare: proratedFare,
+                        distance_fare: booking.distance_fare,
+                        time_fare: booking.time_fare
+                    });
+                }
+
+                if (SupabaseBridge.logAudit) {
+                    SupabaseBridge.logAudit("Booking System", "TRIP_CANCELLED_MIDTRIP", booking.booking_code || booking.id || "N/A", booking.passenger_name || "passenger@hirna.ph", {
+                        booking_code: booking.booking_code,
+                        traveled_km: traveledDistKm,
+                        traveled_min: traveledDurMin,
+                        prorated_fare: proratedFare,
+                        status: "COMPLETED_EARLY"
+                    });
+                }
+            }
+
+            this.tripSimulation.phase = 'arrived_dropoff';
+            this.tripSimulation._settled = true;
+
+            // Update HUD
+            const labelEl = document.getElementById('hud-trip-status-label');
+            const distEl = document.getElementById('hud-distance-value');
+            const etaEl = document.getElementById('hud-eta-value');
+            const barEl = document.getElementById('hud-progress-bar');
+            if (labelEl) labelEl.innerText = "Trip Ended Early (Mid-Transit)";
+            if (distEl) distEl.innerText = "0 m";
+            if (etaEl) etaEl.innerText = "Ended";
+            if (barEl) barEl.style.width = "100%";
+
+            if (typeof App !== 'undefined' && App.showToast) {
+                App.showToast(`Ride ended early. Prorated fare: ₱${proratedFare.toFixed(2)}`, "warning");
+            }
+
+            // Immediately open payment modal to settle partial prorated fare
+            setTimeout(() => {
+                const hud = document.getElementById('active-trip-hud');
+                if (hud) hud.classList.add('hidden');
+
+                if (typeof PaymentsModule !== 'undefined') {
+                    PaymentsModule.openPaymentModal(booking);
+                }
+            }, 500);
         }
     },
 
@@ -7484,6 +7776,10 @@ const BookingModule = {
     },
 
     cleanupTripSimulation() {
+        if (this.tripSimulation._pickupCountdownInterval) {
+            clearInterval(this.tripSimulation._pickupCountdownInterval);
+            this.tripSimulation._pickupCountdownInterval = null;
+        }
         if (this.tripSimulation.animRafId) {
             cancelAnimationFrame(this.tripSimulation.animRafId);
             this.tripSimulation.animRafId = null;
