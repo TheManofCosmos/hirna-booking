@@ -5638,8 +5638,42 @@ const BookingModule = {
         if (telTraffic && quote.telemetry) telTraffic.innerText = quote.telemetry.trafficStatus;
         const telWeather = document.getElementById('telemetry-weather');
         if (telWeather && quote.telemetry) telWeather.innerText = quote.telemetry.weatherStatus;
+        
         const telDemand = document.getElementById('telemetry-demand');
-        if (telDemand && quote.telemetry) telDemand.innerText = quote.telemetry.demandStatus;
+        if (telDemand && quote.telemetry) {
+            telDemand.innerText = quote.telemetry.demandStatus;
+            
+            // Highlight Zone Demand if it's Rush Hour or Impending Rush
+            const demandBox = telDemand.closest('div');
+            if (demandBox) {
+                if (quote.telemetry.isRushHour) {
+                    demandBox.className = "bg-rose-950/80 p-1.5 rounded-lg border-2 border-rose-500 shadow-lg shadow-rose-900/50 text-center animate-pulse transition-all";
+                    telDemand.className = "font-black text-rose-300 flex items-center justify-center space-x-1";
+                } else if (quote.telemetry.isImpendingRush) {
+                    demandBox.className = "bg-amber-950/80 p-1.5 rounded-lg border-2 border-amber-500 shadow-md shadow-amber-900/40 text-center transition-all";
+                    telDemand.className = "font-bold text-amber-300 flex items-center justify-center space-x-1";
+                } else {
+                    demandBox.className = "bg-hirna-950/60 p-1.5 rounded-lg border border-hirna-700/40 text-center transition-all";
+                    telDemand.className = "font-bold text-white";
+                }
+            }
+        }
+
+        // Synchronize Traffic Legend Rush Hour Indicator Pill below the Map
+        const rushPill = document.getElementById('map-rush-indicator-pill');
+        const rushText = document.getElementById('map-rush-indicator-text');
+        if (rushPill && rushText) {
+            if (quote.telemetry && quote.telemetry.isRushHour) {
+                rushPill.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black bg-rose-100 text-rose-800 border border-rose-300 shadow-xs animate-pulse";
+                rushPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span><span id="map-rush-indicator-text">Rush Hour Active (${quote.telemetry.rushDetails || 'Peak Commute'})</span>`;
+            } else if (quote.telemetry && quote.telemetry.isImpendingRush) {
+                rushPill.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-xs";
+                rushPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span><span id="map-rush-indicator-text">Impending Rush Hour (${quote.telemetry.rushDetails || 'Soon'})</span>`;
+            } else {
+                rushPill.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-200/80 text-slate-700 border border-slate-300";
+                rushPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span id="map-rush-indicator-text">Standard Commute Hours</span>`;
+            }
+        }
     },
 
     bindEvents() {

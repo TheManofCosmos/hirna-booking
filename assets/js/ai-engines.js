@@ -250,7 +250,10 @@ const AIEngines = {
                     trafficStatus,
                     weatherStatus,
                     demandStatus,
-                    effectiveSpeedKmh: Math.round(speedKmh)
+                    effectiveSpeedKmh: Math.round(speedKmh),
+                    isRushHour: !!activeRush,
+                    isImpendingRush: !!impendingRush,
+                    rushDetails: activeRush ? activeRush.name : (impendingRush ? `Impending: ${impendingRush.name}` : null)
                 }
             };
         }

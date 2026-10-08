@@ -1272,6 +1272,40 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Traffic Color Legend & Real-Time Commute Indicator Bar -->
+                        <div class="mt-3 p-2.5 bg-slate-50/90 rounded-xl border border-slate-200/90 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[11px] font-bold text-slate-600 flex items-center space-x-1">
+                                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                                    <span>Route Traffic Legend:</span>
+                                </span>
+                                <div class="flex items-center space-x-3 text-[11px] font-semibold text-slate-700">
+                                    <div class="flex items-center space-x-1.5" title="Normal traffic speed">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200"></span>
+                                        <span>Fast / Smooth</span>
+                                    </div>
+                                    <div class="flex items-center space-x-1.5" title="Slight traffic delay">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-amber-200"></span>
+                                        <span>Moderate</span>
+                                    </div>
+                                    <div class="flex items-center space-x-1.5" title="Significant congestion">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-orange-600 ring-2 ring-orange-200"></span>
+                                        <span>Heavy</span>
+                                    </div>
+                                    <div class="flex items-center space-x-1.5" title="Severe gridlock / standstill">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-red-700 ring-2 ring-red-200"></span>
+                                        <span>Severe Gridlock</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Real-Time Traffic & Rush Hour Pill -->
+                            <div id="map-rush-indicator-pill" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-200/80 text-slate-700 border border-slate-300">
+                                <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+                                <span id="map-rush-indicator-text">Standard Commute Hours</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
