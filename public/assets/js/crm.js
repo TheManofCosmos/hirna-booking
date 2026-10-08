@@ -394,6 +394,11 @@ const CRMModule = {
                                 </button>
                             `}
 
+                            <button onclick="CRMModule.sendToHR('${f.id}')" class="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 rounded-lg text-[11px] font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer" title="Send this review to HR">
+                                <span>👥</span>
+                                <span>Send to HR</span>
+                            </button>
+
                             ${(typeof AuthModule !== 'undefined' && AuthModule.isSuperAdmin()) ? `
                                 <button onclick="CRMModule.promptArchiveFeedback('${f.id}')" class="px-2 py-1 text-slate-400 hover:text-amber-800 hover:bg-amber-50 rounded text-[11px] font-medium cursor-pointer" title="Move to Archives">
                                     🗄️ Archive
@@ -815,8 +820,27 @@ const CRMModule = {
 
     closeConfirmModal() {
         const modal = document.getElementById('crm-action-confirm-modal');
-        if (modal) modal.classList.add('hidden');
+        if (modal) {
+            modal.classList.add('hidden');
+            const cancelBtn = modal.querySelector('button');
+            if (cancelBtn) cancelBtn.classList.remove('hidden');
+        }
         this.pendingAction = null;
+    },
+
+    // Send review to HR (popup notification only)
+    sendToHR(id) {
+        this.openConfirmModal({
+            title: "Review Sent to HR",
+            desc: "This review has been sent to HR.",
+            detailsHtml: '',
+            icon: "✅",
+            confirmBtnText: "OK",
+            confirmBtnClass: "bg-sky-600 hover:bg-sky-700 text-white",
+            onConfirm: null
+        });
+        const cancelBtn = document.querySelector('#crm-action-confirm-modal button');
+        if (cancelBtn) cancelBtn.classList.add('hidden');
     },
 
     executeConfirmedAction() {
