@@ -6821,8 +6821,16 @@ const BookingModule = {
             });
         }
 
-        // Animate driver traveling along the actual road route to pickup (28s-35s so passenger can clearly and comfortably watch)
-        const pickupDurationMs = Math.max(26000, Math.min(38000, Math.round((routeData.distanceMeters || 1000) * 28)));
+        // Animate driver traveling along the actual road route to pickup (sync with road traffic conditions)
+        let pickupTrafficMultiplier = 1.0;
+        const pickupTraffic = routeData.trafficTelemetry;
+        if (pickupTraffic && pickupTraffic.congestion_level) {
+            if (pickupTraffic.congestion_level === 'severe') pickupTrafficMultiplier = 1.45;
+            else if (pickupTraffic.congestion_level === 'heavy') pickupTrafficMultiplier = 1.30;
+            else if (pickupTraffic.congestion_level === 'moderate') pickupTrafficMultiplier = 1.15;
+        }
+        const basePickupMs = Math.max(26000, Math.min(38000, Math.round((routeData.distanceMeters || 1000) * 28)));
+        const pickupDurationMs = Math.round(basePickupMs * pickupTrafficMultiplier);
         this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, pickupDurationMs, () => this.onArrivedAtPickup());
     },
 
@@ -6862,6 +6870,17 @@ const BookingModule = {
         // Variable Road Speeds: Normal Cruising Speed on Straights,
         // Deceleration / Slowdown during turns, and Stop-and-Go Signal Intersections!
         // ---------------------------------------------------------------------
+        // Extract real-time road traffic congestion conditions from route telemetry
+        const routeTraffic = this.tripSimulation.activeRouteData?.trafficTelemetry;
+        const congestionLevel = routeTraffic?.congestion_level || 'low';
+        const congestionRatio = routeTraffic?.congestion_ratio || 1.0;
+
+        // In heavier traffic, intersection delays & queues take longer
+        let trafficStopDelayFactor = 1.0;
+        if (congestionLevel === 'severe' || congestionRatio >= 1.60) trafficStopDelayFactor = 1.65;
+        else if (congestionLevel === 'heavy' || congestionRatio >= 1.30) trafficStopDelayFactor = 1.35;
+        else if (congestionLevel === 'moderate' || congestionRatio >= 1.15) trafficStopDelayFactor = 1.15;
+
         const milestones = this.tripSimulation.activeRouteData?.stepMilestones || [];
         
         // Find real signalized and junction intersection points along the route
@@ -6876,8 +6895,8 @@ const BookingModule = {
                     intersectionStops.push({
                         dist: step.startDist,
                         name: step.name || 'Road Intersection',
-                        // Stagger red light signal durations naturally (1.2s to 2.2s)
-                        stopDurationMs: 1400 + ((idx % 3) * 400),
+                        // Stagger red light signal durations naturally (1.4s to 3.5s depending on traffic density)
+                        stopDurationMs: Math.round((1400 + ((idx % 3) * 400)) * trafficStopDelayFactor),
                         hasStopped: false,
                         stopStartTime: 0
                     });
@@ -6890,16 +6909,48 @@ const BookingModule = {
             intersectionStops.push({
                 dist: Math.round(totalDist * 0.45),
                 name: "Signalized Traffic Light Intersection",
-                stopDurationMs: 1800,
+                stopDurationMs: Math.round(1800 * trafficStopDelayFactor),
                 hasStopped: false,
                 stopStartTime: 0
             });
         }
 
+        // Traffic speed factor calibration:
+        // - Smooth / Low Traffic: 1.22x speed (~46-52 km/h cruising)
+        // - Moderate Traffic: 0.92x speed (~34-39 km/h cruising)
+        // - Heavy Traffic: 0.65x speed (~23-28 km/h cruising)
+        // - Severe Traffic / Gridlock: 0.42x speed (~14-18 km/h crawl)
+        let trafficCruisingMultiplier = 1.0;
+        let trafficLabel = "Normal Commute Speed";
+        let trafficDotClass = "bg-emerald-400";
+        let trafficModeClass = "text-emerald-400";
+
+        if (congestionLevel === 'severe' || congestionRatio >= 1.60) {
+            trafficCruisingMultiplier = 0.42;
+            trafficLabel = "Severe Traffic Congestion";
+            trafficDotClass = "bg-rose-500 animate-pulse";
+            trafficModeClass = "text-rose-400";
+        } else if (congestionLevel === 'heavy' || congestionRatio >= 1.30) {
+            trafficCruisingMultiplier = 0.65;
+            trafficLabel = "Heavy Traffic Slowdown";
+            trafficDotClass = "bg-orange-500 animate-pulse";
+            trafficModeClass = "text-orange-400";
+        } else if (congestionLevel === 'moderate' || congestionRatio >= 1.15) {
+            trafficCruisingMultiplier = 0.90;
+            trafficLabel = "Moderate Traffic Flow";
+            trafficDotClass = "bg-amber-400";
+            trafficModeClass = "text-amber-400";
+        } else {
+            trafficCruisingMultiplier = 1.22;
+            trafficLabel = "Smooth Traffic Commute";
+            trafficDotClass = "bg-emerald-400";
+            trafficModeClass = "text-emerald-400";
+        }
+
         let currentDist = 0;
         let lastFrameTime = performance.now();
         let lastDomUpdate = 0;
-        let smoothedSpeedKmh = 42; // Standard urban cruising baseline speed in km/h
+        let smoothedSpeedKmh = Math.round(38 * trafficCruisingMultiplier);
 
         const animate = (now) => {
             if (!this.tripSimulation.active) {
@@ -7001,11 +7052,13 @@ const BookingModule = {
                         drivingModeClass = "text-emerald-300";
                         dotColor = "bg-emerald-400";
                     } else {
-                        // NORMAL COMMUTING SPEED ON STRAIGHT ROADS (~45-55 km/h cruising)
-                        speedFactor = 1.22;
-                        drivingBehavior = "Normal Commute Speed";
-                        drivingModeClass = "text-emerald-400";
-                        dotColor = "bg-emerald-400";
+                        // ROAD COMMUTE SPEED SYNCED WITH REAL TRAFFIC CONDITIONS:
+                        // Normal smooth commuting speed (45-55 km/h) when clear,
+                        // slowing down accordingly under moderate, heavy, or severe traffic!
+                        speedFactor = trafficCruisingMultiplier;
+                        drivingBehavior = trafficLabel;
+                        drivingModeClass = trafficModeClass;
+                        dotColor = trafficDotClass;
                     }
                 }
             }
@@ -7844,8 +7897,16 @@ const BookingModule = {
             driverEtaBadgeDrop.classList.remove('hidden');
         }
 
-        // Animate trip to dropoff along actual road waypoints (relaxed 38s-50s commuting pace)
-        const dropoffDurationMs = Math.max(38000, Math.min(54000, Math.round((routeData.distanceMeters || 1500) * 24)));
+        // Animate trip to dropoff along actual road waypoints (sync with road traffic conditions)
+        let dropoffTrafficMultiplier = 1.0;
+        const dropoffTraffic = routeData.trafficTelemetry;
+        if (dropoffTraffic && dropoffTraffic.congestion_level) {
+            if (dropoffTraffic.congestion_level === 'severe') dropoffTrafficMultiplier = 1.45;
+            else if (dropoffTraffic.congestion_level === 'heavy') dropoffTrafficMultiplier = 1.30;
+            else if (dropoffTraffic.congestion_level === 'moderate') dropoffTrafficMultiplier = 1.15;
+        }
+        const baseDropoffMs = Math.max(38000, Math.min(54000, Math.round((routeData.distanceMeters || 1500) * 24)));
+        const dropoffDurationMs = Math.round(baseDropoffMs * dropoffTrafficMultiplier);
         this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, dropoffDurationMs, () => this.onArrivedAtDropoff());
     },
 
