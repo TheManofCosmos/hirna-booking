@@ -29,7 +29,7 @@ const AnalyticsModule = {
         const now = new Date();
         const currentHour = now.getHours();
 
-        // 1. Revenue Forecast Chart - Synchronized with current date & next 7 days
+        // 1. 7-Day Demand & Traffic Forecast Chart - Synchronized with current date & next 7 days
         const revCtx = document.getElementById('chart-revenue-forecast')?.getContext('2d');
         if (revCtx) {
             if (this.revenueChart) {
@@ -42,11 +42,16 @@ const AnalyticsModule = {
             const forecast = forecastResult.forecast;
 
             const allLabels = [...historical.map(h => h.label), ...forecast.map(f => f.day)];
-            const histData = [...historical.map(h => h.revenue), ...new Array(forecast.length).fill(null)];
+            const histTrips = [...historical.map(h => h.trips), ...new Array(forecast.length).fill(null)];
             
-            // Connect forecast seamlessly starting from today's historical anchor point
-            const todayAnchor = historical[historical.length - 1].revenue;
-            const predData = [...new Array(historical.length - 1).fill(null), todayAnchor, ...forecast.map(f => f.projectedRevenue)];
+            // Connect trips forecast seamlessly starting from today's historical anchor point
+            const todayTripAnchor = historical[historical.length - 1].trips;
+            const predTrips = [...new Array(historical.length - 1).fill(null), todayTripAnchor, ...forecast.map(f => f.projectedTrips)];
+
+            // Traffic Delay Percentage Curve
+            const histTraffic = [...historical.map(h => h.trafficDelayPct), ...new Array(forecast.length).fill(null)];
+            const todayTrafficAnchor = historical[historical.length - 1].trafficDelayPct;
+            const predTraffic = [...new Array(historical.length - 1).fill(null), todayTrafficAnchor, ...forecast.map(f => f.trafficDelayPct)];
 
             this.revenueChart = new Chart(revCtx, {
                 type: 'line',
@@ -54,25 +59,39 @@ const AnalyticsModule = {
                     labels: allLabels,
                     datasets: [
                         {
-                            label: 'Historical Revenue (₱)',
-                            data: histData,
+                            label: 'Historical Demand (Trips)',
+                            data: histTrips,
                             borderColor: '#b91c1c',
-                            backgroundColor: 'rgba(185, 28, 28, 0.1)',
+                            backgroundColor: 'rgba(185, 28, 28, 0.08)',
                             fill: true,
                             tension: 0.35,
                             pointRadius: 4,
-                            pointHoverRadius: 6
+                            pointHoverRadius: 6,
+                            yAxisID: 'y'
                         },
                         {
-                            label: 'Hirna AI 7-Day Predicted Revenue (₱)',
-                            data: predData,
-                            borderColor: '#f59e0b',
+                            label: 'AI Predicted Demand (Trips/Day)',
+                            data: predTrips,
+                            borderColor: '#ea580c',
                             borderDash: [6, 6],
-                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                            backgroundColor: 'rgba(234, 88, 12, 0.12)',
                             fill: true,
                             tension: 0.35,
                             pointRadius: 4,
-                            pointHoverRadius: 6
+                            pointHoverRadius: 6,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Corridor Traffic Delay (% Slowdown)',
+                            data: predTraffic,
+                            borderColor: '#eab308',
+                            borderDash: [3, 3],
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.35,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            yAxisID: 'y1'
                         }
                     ]
                 },
@@ -85,15 +104,31 @@ const AnalyticsModule = {
                             callbacks: {
                                 label: function(context) {
                                     const val = context.parsed.y;
-                                    return val !== null ? ` ${context.dataset.label}: ₱${Number(val).toLocaleString()}` : '';
+                                    if (val === null) return '';
+                                    if (context.dataset.yAxisID === 'y1') {
+                                        return ` ${context.dataset.label}: +${val}% delay`;
+                                    }
+                                    return ` ${context.dataset.label}: ${Number(val).toLocaleString()} trips`;
                                 }
                             }
                         }
                     },
                     scales: {
                         y: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Daily Trips (Booking Demand)' },
                             ticks: {
-                                callback: val => `₱${Number(val).toLocaleString()}`
+                                callback: val => `${Number(val).toLocaleString()} trips`
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'Traffic Delay %' },
+                            ticks: {
+                                callback: val => `+${val}%`
                             }
                         }
                     }
@@ -101,10 +136,10 @@ const AnalyticsModule = {
             });
 
             // Update projected 7-day summary metrics if elements exist
-            const projectedSum = forecast.reduce((acc, f) => acc + f.projectedRevenue, 0);
+            const projectedTripsSum = forecast.reduce((acc, f) => acc + f.projectedTrips, 0);
             const projEl = document.getElementById('dash-7day-projected-revenue');
             if (projEl) {
-                projEl.innerText = `₱${projectedSum.toLocaleString()}`;
+                projEl.innerText = `${projectedTripsSum.toLocaleString()} trips`;
             }
         }
 
