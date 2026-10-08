@@ -5487,13 +5487,21 @@ const BookingModule = {
             } catch(e) {}
 
             // Draw polyline following real street route curves with traffic-aware coloring
-            let routeColor = '#dc2626'; // Default red
+            let routeColor = '#10b981'; // Default: Emerald Green (Fast / Smooth)
             if (routeData.trafficTelemetry && routeData.trafficTelemetry.congestion_level) {
                 const lvl = routeData.trafficTelemetry.congestion_level;
-                if (lvl === 'severe') routeColor = '#b91c1c'; // Deep Crimson
-                else if (lvl === 'heavy') routeColor = '#ea580c'; // Amber Orange
-                else if (lvl === 'moderate') routeColor = '#eab308'; // Amber Gold
-                else routeColor = '#10b981'; // Emerald Green (Smooth)
+                if (lvl === 'severe') routeColor = '#b91c1c'; // Deep Crimson (Severe Traffic)
+                else if (lvl === 'heavy') routeColor = '#ea580c'; // Amber Orange (Heavy)
+                else if (lvl === 'moderate') routeColor = '#eab308'; // Amber Gold (Moderate)
+                else routeColor = '#10b981'; // Emerald Green (Fast / Smooth)
+            } else {
+                // Fallback: Effective corridor speed analysis
+                const distK = routeData.distanceKm || 0;
+                const durM = routeData.durationMin || 0;
+                const spd = (distK > 0 && durM > 0) ? (distK / (durM / 60)) : 30;
+                if (spd < 15) routeColor = '#ea580c'; // Heavy (< 15 km/h)
+                else if (spd < 24) routeColor = '#eab308'; // Moderate (15 - 24 km/h)
+                else routeColor = '#10b981'; // Fast / Smooth (>= 24 km/h)
             }
 
             this.routeLine = L.polyline(routeData.waypoints, {
