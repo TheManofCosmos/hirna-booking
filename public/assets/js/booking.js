@@ -6892,11 +6892,12 @@ const BookingModule = {
                 const mMod = step.maneuver ? (step.maneuver.modifier || '') : '';
                 const isJunction = mType.includes('turn') || mMod.includes('left') || mMod.includes('right') || mType.includes('fork') || mType.includes('roundabout');
                 if (isJunction && step.startDist > 40 && step.startDist < totalDist - 40) {
+                    // Randomize stop duration between 3000ms to 6000ms max (3s to 6s)
+                    const randomStopDuration = Math.round(3000 + Math.random() * 3000);
                     intersectionStops.push({
                         dist: step.startDist,
                         name: step.name || 'Road Intersection',
-                        // Stagger red light signal durations naturally (1.4s to 3.5s depending on traffic density)
-                        stopDurationMs: Math.round((1400 + ((idx % 3) * 400)) * trafficStopDelayFactor),
+                        stopDurationMs: randomStopDuration,
                         hasStopped: false,
                         stopStartTime: 0
                     });
@@ -6906,19 +6907,39 @@ const BookingModule = {
 
         // Fallback: If route has few turn milestones but long straight corridors, add signalized crossroads
         if (intersectionStops.length === 0 && totalDist >= 600) {
+            const randomStopDuration = Math.round(3000 + Math.random() * 3000);
             intersectionStops.push({
                 dist: Math.round(totalDist * 0.45),
                 name: "Signalized Traffic Light Intersection",
-                stopDurationMs: Math.round(1800 * trafficStopDelayFactor),
+                stopDurationMs: randomStopDuration,
                 hasStopped: false,
                 stopStartTime: 0
             });
         }
 
+        // Precompute road bends / curves from segment geometry changes (turn angles >= 18 degrees)
+        const roadBends = [];
+        for (let i = 1; i < waypoints.length - 1; i++) {
+            const pPrev = waypoints[i - 1];
+            const pCurr = waypoints[i];
+            const pNext = waypoints[i + 1];
+            const b1 = Math.atan2(pCurr[1] - pPrev[1], pCurr[0] - pPrev[0]) * 180 / Math.PI;
+            const b2 = Math.atan2(pNext[1] - pCurr[1], pNext[0] - pCurr[0]) * 180 / Math.PI;
+            let diff = Math.abs(b2 - b1);
+            if (diff > 180) diff = 360 - diff;
+            // Noticeable bend or curve in the road geometry
+            if (diff >= 18) {
+                roadBends.push({
+                    dist: cumDistances[i],
+                    angleDiff: diff
+                });
+            }
+        }
+
         // Traffic speed factor calibration:
-        // - Smooth / Low Traffic: 1.22x speed (~46-52 km/h cruising)
-        // - Moderate Traffic: 0.92x speed (~34-39 km/h cruising)
-        // - Heavy Traffic: 0.65x speed (~23-28 km/h cruising)
+        // - Smooth / Low Traffic: 1.22x speed (~46-52 km/h base cruising)
+        // - Moderate Traffic: 0.92x speed (~34-39 km/h base cruising)
+        // - Heavy Traffic: 0.65x speed (~23-28 km/h base cruising)
         // - Severe Traffic / Gridlock: 0.42x speed (~14-18 km/h crawl)
         let trafficCruisingMultiplier = 1.0;
         let trafficLabel = "Normal Commute Speed";
@@ -6947,9 +6968,15 @@ const BookingModule = {
             trafficModeClass = "text-emerald-400";
         }
 
+        // Random commuting speed variation state (between -10 km/h and +10 km/h)
+        let currentVarianceKmh = 0;
+        let targetVarianceKmh = 0;
+        let nextVarianceChangeTime = performance.now() + 2500;
+
         let currentDist = 0;
         let lastFrameTime = performance.now();
         let lastDomUpdate = 0;
+        let currentSpeedFactor = 0.25; // Gentle initial roll
         let smoothedSpeedKmh = Math.round(38 * trafficCruisingMultiplier);
 
         const animate = (now) => {
@@ -6963,6 +6990,15 @@ const BookingModule = {
             // 1. Calculate base nominal speed factor (m/s) so trip finishes naturally within durationMs
             const nominalSpeedMps = totalDist / (durationMs / 1000); // e.g. ~100m/s simulation scale
 
+            // Periodically pick a new random commuting speed variation between -10 km/h and +10 km/h
+            if (now >= nextVarianceChangeTime) {
+                targetVarianceKmh = (Math.random() * 20) - 10; // Range: [-10, +10]
+                // Hold this commuting speed variation for 3.5 to 7.0 seconds
+                nextVarianceChangeTime = now + (3500 + Math.random() * 3500);
+            }
+            // Smoothly ease currentVarianceKmh toward targetVarianceKmh
+            currentVarianceKmh += (targetVarianceKmh - currentVarianceKmh) * Math.min(1.0, dtSec * 1.5);
+
             // 2. Identify nearest upcoming intersection and turn maneuver
             let activeStop = null;
             for (const st of intersectionStops) {
@@ -6973,33 +7009,33 @@ const BookingModule = {
                 }
             }
 
-            let speedFactor = 1.0;
+            let targetSpeedFactor = 1.0;
             let drivingBehavior = "Cruising";
             let drivingModeClass = "text-emerald-400";
             let dotColor = "bg-emerald-400";
 
             if (activeStop) {
-                // STOP-AND-GO AT SIGNAL LIGHT / INTERSECTION
+                // STOP-AND-GO AT SIGNAL LIGHT / INTERSECTION (3s to 6s max randomized duration)
                 if (activeStop.stopStartTime === 0) {
                     activeStop.stopStartTime = now;
                 }
                 const stoppedElapsed = now - activeStop.stopStartTime;
                 if (stoppedElapsed < activeStop.stopDurationMs) {
-                    // Vehicle completely paused at red light / crossroad junction!
-                    speedFactor = 0.0;
+                    // Vehicle fully halted at red light / crossroad junction!
+                    targetSpeedFactor = 0.0;
                     drivingBehavior = "Signal Stop (Red Light)";
                     drivingModeClass = "text-rose-400";
                     dotColor = "bg-rose-500 animate-ping";
                 } else {
-                    // Green light: Accelerating out of intersection
+                    // Green light: Progressive acceleration out of intersection
                     activeStop.hasStopped = true;
-                    speedFactor = 0.45;
+                    targetSpeedFactor = 0.40;
                     drivingBehavior = "Accelerating (Green Light)";
                     drivingModeClass = "text-amber-300";
                     dotColor = "bg-amber-400 animate-pulse";
                 }
             } else {
-                // Check if approaching an intersection stop ahead (Deceleration / Stop preparation)
+                // Check if approaching an intersection stop ahead (Extended progressive deceleration zone)
                 let distToNextStop = 99999;
                 for (const st of intersectionStops) {
                     if (!st.hasStopped && st.dist > currentDist) {
@@ -7008,14 +7044,15 @@ const BookingModule = {
                     }
                 }
 
-                if (distToNextStop <= 45 && distToNextStop > 12) {
-                    // Decelerating to stop at intersection
-                    speedFactor = Math.max(0.20, (distToNextStop / 45) * 0.75);
+                if (distToNextStop <= 65 && distToNextStop > 4) {
+                    // Smooth, progressive deceleration curve to stop
+                    const stopRatio = Math.max(0, (distToNextStop - 4) / 61);
+                    targetSpeedFactor = Math.pow(stopRatio, 1.6) * 0.75;
                     drivingBehavior = "Stopping at Intersection";
                     drivingModeClass = "text-amber-400";
                     dotColor = "bg-amber-400 animate-pulse";
                 } else {
-                    // CHECK TURNS: Slow down on curve / corner
+                    // CHECK TURNS: Slow down on designated turn maneuvers
                     let distToNextTurn = 99999;
                     if (Array.isArray(milestones)) {
                         for (let i = 0; i < milestones.length - 1; i++) {
@@ -7033,35 +7070,67 @@ const BookingModule = {
                         }
                     }
 
-                    if (distToNextTurn <= 35) {
-                        // Slowing down to turn (safe cornering speed: ~15-22 km/h scale)
-                        speedFactor = 0.32;
+                    // CHECK ROAD BENDS: Detect road curvature along geometry
+                    let distToNextBend = 99999;
+                    for (const b of roadBends) {
+                        if (b.dist > currentDist) {
+                            const d = b.dist - currentDist;
+                            if (d < distToNextBend) distToNextBend = d;
+                        }
+                    }
+
+                    if (distToNextTurn <= 40) {
+                        // Slowing down for street turn maneuver (progressive cornering speed)
+                        const turnRatio = Math.max(0, distToNextTurn / 40);
+                        targetSpeedFactor = 0.28 + (turnRatio * 0.12);
                         drivingBehavior = "Slowing for Turn";
                         drivingModeClass = "text-amber-300";
                         dotColor = "bg-amber-300 animate-pulse";
-                    } else if (currentDist < 30) {
-                        // Departing initial location (gradual launch)
-                        speedFactor = 0.50;
+                    } else if (distToNextBend <= 25) {
+                        // REDUCE SPEED ON ROAD BENDS & CURVES
+                        const bendRatio = Math.max(0, distToNextBend / 25);
+                        targetSpeedFactor = 0.48 + (bendRatio * 0.22);
+                        drivingBehavior = "Navigating Bend";
+                        drivingModeClass = "text-teal-400";
+                        dotColor = "bg-teal-400 animate-pulse";
+                    } else if (currentDist < 35) {
+                        // Departing initial location (gentle progressive launch)
+                        const departRatio = Math.min(1.0, currentDist / 35);
+                        targetSpeedFactor = 0.25 + (departRatio * 0.35);
                         drivingBehavior = "Departing";
                         drivingModeClass = "text-teal-300";
                         dotColor = "bg-teal-400";
-                    } else if (currentDist >= totalDist - 40) {
+                    } else if (currentDist >= totalDist - 50) {
                         // Approaching final arrival point
-                        speedFactor = 0.35;
+                        const arriveRatio = Math.max(0, (totalDist - currentDist) / 50);
+                        targetSpeedFactor = 0.20 + (arriveRatio * 0.25);
                         drivingBehavior = "Arriving at Destination";
                         drivingModeClass = "text-emerald-300";
                         dotColor = "bg-emerald-400";
                     } else {
-                        // ROAD COMMUTE SPEED SYNCED WITH REAL TRAFFIC CONDITIONS:
-                        // Normal smooth commuting speed (45-55 km/h) when clear,
-                        // slowing down accordingly under moderate, heavy, or severe traffic!
-                        speedFactor = trafficCruisingMultiplier;
-                        drivingBehavior = trafficLabel;
+                        // ROAD COMMUTE SPEED SYNCED WITH REAL TRAFFIC & RANDOM COMMUTER VARIATIONS (+/- 10 km/h)
+                        const varianceFactor = currentVarianceKmh / 42.0;
+                        targetSpeedFactor = Math.max(0.35, trafficCruisingMultiplier + varianceFactor);
+                        
+                        // Dynamic behavioral label indicating slight variation
+                        if (currentVarianceKmh >= 3.0) {
+                            drivingBehavior = `${trafficLabel} (+${Math.round(currentVarianceKmh)} km/h)`;
+                        } else if (currentVarianceKmh <= -3.0) {
+                            drivingBehavior = `${trafficLabel} (${Math.round(currentVarianceKmh)} km/h)`;
+                        } else {
+                            drivingBehavior = trafficLabel;
+                        }
                         drivingModeClass = trafficModeClass;
                         dotColor = trafficDotClass;
                     }
                 }
             }
+
+            // Progressive Acceleration & Deceleration Smoothing Curve
+            // Accelerate at a natural, gentle rate (~1.5/s); decelerate smoothly (~2.2/s)
+            const easeRate = (targetSpeedFactor < currentSpeedFactor) ? 2.2 : 1.5;
+            currentSpeedFactor += (targetSpeedFactor - currentSpeedFactor) * Math.min(1.0, dtSec * easeRate);
+            const speedFactor = currentSpeedFactor;
 
             // Advance distance based on dynamic speed
             currentDist += nominalSpeedMps * speedFactor * dtSec;
@@ -7071,9 +7140,9 @@ const BookingModule = {
             this.tripSimulation.currentProgress = progress;
             const targetDist = currentDist;
 
-            // Compute realistic simulated speedometer value (km/h)
-            const targetKmh = speedFactor === 0 ? 0 : Math.round(38 * speedFactor + (Math.sin(now / 500) * 2));
-            smoothedSpeedKmh = Math.round(smoothedSpeedKmh + (targetKmh - smoothedSpeedKmh) * 0.15);
+            // Compute realistic simulated speedometer value (km/h) with micro road vibrations
+            const targetKmh = speedFactor < 0.05 ? 0 : Math.max(12, Math.round(38 * speedFactor + (Math.sin(now / 450) * 1.5)));
+            smoothedSpeedKmh = Math.round(smoothedSpeedKmh + (targetKmh - smoothedSpeedKmh) * Math.min(1.0, dtSec * 3.5));
 
             // Find current street segment along waypoints
             let segIndex = 0;
@@ -7152,11 +7221,12 @@ const BookingModule = {
                 // Live remaining distance, speed, and ETA directly on top of the driver marker
                 const driverDistBadge = document.getElementById('driver-marker-rem-dist');
                 const driverEtaBadge = document.getElementById('driver-marker-eta');
+                const isVehicleStopped = (smoothedSpeedKmh <= 3 || speedFactor < 0.05);
                 if (driverDistBadge) {
-                    driverDistBadge.innerText = progress >= 1.0 ? 'Arrived' : (smoothedSpeedKmh === 0 ? "Stopped (Signal)" : `${smoothedSpeedKmh} km/h • ${distText}`);
+                    driverDistBadge.innerText = progress >= 1.0 ? 'Arrived' : (isVehicleStopped ? "Stopped (Signal)" : `${smoothedSpeedKmh} km/h • ${distText}`);
                 }
                 if (driverEtaBadge) {
-                    driverEtaBadge.innerText = progress >= 1.0 ? 'Now' : (smoothedSpeedKmh === 0 ? "Wait" : etaText);
+                    driverEtaBadge.innerText = progress >= 1.0 ? 'Now' : (isVehicleStopped ? "Wait" : etaText);
                     driverEtaBadge.classList.remove('hidden');
                 }
             }
