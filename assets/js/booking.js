@@ -6821,8 +6821,9 @@ const BookingModule = {
             });
         }
 
-        // Animate driver traveling along the actual road route to pickup (11s so passenger can clearly watch)
-        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, 11000, () => this.onArrivedAtPickup());
+        // Animate driver traveling along the actual road route to pickup (28s-35s so passenger can clearly and comfortably watch)
+        const pickupDurationMs = Math.max(26000, Math.min(38000, Math.round((routeData.distanceMeters || 1000) * 28)));
+        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, pickupDurationMs, () => this.onArrivedAtPickup());
     },
 
     animateAlongRoute(waypoints, totalDistMeters, durationMs, onArrival) {
@@ -7014,6 +7015,7 @@ const BookingModule = {
             if (currentDist > totalDist) currentDist = totalDist;
 
             const progress = totalDist > 0 ? Math.min(1.0, currentDist / totalDist) : 1.0;
+            this.tripSimulation.currentProgress = progress;
             const targetDist = currentDist;
 
             // Compute realistic simulated speedometer value (km/h)
@@ -7523,8 +7525,10 @@ const BookingModule = {
         } else if (phase === 'en_route_dropoff') {
             // In-Transit Phase: Prorated Fare Calculation
             const animElapsed = performance.now() - (this.tripSimulation.legStartTime || performance.now());
-            const durationMs = this.tripSimulation.legDurationMs || 14000;
-            const progress = Math.max(0.05, Math.min(0.98, animElapsed / durationMs));
+            const durationMs = this.tripSimulation.legDurationMs || 42000;
+            const progress = (typeof this.tripSimulation.currentProgress === 'number' && this.tripSimulation.currentProgress > 0)
+                ? Math.max(0.05, Math.min(0.98, this.tripSimulation.currentProgress))
+                : Math.max(0.05, Math.min(0.98, animElapsed / durationMs));
 
             const totalDistKm = parseFloat(booking.distance_km || 5.0);
             const totalDurMin = parseFloat(booking.duration_min || 15);
@@ -7840,8 +7844,9 @@ const BookingModule = {
             driverEtaBadgeDrop.classList.remove('hidden');
         }
 
-        // Animate trip to dropoff along actual road waypoints (14s)
-        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, 14000, () => this.onArrivedAtDropoff());
+        // Animate trip to dropoff along actual road waypoints (relaxed 38s-50s commuting pace)
+        const dropoffDurationMs = Math.max(38000, Math.min(54000, Math.round((routeData.distanceMeters || 1500) * 24)));
+        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, dropoffDurationMs, () => this.onArrivedAtDropoff());
     },
 
     onArrivedAtDropoff() {
