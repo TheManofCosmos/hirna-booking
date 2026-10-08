@@ -6831,13 +6831,17 @@ const BookingModule = {
         }
         const basePickupMs = Math.max(26000, Math.min(38000, Math.round((routeData.distanceMeters || 1000) * 28)));
         const pickupDurationMs = Math.round(basePickupMs * pickupTrafficMultiplier);
-        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, pickupDurationMs, () => this.onArrivedAtPickup());
+        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, pickupDurationMs, () => this.onArrivedAtPickup(), routeData);
     },
 
-    animateAlongRoute(waypoints, totalDistMeters, durationMs, onArrival) {
+    animateAlongRoute(waypoints, totalDistMeters, durationMs, onArrival, routeData) {
         if (!waypoints || waypoints.length === 0) {
             if (typeof onArrival === 'function') onArrival();
             return;
+        }
+
+        if (routeData) {
+            this.tripSimulation.activeRouteData = routeData;
         }
 
         if (this.tripSimulation.animRafId) {
@@ -6848,6 +6852,8 @@ const BookingModule = {
             clearInterval(this.tripSimulation.animTimer);
             this.tripSimulation.animTimer = null;
         }
+
+        this.tripSimulation._latchedStop = null;
 
         // Compute segment distances and cumulative road distances
         const segmentDistances = [];
@@ -6871,7 +6877,8 @@ const BookingModule = {
         // Deceleration / Slowdown during turns, and Stop-and-Go Signal Intersections!
         // ---------------------------------------------------------------------
         // Extract real-time road traffic congestion conditions from route telemetry
-        const routeTraffic = this.tripSimulation.activeRouteData?.trafficTelemetry;
+        const activeRoute = routeData || this.tripSimulation.activeRouteData || {};
+        const routeTraffic = activeRoute.trafficTelemetry;
         const congestionLevel = routeTraffic?.congestion_level || 'low';
         const congestionRatio = routeTraffic?.congestion_ratio || 1.0;
 
@@ -6881,21 +6888,20 @@ const BookingModule = {
         else if (congestionLevel === 'heavy' || congestionRatio >= 1.30) trafficStopDelayFactor = 1.35;
         else if (congestionLevel === 'moderate' || congestionRatio >= 1.15) trafficStopDelayFactor = 1.15;
 
-        const milestones = this.tripSimulation.activeRouteData?.stepMilestones || [];
+        const milestones = activeRoute.stepMilestones || [];
         
-        // Find real signalized and junction intersection points along the route
-        const intersectionStops = [];
-        if (Array.isArray(milestones) && milestones.length > 2) {
+        // 1. Find all turn maneuvers and junctions from route milestones
+        const rawStops = [];
+        if (Array.isArray(milestones) && milestones.length > 0) {
             milestones.forEach((step, idx) => {
                 if (idx === 0 || idx >= milestones.length - 1) return;
                 const mType = step.maneuver ? (step.maneuver.type || '') : '';
                 const mMod = step.maneuver ? (step.maneuver.modifier || '') : '';
-                const isJunction = mType.includes('turn') || mMod.includes('left') || mMod.includes('right') || mType.includes('fork') || mType.includes('roundabout');
-                if (isJunction && step.startDist > 40 && step.startDist < totalDist - 40) {
-                    // Randomize stop duration between 3000ms to 6000ms max (3s to 6s)
+                const isJunction = mType.includes('turn') || mMod.includes('left') || mMod.includes('right') || mType.includes('fork') || mType.includes('roundabout') || mType.includes('intersection');
+                if (isJunction && step.startDist > 45 && step.startDist < totalDist - 45) {
                     const randomStopDuration = Math.round(3000 + Math.random() * 3000);
-                    intersectionStops.push({
-                        dist: step.startDist,
+                    rawStops.push({
+                        dist: Math.round(step.startDist),
                         name: step.name || 'Road Intersection',
                         stopDurationMs: randomStopDuration,
                         hasStopped: false,
@@ -6905,34 +6911,118 @@ const BookingModule = {
             });
         }
 
-        // Fallback: If route has few turn milestones but long straight corridors, add signalized crossroads
-        if (intersectionStops.length === 0 && totalDist >= 600) {
-            const randomStopDuration = Math.round(3000 + Math.random() * 3000);
+        rawStops.sort((a, b) => a.dist - b.dist);
+
+        // Deduplicate stops that are excessively close together (< 160m)
+        const dedupedStops = [];
+        for (const st of rawStops) {
+            if (dedupedStops.length === 0 || (st.dist - dedupedStops[dedupedStops.length - 1].dist) >= 160) {
+                dedupedStops.push(st);
+            }
+        }
+
+        // 2. Populate realistic signalized crossroads in long corridors (gaps >= 420m)
+        // This ensures realistic stop-and-go city traffic throughout longer dropoff legs!
+        const intersectionStops = [];
+        let prevStopDist = 0;
+        for (let i = 0; i < dedupedStops.length; i++) {
+            const st = dedupedStops[i];
+            const gap = st.dist - prevStopDist;
+            if (gap >= 420) {
+                const numIntervals = Math.floor(gap / 360);
+                for (let k = 1; k <= numIntervals; k++) {
+                    const interDist = Math.round(prevStopDist + (gap / (numIntervals + 1)) * k);
+                    if (interDist > 45 && interDist < totalDist - 45) {
+                        intersectionStops.push({
+                            dist: interDist,
+                            name: "Signalized Crossroad",
+                            stopDurationMs: Math.round(3000 + Math.random() * 3000),
+                            hasStopped: false,
+                            stopStartTime: 0
+                        });
+                    }
+                }
+            }
+            intersectionStops.push(st);
+            prevStopDist = st.dist;
+        }
+
+        const finalGap = totalDist - prevStopDist;
+        if (finalGap >= 420) {
+            const numIntervals = Math.floor(finalGap / 360);
+            for (let k = 1; k <= numIntervals; k++) {
+                const interDist = Math.round(prevStopDist + (finalGap / (numIntervals + 1)) * k);
+                if (interDist > 45 && interDist < totalDist - 45) {
+                    intersectionStops.push({
+                        dist: interDist,
+                        name: "Avenue Signal Light",
+                        stopDurationMs: Math.round(3000 + Math.random() * 3000),
+                        hasStopped: false,
+                        stopStartTime: 0
+                    });
+                }
+            }
+        }
+
+        // Fallback: If route has >= 350m and still 0 stops, add 1 signalized intersection
+        if (intersectionStops.length === 0 && totalDist >= 350) {
             intersectionStops.push({
-                dist: Math.round(totalDist * 0.45),
+                dist: Math.round(totalDist * 0.48),
                 name: "Signalized Traffic Light Intersection",
-                stopDurationMs: randomStopDuration,
+                stopDurationMs: Math.round(3000 + Math.random() * 3000),
                 hasStopped: false,
                 stopStartTime: 0
             });
         }
 
-        // Precompute road bends / curves from segment geometry changes (turn angles >= 18 degrees)
+        intersectionStops.sort((a, b) => a.dist - b.dist);
+
+        // 3. Precompute road bends / curves from polyline geometry across chords (~20-30m lookahead)
+        // Works reliably on dense polyline vertices from Mapbox and OSRM
+        const computeBearing = (p1, p2) => {
+            const dLat = (p2[0] - p1[0]);
+            const avgLatRad = ((p1[0] + p2[0]) / 2) * Math.PI / 180;
+            const dLng = (p2[1] - p1[1]) * Math.cos(avgLatRad);
+            let angle = Math.atan2(dLng, dLat) * 180 / Math.PI;
+            return (angle + 360) % 360;
+        };
+
         const roadBends = [];
-        for (let i = 1; i < waypoints.length - 1; i++) {
-            const pPrev = waypoints[i - 1];
-            const pCurr = waypoints[i];
-            const pNext = waypoints[i + 1];
-            const b1 = Math.atan2(pCurr[1] - pPrev[1], pCurr[0] - pPrev[0]) * 180 / Math.PI;
-            const b2 = Math.atan2(pNext[1] - pCurr[1], pNext[0] - pCurr[0]) * 180 / Math.PI;
-            let diff = Math.abs(b2 - b1);
-            if (diff > 180) diff = 360 - diff;
-            // Noticeable bend or curve in the road geometry
-            if (diff >= 18) {
-                roadBends.push({
-                    dist: cumDistances[i],
-                    angleDiff: diff
-                });
+        if (waypoints.length >= 3) {
+            for (let i = 1; i < waypoints.length - 1; i++) {
+                let backIdx = i - 1;
+                while (backIdx > 0 && (cumDistances[i] - cumDistances[backIdx]) < 22) {
+                    backIdx--;
+                }
+                let fwdIdx = i + 1;
+                while (fwdIdx < waypoints.length - 1 && (cumDistances[fwdIdx] - cumDistances[i]) < 22) {
+                    fwdIdx++;
+                }
+
+                const bBack = computeBearing(waypoints[backIdx], waypoints[i]);
+                const bFwd = computeBearing(waypoints[i], waypoints[fwdIdx]);
+                let diff = Math.abs(bFwd - bBack);
+                if (diff > 180) diff = 360 - diff;
+
+                // Detect noticeable road curvature (bearing change >= 12 degrees across chord)
+                if (diff >= 12) {
+                    const spanStart = Math.max(0, cumDistances[i] - 25);
+                    const spanEnd = Math.min(totalDist, cumDistances[i] + 25);
+
+                    if (roadBends.length > 0 && (cumDistances[i] - roadBends[roadBends.length - 1].spanEnd) < 35) {
+                        // Merge adjacent continuous curvature vertices
+                        roadBends[roadBends.length - 1].spanEnd = spanEnd;
+                        roadBends[roadBends.length - 1].dist = Math.round((roadBends[roadBends.length - 1].spanStart + spanEnd) / 2);
+                        roadBends[roadBends.length - 1].angleDiff = Math.max(roadBends[roadBends.length - 1].angleDiff, diff);
+                    } else {
+                        roadBends.push({
+                            dist: cumDistances[i],
+                            spanStart: spanStart,
+                            spanEnd: spanEnd,
+                            angleDiff: diff
+                        });
+                    }
+                }
             }
         }
 
@@ -7000,12 +7090,20 @@ const BookingModule = {
             currentVarianceKmh += (targetVarianceKmh - currentVarianceKmh) * Math.min(1.0, dtSec * 1.5);
 
             // 2. Identify nearest upcoming intersection and turn maneuver
-            let activeStop = null;
-            for (const st of intersectionStops) {
-                // If approaching within 14 meters of intersection and hasn't completed stop yet
-                if (Math.abs(currentDist - st.dist) <= 14 && !st.hasStopped) {
-                    activeStop = st;
-                    break;
+            let activeStop = this.tripSimulation._latchedStop || null;
+
+            if (!activeStop) {
+                // Check if vehicle reached or is stepping over an intersection stop line
+                const stepLookahead = Math.max(10, nominalSpeedMps * currentSpeedFactor * dtSec * 1.4);
+                for (const st of intersectionStops) {
+                    if (!st.hasStopped) {
+                        if (currentDist >= st.dist - stepLookahead && currentDist <= st.dist + 16) {
+                            activeStop = st;
+                            this.tripSimulation._latchedStop = st;
+                            currentDist = st.dist;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -7021,15 +7119,21 @@ const BookingModule = {
                 }
                 const stoppedElapsed = now - activeStop.stopStartTime;
                 if (stoppedElapsed < activeStop.stopDurationMs) {
-                    // Vehicle fully halted at red light / crossroad junction!
+                    // Vehicle fully halted at red light / crossroad junction! Pin distance to stop line
+                    currentDist = activeStop.dist;
                     targetSpeedFactor = 0.0;
+                    currentSpeedFactor = 0.0;
+                    smoothedSpeedKmh = 0;
                     drivingBehavior = "Signal Stop (Red Light)";
                     drivingModeClass = "text-rose-400";
                     dotColor = "bg-rose-500 animate-ping";
                 } else {
                     // Green light: Progressive acceleration out of intersection
                     activeStop.hasStopped = true;
-                    targetSpeedFactor = 0.40;
+                    this.tripSimulation._latchedStop = null;
+                    activeStop = null;
+                    targetSpeedFactor = 0.45;
+                    currentSpeedFactor = Math.max(currentSpeedFactor, 0.12);
                     drivingBehavior = "Accelerating (Green Light)";
                     drivingModeClass = "text-amber-300";
                     dotColor = "bg-amber-400 animate-pulse";
@@ -7044,10 +7148,11 @@ const BookingModule = {
                     }
                 }
 
-                if (distToNextStop <= 65 && distToNextStop > 4) {
+                const stopDecelHorizon = Math.max(70, nominalSpeedMps * 1.4);
+                if (distToNextStop <= stopDecelHorizon && distToNextStop > 4) {
                     // Smooth, progressive deceleration curve to stop
-                    const stopRatio = Math.max(0, (distToNextStop - 4) / 61);
-                    targetSpeedFactor = Math.pow(stopRatio, 1.6) * 0.75;
+                    const stopRatio = Math.max(0, (distToNextStop - 4) / (stopDecelHorizon - 4));
+                    targetSpeedFactor = Math.pow(stopRatio, 1.5) * 0.70;
                     drivingBehavior = "Stopping at Intersection";
                     drivingModeClass = "text-amber-400";
                     dotColor = "bg-amber-400 animate-pulse";
@@ -7070,28 +7175,42 @@ const BookingModule = {
                         }
                     }
 
-                    // CHECK ROAD BENDS: Detect road curvature along geometry
+                    // CHECK ROAD BENDS: Inside a bend or approaching a bend along geometry
+                    let activeBend = null;
                     let distToNextBend = 99999;
                     for (const b of roadBends) {
+                        if (currentDist >= b.spanStart && currentDist <= b.spanEnd) {
+                            activeBend = b;
+                            break;
+                        }
                         if (b.dist > currentDist) {
                             const d = b.dist - currentDist;
                             if (d < distToNextBend) distToNextBend = d;
                         }
                     }
 
-                    if (distToNextTurn <= 40) {
+                    const turnDecelHorizon = Math.max(45, nominalSpeedMps * 0.9);
+                    const bendDecelHorizon = Math.max(40, nominalSpeedMps * 0.8);
+
+                    if (distToNextTurn <= turnDecelHorizon) {
                         // Slowing down for street turn maneuver (progressive cornering speed)
-                        const turnRatio = Math.max(0, distToNextTurn / 40);
+                        const turnRatio = Math.max(0, distToNextTurn / turnDecelHorizon);
                         targetSpeedFactor = 0.28 + (turnRatio * 0.12);
                         drivingBehavior = "Slowing for Turn";
                         drivingModeClass = "text-amber-300";
                         dotColor = "bg-amber-300 animate-pulse";
-                    } else if (distToNextBend <= 25) {
-                        // REDUCE SPEED ON ROAD BENDS & CURVES
-                        const bendRatio = Math.max(0, distToNextBend / 25);
-                        targetSpeedFactor = 0.48 + (bendRatio * 0.22);
+                    } else if (activeBend) {
+                        // Currently traversing a curved road or bend
+                        targetSpeedFactor = 0.46;
                         drivingBehavior = "Navigating Bend";
                         drivingModeClass = "text-teal-400";
+                        dotColor = "bg-teal-400 animate-pulse";
+                    } else if (distToNextBend <= bendDecelHorizon) {
+                        // REDUCE SPEED ON ROAD BENDS & CURVES
+                        const bendRatio = Math.max(0, distToNextBend / bendDecelHorizon);
+                        targetSpeedFactor = 0.46 + (bendRatio * 0.24);
+                        drivingBehavior = "Slowing for Bend";
+                        drivingModeClass = "text-teal-300";
                         dotColor = "bg-teal-400 animate-pulse";
                     } else if (currentDist < 35) {
                         // Departing initial location (gentle progressive launch)
@@ -7128,21 +7247,28 @@ const BookingModule = {
 
             // Progressive Acceleration & Deceleration Smoothing Curve
             // Accelerate at a natural, gentle rate (~1.5/s); decelerate smoothly (~2.2/s)
-            const easeRate = (targetSpeedFactor < currentSpeedFactor) ? 2.2 : 1.5;
-            currentSpeedFactor += (targetSpeedFactor - currentSpeedFactor) * Math.min(1.0, dtSec * easeRate);
-            const speedFactor = currentSpeedFactor;
+            if (!activeStop) {
+                const easeRate = (targetSpeedFactor < currentSpeedFactor) ? 2.2 : 1.5;
+                currentSpeedFactor += (targetSpeedFactor - currentSpeedFactor) * Math.min(1.0, dtSec * easeRate);
+                const speedFactor = currentSpeedFactor;
 
-            // Advance distance based on dynamic speed
-            currentDist += nominalSpeedMps * speedFactor * dtSec;
-            if (currentDist > totalDist) currentDist = totalDist;
+                // Advance distance based on dynamic speed
+                currentDist += nominalSpeedMps * speedFactor * dtSec;
+                if (currentDist > totalDist) currentDist = totalDist;
+            }
+            const speedFactor = currentSpeedFactor;
 
             const progress = totalDist > 0 ? Math.min(1.0, currentDist / totalDist) : 1.0;
             this.tripSimulation.currentProgress = progress;
             const targetDist = currentDist;
 
             // Compute realistic simulated speedometer value (km/h) with micro road vibrations
-            const targetKmh = speedFactor < 0.05 ? 0 : Math.max(12, Math.round(38 * speedFactor + (Math.sin(now / 450) * 1.5)));
-            smoothedSpeedKmh = Math.round(smoothedSpeedKmh + (targetKmh - smoothedSpeedKmh) * Math.min(1.0, dtSec * 3.5));
+            const targetKmh = (speedFactor < 0.05 || activeStop) ? 0 : Math.max(12, Math.round(38 * speedFactor + (Math.sin(now / 450) * 1.5)));
+            if (activeStop) {
+                smoothedSpeedKmh = 0;
+            } else {
+                smoothedSpeedKmh = Math.round(smoothedSpeedKmh + (targetKmh - smoothedSpeedKmh) * Math.min(1.0, dtSec * 3.5));
+            }
 
             // Find current street segment along waypoints
             let segIndex = 0;
@@ -7249,7 +7375,7 @@ const BookingModule = {
         startCoords = this.normalizeCoords(startCoords);
         targetCoords = this.normalizeCoords(targetCoords);
         this.getDrivingRoute(startCoords, targetCoords).then(route => {
-            this.animateAlongRoute(route.waypoints, route.distanceMeters, durationMs, onArrival);
+            this.animateAlongRoute(route.waypoints, route.distanceMeters, durationMs, onArrival, route);
         }).catch(() => {
             this.animateAlongRoute([startCoords, targetCoords], this.computeDistanceMeters(startCoords, targetCoords), durationMs, onArrival);
         });
@@ -7975,9 +8101,9 @@ const BookingModule = {
             else if (dropoffTraffic.congestion_level === 'heavy') dropoffTrafficMultiplier = 1.30;
             else if (dropoffTraffic.congestion_level === 'moderate') dropoffTrafficMultiplier = 1.15;
         }
-        const baseDropoffMs = Math.max(38000, Math.min(54000, Math.round((routeData.distanceMeters || 1500) * 24)));
+        const baseDropoffMs = Math.max(42000, Math.min(72000, Math.round((routeData.distanceMeters || 1500) * 22)));
         const dropoffDurationMs = Math.round(baseDropoffMs * dropoffTrafficMultiplier);
-        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, dropoffDurationMs, () => this.onArrivedAtDropoff());
+        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, dropoffDurationMs, () => this.onArrivedAtDropoff(), routeData);
     },
 
     onArrivedAtDropoff() {
