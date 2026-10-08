@@ -6890,92 +6890,80 @@ const BookingModule = {
 
         const milestones = activeRoute.stepMilestones || [];
         
-        // 1. Find all turn maneuvers and junctions from route milestones
-        const rawStops = [];
-        if (Array.isArray(milestones) && milestones.length > 0) {
+        // ---------------------------------------------------------------------
+        // 1. MAJOR TRAFFIC SIGNAL LIGHT STOPS (Full stop 2s to 4s at red lights)
+        // Only stop at designated red light signals (spaced ~900m-1300m or 1 stop for medium trips)
+        // ---------------------------------------------------------------------
+        const signalStops = [];
+        if (totalDist >= 650 && totalDist < 1900) {
+            // Exactly 1 major signal stop around the halfway mark
+            signalStops.push({
+                dist: Math.round(totalDist * 0.48),
+                name: "Traffic Signal Light (Red)",
+                stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
+                hasStopped: false,
+                stopStartTime: 0
+            });
+        } else if (totalDist >= 1900) {
+            // Space major signal light stops every ~900m-1300m
+            const numStops = Math.max(1, Math.floor(totalDist / 1050));
+            for (let s = 1; s <= numStops; s++) {
+                const sDist = Math.round((totalDist / (numStops + 1)) * s);
+                if (sDist > 70 && sDist < totalDist - 70) {
+                    signalStops.push({
+                        dist: sDist,
+                        name: "Traffic Signal Light (Red)",
+                        stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
+                        hasStopped: false,
+                        stopStartTime: 0
+                    });
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // 2. CONNECTED STREETS & CROSSROADS (Slow down, go straight, accelerate)
+        // Rather than a full stop on a connected street on right/left that you are
+        // not going to, the vehicle slows down, crosses straight through, and accelerates!
+        // ---------------------------------------------------------------------
+        const connectedIntersections = [];
+        const crossroadInterval = Math.max(280, Math.min(420, Math.round(totalDist / 5)));
+        let nextCrossroadDist = crossroadInterval;
+        while (nextCrossroadDist < totalDist - 60) {
+            const nearSignal = signalStops.some(st => Math.abs(st.dist - nextCrossroadDist) < 130);
+            if (!nearSignal) {
+                connectedIntersections.push({
+                    dist: nextCrossroadDist,
+                    name: "Connected Side Street",
+                    spanStart: Math.max(0, nextCrossroadDist - 25),
+                    spanEnd: Math.min(totalDist, nextCrossroadDist + 18)
+                });
+            }
+            nextCrossroadDist += crossroadInterval;
+        }
+
+        // Also add any intermediate straight steps from milestones
+        if (Array.isArray(milestones)) {
             milestones.forEach((step, idx) => {
                 if (idx === 0 || idx >= milestones.length - 1) return;
                 const mType = step.maneuver ? (step.maneuver.type || '') : '';
                 const mMod = step.maneuver ? (step.maneuver.modifier || '') : '';
-                const isJunction = mType.includes('turn') || mMod.includes('left') || mMod.includes('right') || mType.includes('fork') || mType.includes('roundabout') || mType.includes('intersection');
-                if (isJunction && step.startDist > 45 && step.startDist < totalDist - 45) {
-                    const randomStopDuration = Math.round(3000 + Math.random() * 3000);
-                    rawStops.push({
-                        dist: Math.round(step.startDist),
-                        name: step.name || 'Road Intersection',
-                        stopDurationMs: randomStopDuration,
-                        hasStopped: false,
-                        stopStartTime: 0
-                    });
-                }
-            });
-        }
-
-        rawStops.sort((a, b) => a.dist - b.dist);
-
-        // Deduplicate stops that are excessively close together (< 160m)
-        const dedupedStops = [];
-        for (const st of rawStops) {
-            if (dedupedStops.length === 0 || (st.dist - dedupedStops[dedupedStops.length - 1].dist) >= 160) {
-                dedupedStops.push(st);
-            }
-        }
-
-        // 2. Populate realistic signalized crossroads in long corridors (gaps >= 420m)
-        // This ensures realistic stop-and-go city traffic throughout longer dropoff legs!
-        const intersectionStops = [];
-        let prevStopDist = 0;
-        for (let i = 0; i < dedupedStops.length; i++) {
-            const st = dedupedStops[i];
-            const gap = st.dist - prevStopDist;
-            if (gap >= 420) {
-                const numIntervals = Math.floor(gap / 360);
-                for (let k = 1; k <= numIntervals; k++) {
-                    const interDist = Math.round(prevStopDist + (gap / (numIntervals + 1)) * k);
-                    if (interDist > 45 && interDist < totalDist - 45) {
-                        intersectionStops.push({
-                            dist: interDist,
-                            name: "Signalized Crossroad",
-                            stopDurationMs: Math.round(3000 + Math.random() * 3000),
-                            hasStopped: false,
-                            stopStartTime: 0
+                const isStraight = mMod.includes('straight') || mType.includes('continue');
+                if (isStraight && step.startDist > 60 && step.startDist < totalDist - 60) {
+                    const nearSignal = signalStops.some(st => Math.abs(st.dist - step.startDist) < 130);
+                    const nearExisting = connectedIntersections.some(ci => Math.abs(ci.dist - step.startDist) < 100);
+                    if (!nearSignal && !nearExisting) {
+                        connectedIntersections.push({
+                            dist: Math.round(step.startDist),
+                            name: step.name || "Connected Street",
+                            spanStart: Math.max(0, Math.round(step.startDist) - 25),
+                            spanEnd: Math.min(totalDist, Math.round(step.startDist) + 18)
                         });
                     }
                 }
-            }
-            intersectionStops.push(st);
-            prevStopDist = st.dist;
-        }
-
-        const finalGap = totalDist - prevStopDist;
-        if (finalGap >= 420) {
-            const numIntervals = Math.floor(finalGap / 360);
-            for (let k = 1; k <= numIntervals; k++) {
-                const interDist = Math.round(prevStopDist + (finalGap / (numIntervals + 1)) * k);
-                if (interDist > 45 && interDist < totalDist - 45) {
-                    intersectionStops.push({
-                        dist: interDist,
-                        name: "Avenue Signal Light",
-                        stopDurationMs: Math.round(3000 + Math.random() * 3000),
-                        hasStopped: false,
-                        stopStartTime: 0
-                    });
-                }
-            }
-        }
-
-        // Fallback: If route has >= 350m and still 0 stops, add 1 signalized intersection
-        if (intersectionStops.length === 0 && totalDist >= 350) {
-            intersectionStops.push({
-                dist: Math.round(totalDist * 0.48),
-                name: "Signalized Traffic Light Intersection",
-                stopDurationMs: Math.round(3000 + Math.random() * 3000),
-                hasStopped: false,
-                stopStartTime: 0
             });
         }
-
-        intersectionStops.sort((a, b) => a.dist - b.dist);
+        connectedIntersections.sort((a, b) => a.dist - b.dist);
 
         // 3. Precompute road bends / curves from polyline geometry across chords (~20-30m lookahead)
         // Works reliably on dense polyline vertices from Mapbox and OSRM
@@ -7089,18 +7077,19 @@ const BookingModule = {
             // Smoothly ease currentVarianceKmh toward targetVarianceKmh
             currentVarianceKmh += (targetVarianceKmh - currentVarianceKmh) * Math.min(1.0, dtSec * 1.5);
 
-            // 2. Identify nearest upcoming intersection and turn maneuver
+            // 2. Identify nearest upcoming signal stop or connected street
             let activeStop = this.tripSimulation._latchedStop || null;
 
             if (!activeStop) {
-                // Check if vehicle reached or is stepping over an intersection stop line
-                const stepLookahead = Math.max(10, nominalSpeedMps * currentSpeedFactor * dtSec * 1.4);
-                for (const st of intersectionStops) {
+                // Check if vehicle has reached a signal stop line smoothly
+                const frameStep = Math.max(2, nominalSpeedMps * currentSpeedFactor * dtSec * 1.2);
+                for (const st of signalStops) {
                     if (!st.hasStopped) {
-                        if (currentDist >= st.dist - stepLookahead && currentDist <= st.dist + 16) {
+                        if (currentDist >= st.dist - frameStep && currentDist <= st.dist + 4) {
                             activeStop = st;
                             this.tripSimulation._latchedStop = st;
-                            currentDist = st.dist;
+                            currentDist = st.dist; // Pin smoothly at stop line without jumping
+                            currentSpeedFactor = 0.0;
                             break;
                         }
                     }
@@ -7113,13 +7102,13 @@ const BookingModule = {
             let dotColor = "bg-emerald-400";
 
             if (activeStop) {
-                // STOP-AND-GO AT SIGNAL LIGHT / INTERSECTION (3s to 6s max randomized duration)
+                // STOP-AND-GO AT SIGNAL LIGHT (2s to 4s randomized duration)
                 if (activeStop.stopStartTime === 0) {
                     activeStop.stopStartTime = now;
                 }
                 const stoppedElapsed = now - activeStop.stopStartTime;
                 if (stoppedElapsed < activeStop.stopDurationMs) {
-                    // Vehicle fully halted at red light / crossroad junction! Pin distance to stop line
+                    // Vehicle fully halted at red light! Firmly pinned at the stop line without sudden moves
                     currentDist = activeStop.dist;
                     targetSpeedFactor = 0.0;
                     currentSpeedFactor = 0.0;
@@ -7133,27 +7122,28 @@ const BookingModule = {
                     this.tripSimulation._latchedStop = null;
                     activeStop = null;
                     targetSpeedFactor = 0.45;
-                    currentSpeedFactor = Math.max(currentSpeedFactor, 0.12);
+                    currentSpeedFactor = 0.04;
                     drivingBehavior = "Accelerating (Green Light)";
                     drivingModeClass = "text-amber-300";
                     dotColor = "bg-amber-400 animate-pulse";
                 }
             } else {
-                // Check if approaching an intersection stop ahead (Extended progressive deceleration zone)
+                // Check if approaching a major signal stop ahead (Smooth deceleration without lurching)
                 let distToNextStop = 99999;
-                for (const st of intersectionStops) {
+                for (const st of signalStops) {
                     if (!st.hasStopped && st.dist > currentDist) {
                         const d = st.dist - currentDist;
                         if (d < distToNextStop) distToNextStop = d;
                     }
                 }
 
-                const stopDecelHorizon = Math.max(70, nominalSpeedMps * 1.4);
-                if (distToNextStop <= stopDecelHorizon && distToNextStop > 4) {
-                    // Smooth, progressive deceleration curve to stop
-                    const stopRatio = Math.max(0, (distToNextStop - 4) / (stopDecelHorizon - 4));
-                    targetSpeedFactor = Math.pow(stopRatio, 1.5) * 0.70;
-                    drivingBehavior = "Stopping at Intersection";
+                const stopDecelHorizon = Math.max(65, nominalSpeedMps * 1.3);
+                if (distToNextStop <= stopDecelHorizon) {
+                    // Continuous smooth deceleration curve easing all the way to 0 at stop line
+                    // Prevents any sudden moving/accelerating right before the stop!
+                    const stopRatio = Math.max(0, distToNextStop / stopDecelHorizon);
+                    targetSpeedFactor = Math.pow(stopRatio, 1.4) * 0.70;
+                    drivingBehavior = "Stopping at Red Light";
                     drivingModeClass = "text-amber-400";
                     dotColor = "bg-amber-400 animate-pulse";
                 } else {
@@ -7189,6 +7179,20 @@ const BookingModule = {
                         }
                     }
 
+                    // CHECK CONNECTED SIDE STREETS: Slow down, go straight, then accelerate (NO full stop!)
+                    let activeConnected = null;
+                    let distToNextConnected = 99999;
+                    for (const ci of connectedIntersections) {
+                        if (currentDist >= ci.spanStart && currentDist <= ci.spanEnd) {
+                            activeConnected = ci;
+                            break;
+                        }
+                        if (ci.dist > currentDist) {
+                            const d = ci.dist - currentDist;
+                            if (d < distToNextConnected) distToNextConnected = d;
+                        }
+                    }
+
                     const turnDecelHorizon = Math.max(45, nominalSpeedMps * 0.9);
                     const bendDecelHorizon = Math.max(40, nominalSpeedMps * 0.8);
 
@@ -7212,6 +7216,19 @@ const BookingModule = {
                         drivingBehavior = "Slowing for Bend";
                         drivingModeClass = "text-teal-300";
                         dotColor = "bg-teal-400 animate-pulse";
+                    } else if (activeConnected) {
+                        // PASSING CONNECTED STREET STRAIGHT: Maintain steady caution crossing speed (~22 km/h)
+                        targetSpeedFactor = 0.48;
+                        drivingBehavior = "Crossing Intersection (Straight)";
+                        drivingModeClass = "text-amber-300";
+                        dotColor = "bg-amber-400 animate-pulse";
+                    } else if (distToNextConnected <= 40) {
+                        // APPROACHING CONNECTED STREET: Slow down smoothly before crossing
+                        const ciRatio = Math.max(0, distToNextConnected / 40);
+                        targetSpeedFactor = 0.48 + (ciRatio * 0.22);
+                        drivingBehavior = "Yielding at Cross Street";
+                        drivingModeClass = "text-amber-300";
+                        dotColor = "bg-amber-400 animate-pulse";
                     } else if (currentDist < 35) {
                         // Departing initial location (gentle progressive launch)
                         const departRatio = Math.min(1.0, currentDist / 35);
