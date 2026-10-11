@@ -353,6 +353,7 @@
                                 <div class="sm:col-span-4 p-3 bg-hirna-950/70 rounded-xl border border-hirna-800 flex flex-col justify-center">
                                     <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">Current Speed</span>
                                     <span id="hud-speed" class="text-xl font-black text-gold-400 font-mono mt-0.5">0.0 km/h</span>
+                                    <span id="hud-driving-behavior" class="text-[10px] font-bold text-emerald-400 mt-0.5 truncate">Ready</span>
                                 </div>
                                 <div class="sm:col-span-8 p-3 bg-hirna-950/70 rounded-xl border border-hirna-800 text-left flex flex-col justify-center">
                                     <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider flex items-center space-x-1.5">
@@ -362,6 +363,12 @@
                                     <span id="hud-current-location" class="text-xs font-bold text-white mt-0.5 block truncate">--</span>
                                     <span id="hud-coords" class="text-[10px] font-mono text-slate-400 block mt-0.5 truncate">0.0000, 0.0000</span>
                                 </div>
+                            </div>
+
+                            <!-- Mid-Trip Cancellation Notice Banner -->
+                            <div id="hud-cancelled-notice" class="p-2.5 bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-bold rounded-lg hidden flex items-center space-x-2">
+                                <span class="text-base flex-shrink-0">⚠️</span>
+                                <span id="hud-cancelled-notice-text">Trip Cancelled Mid-Transit: Vehicle journey ended early. Replaying actual road telemetry up to the cancellation point.</span>
                             </div>
 
                             <!-- AI Anomaly Alert Box -->

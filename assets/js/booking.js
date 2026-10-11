@@ -6253,8 +6253,8 @@ const BookingModule = {
                 <td class="px-4 py-3 text-xs text-slate-700 font-semibold">${b.vehicle_class}</td>
                 <td class="px-4 py-3 text-xs font-black text-slate-900">₱${parseFloat(b.total_fare).toFixed(2)} <br/><span class="text-[10px] text-amber-600 font-normal">(${b.surge_multiplier || 1.0}x Surge)</span></td>
                 <td class="px-4 py-3 text-xs">
-                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${b.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-hirna-100 text-hirna-900'}">
-                        ● ${b.status.toUpperCase()}
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${b.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : (b.status === 'completed_early' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-hirna-100 text-hirna-900')}">
+                        ● ${b.status === 'completed_early' ? 'CANCELLED MID-TRIP' : (b.status || 'PENDING').toUpperCase()}
                     </span>
                 </td>
                 <td class="px-4 py-3 text-xs text-right space-x-1 whitespace-nowrap">
@@ -6891,71 +6891,108 @@ const BookingModule = {
         const milestones = activeRoute.stepMilestones || [];
         
         // ---------------------------------------------------------------------
-        // 1. MAJOR TRAFFIC SIGNAL LIGHT STOPS (Full stop 2s to 4s at red lights)
-        // Only stop at designated red light signals (spaced ~900m-1300m or 1 stop for medium trips)
+        // 1. REAL TURNS & INTERSECTIONS (Stop only on actual turns and intersections!)
+        // No arbitrary mid-road stops on continuous straight roads or highways.
         // ---------------------------------------------------------------------
-        const signalStops = [];
-        if (totalDist >= 650 && totalDist < 1900) {
-            // Exactly 1 major signal stop around the halfway mark
-            signalStops.push({
-                dist: Math.round(totalDist * 0.48),
-                name: "Traffic Signal Light (Red)",
-                stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
-                hasStopped: false,
-                stopStartTime: 0
-            });
-        } else if (totalDist >= 1900) {
-            // Space major signal light stops every ~900m-1300m
-            const numStops = Math.max(1, Math.floor(totalDist / 1050));
-            for (let s = 1; s <= numStops; s++) {
-                const sDist = Math.round((totalDist / (numStops + 1)) * s);
-                if (sDist > 70 && sDist < totalDist - 70) {
-                    signalStops.push({
-                        dist: sDist,
-                        name: "Traffic Signal Light (Red)",
+        const turnAndIntersectionStops = [];
+
+        // 1a. Extract turn & intersection milestones from route navigation steps
+        if (Array.isArray(milestones) && milestones.length > 0) {
+            milestones.forEach((step, idx) => {
+                // Skip initial depart (idx === 0) and final arrive (handled on arrival)
+                if (idx === 0 || idx >= milestones.length - 1) return;
+
+                const mType = step.maneuver ? (step.maneuver.type || '').toLowerCase() : '';
+                const mMod = step.maneuver ? (step.maneuver.modifier || '').toLowerCase() : '';
+
+                const isTurn = mType.includes('turn') || mMod.includes('left') || mMod.includes('right') || 
+                               mMod.includes('uturn') || mType.includes('fork') || mType.includes('roundabout') || 
+                               mType.includes('rotary') || mType.includes('end of road');
+                const isIntersection = mType.includes('intersection') || mType.includes('junction') || 
+                                       mType.includes('new name');
+
+                if ((isTurn || isIntersection) && step.startDist > 45 && step.startDist < totalDist - 45) {
+                    const actionName = isTurn 
+                        ? (mMod.includes('left') ? 'Turn Left Junction' : mMod.includes('right') ? 'Turn Right Junction' : 'Turn Junction')
+                        : 'Road Intersection';
+
+                    turnAndIntersectionStops.push({
+                        dist: Math.round(step.startDist),
+                        name: step.name ? `${actionName} (${step.name})` : actionName,
+                        isTurn: isTurn,
                         stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
                         hasStopped: false,
                         stopStartTime: 0
                     });
                 }
+            });
+        }
+
+        // 1b. Also detect sharp physical road turns from polyline geometry (heading change >= 38 degrees)
+        // for physical corners that may not have a dedicated step in directions
+        if (waypoints.length >= 3) {
+            for (let i = 1; i < waypoints.length - 1; i++) {
+                let backIdx = i - 1;
+                while (backIdx > 0 && (cumDistances[i] - cumDistances[backIdx]) < 22) {
+                    backIdx--;
+                }
+                let fwdIdx = i + 1;
+                while (fwdIdx < waypoints.length - 1 && (cumDistances[fwdIdx] - cumDistances[i]) < 22) {
+                    fwdIdx++;
+                }
+
+                const bBack = computeBearing(waypoints[backIdx], waypoints[i]);
+                const bFwd = computeBearing(waypoints[i], waypoints[fwdIdx]);
+                let diff = Math.abs(bFwd - bBack);
+                if (diff > 180) diff = 360 - diff;
+
+                if (diff >= 38) {
+                    const turnDist = Math.round(cumDistances[i]);
+                    if (turnDist > 55 && turnDist < totalDist - 55) {
+                        const alreadyCaptured = turnAndIntersectionStops.some(st => Math.abs(st.dist - turnDist) < 90);
+                        if (!alreadyCaptured) {
+                            turnAndIntersectionStops.push({
+                                dist: turnDist,
+                                name: "Street Turn Corner",
+                                isTurn: true,
+                                stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
+                                hasStopped: false,
+                                stopStartTime: 0
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        turnAndIntersectionStops.sort((a, b) => a.dist - b.dist);
+
+        // Deduplicate any stops closer than 100m to each other
+        const finalStops = [];
+        for (const st of turnAndIntersectionStops) {
+            if (finalStops.length === 0 || (st.dist - finalStops[finalStops.length - 1].dist) >= 100) {
+                finalStops.push(st);
             }
         }
 
         // ---------------------------------------------------------------------
-        // 2. CONNECTED STREETS & CROSSROADS (Slow down, go straight, accelerate)
-        // Rather than a full stop on a connected street on right/left that you are
-        // not going to, the vehicle slows down, crosses straight through, and accelerates!
+        // 2. CONNECTED SIDE STREETS (Slow down, go straight, accelerate - NO stop!)
+        // For side streets on the right or left where the vehicle continues straight
         // ---------------------------------------------------------------------
         const connectedIntersections = [];
-        const crossroadInterval = Math.max(280, Math.min(420, Math.round(totalDist / 5)));
-        let nextCrossroadDist = crossroadInterval;
-        while (nextCrossroadDist < totalDist - 60) {
-            const nearSignal = signalStops.some(st => Math.abs(st.dist - nextCrossroadDist) < 130);
-            if (!nearSignal) {
-                connectedIntersections.push({
-                    dist: nextCrossroadDist,
-                    name: "Connected Side Street",
-                    spanStart: Math.max(0, nextCrossroadDist - 25),
-                    spanEnd: Math.min(totalDist, nextCrossroadDist + 18)
-                });
-            }
-            nextCrossroadDist += crossroadInterval;
-        }
-
-        // Also add any intermediate straight steps from milestones
         if (Array.isArray(milestones)) {
             milestones.forEach((step, idx) => {
                 if (idx === 0 || idx >= milestones.length - 1) return;
-                const mType = step.maneuver ? (step.maneuver.type || '') : '';
-                const mMod = step.maneuver ? (step.maneuver.modifier || '') : '';
+                const mType = step.maneuver ? (step.maneuver.type || '').toLowerCase() : '';
+                const mMod = step.maneuver ? (step.maneuver.modifier || '').toLowerCase() : '';
                 const isStraight = mMod.includes('straight') || mType.includes('continue');
                 if (isStraight && step.startDist > 60 && step.startDist < totalDist - 60) {
-                    const nearSignal = signalStops.some(st => Math.abs(st.dist - step.startDist) < 130);
-                    const nearExisting = connectedIntersections.some(ci => Math.abs(ci.dist - step.startDist) < 100);
-                    if (!nearSignal && !nearExisting) {
+                    const nearStop = finalStops.some(st => Math.abs(st.dist - step.startDist) < 110);
+                    const nearExisting = connectedIntersections.some(ci => Math.abs(ci.dist - step.startDist) < 90);
+                    if (!nearStop && !nearExisting) {
                         connectedIntersections.push({
                             dist: Math.round(step.startDist),
-                            name: step.name || "Connected Street",
+                            name: step.name || "Connected Side Street",
                             spanStart: Math.max(0, Math.round(step.startDist) - 25),
                             spanEnd: Math.min(totalDist, Math.round(step.startDist) + 18)
                         });
@@ -7081,9 +7118,9 @@ const BookingModule = {
             let activeStop = this.tripSimulation._latchedStop || null;
 
             if (!activeStop) {
-                // Check if vehicle has reached a signal stop line smoothly
+                // Check if vehicle has reached a turn or intersection stop line smoothly
                 const frameStep = Math.max(2, nominalSpeedMps * currentSpeedFactor * dtSec * 1.2);
-                for (const st of signalStops) {
+                for (const st of finalStops) {
                     if (!st.hasStopped) {
                         if (currentDist >= st.dist - frameStep && currentDist <= st.dist + 4) {
                             activeStop = st;
@@ -7102,38 +7139,42 @@ const BookingModule = {
             let dotColor = "bg-emerald-400";
 
             if (activeStop) {
-                // STOP-AND-GO AT SIGNAL LIGHT (2s to 4s randomized duration)
+                // FULL STOP AT TURN OR INTERSECTION (2s to 4s randomized duration)
                 if (activeStop.stopStartTime === 0) {
                     activeStop.stopStartTime = now;
                 }
                 const stoppedElapsed = now - activeStop.stopStartTime;
                 if (stoppedElapsed < activeStop.stopDurationMs) {
-                    // Vehicle fully halted at red light! Firmly pinned at the stop line without sudden moves
+                    // Vehicle fully halted at turn or intersection! Firmly pinned without sudden moves
                     currentDist = activeStop.dist;
                     targetSpeedFactor = 0.0;
                     currentSpeedFactor = 0.0;
                     smoothedSpeedKmh = 0;
-                    drivingBehavior = "Signal Stop (Red Light)";
+                    drivingBehavior = activeStop.isTurn ? "Stopped for Turn" : "Stopped at Intersection";
                     drivingModeClass = "text-rose-400";
                     dotColor = "bg-rose-500 animate-ping";
                 } else {
-                    // Green light: Progressive acceleration out of intersection
+                    // Clear to go: Progressive acceleration out of the turn / intersection
                     activeStop.hasStopped = true;
                     this.tripSimulation._latchedStop = null;
                     activeStop = null;
                     targetSpeedFactor = 0.45;
                     currentSpeedFactor = 0.04;
-                    drivingBehavior = "Accelerating (Green Light)";
+                    drivingBehavior = "Accelerating into Road";
                     drivingModeClass = "text-amber-300";
                     dotColor = "bg-amber-400 animate-pulse";
                 }
             } else {
-                // Check if approaching a major signal stop ahead (Smooth deceleration without lurching)
+                // Check if approaching a turn or intersection stop ahead (Smooth deceleration without lurching)
                 let distToNextStop = 99999;
-                for (const st of signalStops) {
+                let nextStopObj = null;
+                for (const st of finalStops) {
                     if (!st.hasStopped && st.dist > currentDist) {
                         const d = st.dist - currentDist;
-                        if (d < distToNextStop) distToNextStop = d;
+                        if (d < distToNextStop) {
+                            distToNextStop = d;
+                            nextStopObj = st;
+                        }
                     }
                 }
 
@@ -7143,28 +7184,10 @@ const BookingModule = {
                     // Prevents any sudden moving/accelerating right before the stop!
                     const stopRatio = Math.max(0, distToNextStop / stopDecelHorizon);
                     targetSpeedFactor = Math.pow(stopRatio, 1.4) * 0.70;
-                    drivingBehavior = "Stopping at Red Light";
+                    drivingBehavior = nextStopObj?.isTurn ? "Stopping for Turn" : "Stopping at Intersection";
                     drivingModeClass = "text-amber-400";
                     dotColor = "bg-amber-400 animate-pulse";
                 } else {
-                    // CHECK TURNS: Slow down on designated turn maneuvers
-                    let distToNextTurn = 99999;
-                    if (Array.isArray(milestones)) {
-                        for (let i = 0; i < milestones.length - 1; i++) {
-                            const m = milestones[i];
-                            const nextM = milestones[i + 1];
-                            const isTurn = nextM && nextM.maneuver && (
-                                (nextM.maneuver.modifier || '').includes('left') || 
-                                (nextM.maneuver.modifier || '').includes('right') || 
-                                (nextM.maneuver.type || '').includes('turn')
-                            );
-                            if (isTurn && m.endDist > currentDist) {
-                                const d = m.endDist - currentDist;
-                                if (d < distToNextTurn) distToNextTurn = d;
-                            }
-                        }
-                    }
-
                     // CHECK ROAD BENDS: Inside a bend or approaching a bend along geometry
                     let activeBend = null;
                     let distToNextBend = 99999;
@@ -7193,17 +7216,9 @@ const BookingModule = {
                         }
                     }
 
-                    const turnDecelHorizon = Math.max(45, nominalSpeedMps * 0.9);
                     const bendDecelHorizon = Math.max(40, nominalSpeedMps * 0.8);
 
-                    if (distToNextTurn <= turnDecelHorizon) {
-                        // Slowing down for street turn maneuver (progressive cornering speed)
-                        const turnRatio = Math.max(0, distToNextTurn / turnDecelHorizon);
-                        targetSpeedFactor = 0.28 + (turnRatio * 0.12);
-                        drivingBehavior = "Slowing for Turn";
-                        drivingModeClass = "text-amber-300";
-                        dotColor = "bg-amber-300 animate-pulse";
-                    } else if (activeBend) {
+                    if (activeBend) {
                         // Currently traversing a curved road or bend
                         targetSpeedFactor = 0.46;
                         drivingBehavior = "Navigating Bend";
@@ -7366,7 +7381,8 @@ const BookingModule = {
                 const driverEtaBadge = document.getElementById('driver-marker-eta');
                 const isVehicleStopped = (smoothedSpeedKmh <= 3 || speedFactor < 0.05);
                 if (driverDistBadge) {
-                    driverDistBadge.innerText = progress >= 1.0 ? 'Arrived' : (isVehicleStopped ? "Stopped (Signal)" : `${smoothedSpeedKmh} km/h • ${distText}`);
+                    const stopBadgeText = activeStop?.isTurn ? "Stopped (Turn)" : "Stopped (Intersection)";
+                    driverDistBadge.innerText = progress >= 1.0 ? 'Arrived' : (isVehicleStopped ? stopBadgeText : `${smoothedSpeedKmh} km/h • ${distText}`);
                 }
                 if (driverEtaBadge) {
                     driverEtaBadge.innerText = progress >= 1.0 ? 'Now' : (isVehicleStopped ? "Wait" : etaText);
@@ -7911,12 +7927,36 @@ const BookingModule = {
             const traveledDurMin = this.tripSimulation._pendingProratedTime || Math.round(booking.duration_min * 0.6);
             const proratedQuote = this.tripSimulation._pendingProratedQuote;
 
+            // Get current location street name and traveled coordinates
+            const currStreet = document.getElementById('hud-current-location')?.innerText || `Mid-Trip Point (km ${traveledDistKm})`;
+
+            // Extract the actual traveled road waypoints from simulation
+            let traveledWaypoints = [];
+            if (Array.isArray(this.tripSimulation.waypoints) && this.tripSimulation.waypoints.length > 0) {
+                const totalWp = this.tripSimulation.waypoints.length;
+                const prog = this.tripSimulation.currentProgress || (traveledDistKm / (booking.distance_km || 1));
+                const cutIdx = Math.max(1, Math.min(totalWp - 1, Math.round(totalWp * Math.min(1.0, prog))));
+                traveledWaypoints = this.tripSimulation.waypoints.slice(0, cutIdx);
+                if (curCoords) {
+                    traveledWaypoints.push(curCoords);
+                }
+            } else if (curCoords && this.pickupCoords) {
+                traveledWaypoints = [this.pickupCoords, curCoords];
+            }
+
             // Mark booking as completed (early cancellation) with prorated fare
             booking.total_fare = proratedFare;
             booking.distance_km = traveledDistKm;
             booking.duration_min = traveledDurMin;
             booking.status = 'completed_early';
-            booking.cancellation_note = `Ride ended mid-trip at km ${traveledDistKm} (${traveledDurMin} mins)`;
+            booking.is_cancelled_mid_trip = true;
+            booking.cancelled_mid_trip = true;
+            booking.cancellation_coords = curCoords;
+            booking.actual_dropoff_coords = curCoords;
+            booking.cancellation_street = currStreet;
+            booking.cancellation_progress = this.tripSimulation.currentProgress || (traveledDistKm / (booking.distance_km || 1));
+            booking.traveled_waypoints = traveledWaypoints;
+            booking.cancellation_note = `Ride ended mid-trip at km ${traveledDistKm} (${traveledDurMin} mins) near ${currStreet}`;
 
             if (proratedQuote) {
                 booking.base_fare = proratedQuote.baseFare;
@@ -7931,6 +7971,14 @@ const BookingModule = {
                     distance_km: traveledDistKm,
                     duration_min: traveledDurMin,
                     status: 'completed_early',
+                    is_cancelled_mid_trip: true,
+                    cancelled_mid_trip: true,
+                    cancellation_coords: curCoords,
+                    actual_dropoff_coords: curCoords,
+                    cancellation_street: currStreet,
+                    cancellation_progress: booking.cancellation_progress,
+                    traveled_waypoints: traveledWaypoints,
+                    cancellation_note: booking.cancellation_note,
                     base_fare: booking.base_fare,
                     distance_fare: booking.distance_fare,
                     time_fare: booking.time_fare

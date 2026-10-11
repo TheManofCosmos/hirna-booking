@@ -10,10 +10,14 @@ const GPSModule = {
     carMarker: null,
     pickupMarker: null,
     dropoffMarker: null,
+    origDropoffMarker: null,
     routePolyline: null,
     traveledPolyline: null,
+    cancelledPolyline: null,
     activeBooking: null,
+    isCancelledMidTrip: false,
     waypoints: [],
+    cancelledWaypoints: [],
     stepMilestones: [],
     segmentDistances: [],
     cumDistances: [],
@@ -24,12 +28,30 @@ const GPSModule = {
     arrivalTimeStr: "08:52:00 AM",
     startDateObj: null,
     currentProgress: 0, // 0.0 to 1.0
+    currentDistM: 0,
     isPlaying: false,
     playbackSpeed: 1,
     animRafId: null,
     lastFrameTime: 0,
     autoTrack: true,
     currentCoords: null,
+    // Real-world driving dynamics engine state (synced with booking.js)
+    drivingDynamics: {
+        finalStops: [],
+        signalStops: [],
+        connectedIntersections: [],
+        roadBends: [],
+        trafficCruisingMultiplier: 1.0,
+        trafficLabel: "Normal Commute Speed",
+        trafficDotClass: "bg-emerald-400",
+        trafficModeClass: "text-emerald-400",
+        currentVarianceKmh: 0,
+        targetVarianceKmh: 0,
+        nextVarianceChangeTime: 0,
+        currentSpeedFactor: 0.25,
+        smoothedSpeedKmh: 38,
+        activeStop: null
+    },
 
     init() {
         if (this._initialized) {
@@ -299,7 +321,21 @@ const GPSModule = {
             const plate = b.vehicle_plate || 'TXI-5431';
             const duration = b.duration_min ? `${b.duration_min} mins` : '20 mins';
             const dist = b.distance_km ? `${parseFloat(b.distance_km).toFixed(1)} km` : '5.5 km';
+            const isCancelledMidTrip = b.status === 'completed_early' || !!b.is_cancelled_mid_trip || !!b.cancelled_mid_trip || (b.cancellation_note && b.cancellation_note.includes('mid-trip'));
             const isCompleted = (b.status || '').toLowerCase() === 'completed';
+
+            let statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isCompleted ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">● ${(b.status || 'COMPLETED').toUpperCase()}</span>`;
+            if (isCancelledMidTrip) {
+                statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">● CANCELLED MID-TRIP</span>`;
+            }
+
+            const dropoffDisplay = isCancelledMidTrip
+                ? `<div class="text-xs text-amber-800 font-semibold truncate mt-0.5" title="Cancelled Mid-Trip at: ${b.cancellation_street || 'Ended Mid-Trip'}">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 inline-block mr-1"></span>${b.cancellation_street || 'Ended Mid-Trip'} <span class="text-[10px] text-slate-400 line-through">(${b.dropoff})</span>
+                   </div>`
+                : `<div class="text-xs text-slate-500 truncate mt-0.5" title="${b.dropoff}">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 inline-block mr-1"></span>${b.dropoff}
+                   </div>`;
 
             return `
                 <tr class="hover:bg-slate-50 transition border-b border-slate-100">
@@ -317,9 +353,7 @@ const GPSModule = {
                         <div class="text-xs text-slate-800 font-medium truncate" title="${b.pickup}">
                             <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1"></span>${b.pickup}
                         </div>
-                        <div class="text-xs text-slate-500 truncate mt-0.5" title="${b.dropoff}">
-                            <span class="w-2 h-2 rounded-full bg-rose-500 inline-block mr-1"></span>${b.dropoff}
-                        </div>
+                        ${dropoffDisplay}
                     </td>
                     <td class="px-4 py-3.5">
                         <div class="font-semibold text-slate-800">${driver}</div>
@@ -330,9 +364,7 @@ const GPSModule = {
                         <div class="text-[11px] text-slate-500 font-mono">${dist}</div>
                     </td>
                     <td class="px-4 py-3.5">
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${isCompleted ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                            ● ${(b.status || 'COMPLETED').toUpperCase()}
-                        </span>
+                        ${statusBadge}
                     </td>
                     <td class="px-4 py-3.5 text-right whitespace-nowrap">
                         <button type="button" onclick="GPSModule.viewTrip('${b.id || b.booking_code}')" class="px-3.5 py-1.5 bg-hirna-700 hover:bg-hirna-800 active:scale-95 text-white font-bold rounded-xl shadow-sm transition inline-flex items-center space-x-1.5 cursor-pointer">
@@ -522,13 +554,47 @@ const GPSModule = {
         const bookerName = booking.sender_name || booking.passenger_name || 'Passenger';
         const bookerPhone = booking.sender_phone || booking.passenger_phone || '+63 917 123 4567';
 
+        // Detect if this trip was completed early due to mid-trip cancellation
+        const isCancelledMidTrip = booking.status === 'completed_early' ||
+            !!booking.is_cancelled_mid_trip ||
+            !!booking.cancelled_mid_trip ||
+            (booking.cancellation_note && booking.cancellation_note.includes('mid-trip'));
+        this.isCancelledMidTrip = isCancelledMidTrip;
+
         // 1. Update Title and Badges
         const titleEl = document.getElementById('playback-trip-title');
         const subTitleEl = document.getElementById('playback-route-subtitle');
         const badgeEl = document.getElementById('playback-booking-badge');
-        if (titleEl) titleEl.innerText = `${booking.pickup} → ${booking.dropoff}`;
-        if (subTitleEl) subTitleEl.innerText = `Replaying ${isParcel ? 'Parcel Delivery' : 'Ride'}: ${booking.booking_code} • Duration: ${booking.duration_min || 22} mins`;
-        if (badgeEl) badgeEl.innerText = `#${booking.booking_code}`;
+        const cancelNotice = document.getElementById('hud-cancelled-notice');
+        const cancelNoticeText = document.getElementById('hud-cancelled-notice-text');
+
+        if (titleEl) {
+            titleEl.innerText = isCancelledMidTrip
+                ? `${booking.pickup} → ${booking.cancellation_street || 'Ended Mid-Trip'}`
+                : `${booking.pickup} → ${booking.dropoff}`;
+        }
+        if (subTitleEl) {
+            subTitleEl.innerText = isCancelledMidTrip
+                ? `Replaying ${isParcel ? 'Parcel Delivery' : 'Ride'} (Ended Mid-Trip): ${booking.booking_code} • Duration: ${booking.duration_min || 12} mins`
+                : `Replaying ${isParcel ? 'Parcel Delivery' : 'Ride'}: ${booking.booking_code} • Duration: ${booking.duration_min || 22} mins`;
+        }
+        if (badgeEl) {
+            badgeEl.innerText = isCancelledMidTrip ? `#${booking.booking_code} [MID-TRIP CANCELLED]` : `#${booking.booking_code}`;
+            badgeEl.className = isCancelledMidTrip
+                ? "px-3 py-1 bg-amber-50 text-amber-800 font-mono text-xs font-bold rounded-xl border border-amber-300 shadow-xs"
+                : "px-3 py-1 bg-hirna-50 text-hirna-800 font-mono text-xs font-bold rounded-xl border border-hirna-200 shadow-xs";
+        }
+
+        if (cancelNotice) {
+            if (isCancelledMidTrip) {
+                cancelNotice.classList.remove('hidden');
+                if (cancelNoticeText) {
+                    cancelNoticeText.innerText = booking.cancellation_note || `Ride ended mid-trip at km ${booking.distance_km || 'prorated'} (${booking.duration_min || 'prorated'} mins) near ${booking.cancellation_street || 'Mid-Trip Point'}`;
+                }
+            } else {
+                cancelNotice.classList.add('hidden');
+            }
+        }
 
         // 2. Populate Trip Details HUD
         const codeEl = document.getElementById('detail-booking-code');
@@ -543,18 +609,23 @@ const GPSModule = {
 
         if (codeEl) codeEl.innerText = booking.booking_code;
         if (serviceBadge) {
-            serviceBadge.innerText = isParcel ? "PARCEL DELIVERY" : (booking.service_type ? booking.service_type.toUpperCase() : "TRANSPORT");
-            serviceBadge.className = isParcel 
-                ? "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase"
-                : "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase";
+            if (isCancelledMidTrip) {
+                serviceBadge.innerText = "CANCELLED MID-TRIP";
+                serviceBadge.className = "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase";
+            } else {
+                serviceBadge.innerText = isParcel ? "PARCEL DELIVERY" : (booking.service_type ? booking.service_type.toUpperCase() : "TRANSPORT");
+                serviceBadge.className = isParcel 
+                    ? "px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase"
+                    : "px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase";
+            }
         }
-        if (durationEl) durationEl.innerText = `${booking.duration_min || 22} mins`;
+        if (durationEl) durationEl.innerText = `${booking.duration_min || (isCancelledMidTrip ? 12 : 22)} mins`;
         if (bookerLabel) bookerLabel.innerText = isParcel ? "Booker / Sender:" : "Booker / Passenger:";
         if (bookerNameEl) bookerNameEl.innerText = bookerName;
         if (bookerPhoneEl) bookerPhoneEl.innerText = bookerPhone;
         if (driverNameEl) driverNameEl.innerText = booking.driver_name || 'Ricardo Dalisay';
         if (vehicleInfoEl) vehicleInfoEl.innerText = `${booking.vehicle_model || 'Toyota Vios'} (${booking.vehicle_plate || 'TXI-5431'})`;
-        if (distEl) distEl.innerText = `${booking.distance_km || 5.8} km`;
+        if (distEl) distEl.innerText = `${booking.distance_km || (isCancelledMidTrip ? 3.4 : 5.8)} km`;
 
         // Recipient details (if parcel)
         const recipientBox = document.getElementById('detail-recipient-box');
@@ -570,7 +641,7 @@ const GPSModule = {
         }
 
         // 3. Setup Trip Timers & Arrival Times
-        this.totalDurationMin = parseInt(booking.duration_min) || 22;
+        this.totalDurationMin = parseInt(booking.duration_min) || (isCancelledMidTrip ? 12 : 22);
         let baseDate = new Date();
         if (booking.created_at) {
             const parsed = new Date(booking.created_at);
@@ -600,11 +671,74 @@ const GPSModule = {
         const pickup = this.normalizeCoords(booking.pickup_coords, [14.5758, 121.0183]);
         const dropoff = this.normalizeCoords(booking.dropoff_coords, [14.5517, 121.0509]);
 
-        const routeResult = await this.fetchRouteWaypointsAndSteps(pickup, dropoff, booking.id);
-        this.waypoints = routeResult.waypoints || [pickup, dropoff];
-        this.stepMilestones = routeResult.steps || [];
+        let fullWaypoints = [];
+        let fullSteps = [];
 
-        // Precompute cumulative distances
+        // Check if traveled_waypoints was explicitly stored at cancellation time
+        if (isCancelledMidTrip && Array.isArray(booking.traveled_waypoints) && booking.traveled_waypoints.length >= 2) {
+            this.waypoints = booking.traveled_waypoints.map(p => this.normalizeCoords(p));
+            // Also fetch full route to destination to show untraveled cancelled segment
+            const fullRoute = await this.fetchRouteWaypointsAndSteps(pickup, dropoff, booking.id);
+            fullWaypoints = fullRoute.waypoints || [pickup, dropoff];
+            fullSteps = fullRoute.steps || [];
+        } else {
+            const routeResult = await this.fetchRouteWaypointsAndSteps(pickup, dropoff, booking.id);
+            fullWaypoints = routeResult.waypoints || [pickup, dropoff];
+            fullSteps = routeResult.steps || [];
+
+            if (isCancelledMidTrip) {
+                // Determine slice point: either cancellation_coords or cancellation_progress / prorated distance ratio
+                const cancelCoords = booking.cancellation_coords || booking.actual_dropoff_coords;
+                let sliceIdx = -1;
+
+                if (cancelCoords) {
+                    const normCancel = this.normalizeCoords(cancelCoords);
+                    let minDist = Infinity;
+                    for (let i = 0; i < fullWaypoints.length; i++) {
+                        const d = this.computeDistanceMeters(normCancel, fullWaypoints[i]);
+                        if (d < minDist) {
+                            minDist = d;
+                            sliceIdx = i;
+                        }
+                    }
+                }
+
+                if (sliceIdx <= 0 || sliceIdx >= fullWaypoints.length) {
+                    const prog = booking.cancellation_progress || (booking.distance_km ? (parseFloat(booking.distance_km) / 6.5) : 0.55);
+                    sliceIdx = Math.max(2, Math.min(fullWaypoints.length - 2, Math.round(fullWaypoints.length * Math.min(0.9, prog))));
+                }
+
+                this.waypoints = fullWaypoints.slice(0, sliceIdx + 1);
+                if (cancelCoords) {
+                    this.waypoints.push(this.normalizeCoords(cancelCoords));
+                }
+            } else {
+                this.waypoints = fullWaypoints;
+            }
+        }
+
+        // Untraveled / Cancelled segment beyond early dropoff
+        if (isCancelledMidTrip && fullWaypoints.length > 0) {
+            const lastTraveledPt = this.waypoints[this.waypoints.length - 1];
+            // Find closest index in fullWaypoints to lastTraveledPt
+            let matchIdx = fullWaypoints.length - 1;
+            let bestD = Infinity;
+            for (let i = 0; i < fullWaypoints.length; i++) {
+                const d = this.computeDistanceMeters(lastTraveledPt, fullWaypoints[i]);
+                if (d < bestD) {
+                    bestD = d;
+                    matchIdx = i;
+                }
+            }
+            const remaining = fullWaypoints.slice(matchIdx);
+            this.cancelledWaypoints = [lastTraveledPt, ...remaining];
+        } else {
+            this.cancelledWaypoints = [];
+        }
+
+        this.stepMilestones = fullSteps;
+
+        // Precompute cumulative distances for traveled waypoints
         this.segmentDistances = [];
         this.cumDistances = [0];
         let totalD = 0;
@@ -614,22 +748,35 @@ const GPSModule = {
             totalD += d;
             this.cumDistances.push(totalD);
         }
-        this.totalDistM = totalD > 0 ? totalD : 5800;
+        this.totalDistM = totalD > 0 ? totalD : (isCancelledMidTrip ? 3400 : 5800);
 
         // 5. Setup Leaflet Map Layers
         if (this.routePolyline) this.map.removeLayer(this.routePolyline);
         if (this.traveledPolyline) this.map.removeLayer(this.traveledPolyline);
+        if (this.cancelledPolyline) this.map.removeLayer(this.cancelledPolyline);
         if (this.pickupMarker) this.map.removeLayer(this.pickupMarker);
         if (this.dropoffMarker) this.map.removeLayer(this.dropoffMarker);
+        if (this.origDropoffMarker) this.map.removeLayer(this.origDropoffMarker);
         if (this.carMarker) this.map.removeLayer(this.carMarker);
 
-        // Solid background road route
+        // Solid background road route for traveled portion
         this.routePolyline = L.polyline(this.waypoints, {
             color: '#cbd5e1',
             weight: 6,
             opacity: 0.75,
             lineJoin: 'round'
         }).addTo(this.map);
+
+        // If cancelled mid-trip, render dashed red line for untraveled remaining route to original destination
+        if (isCancelledMidTrip && this.cancelledWaypoints.length >= 2) {
+            this.cancelledPolyline = L.polyline(this.cancelledWaypoints, {
+                color: '#ef4444',
+                weight: 5,
+                opacity: 0.65,
+                dashArray: '6, 8',
+                lineJoin: 'round'
+            }).addTo(this.map);
+        }
 
         // Traveled dynamic highlight polyline
         this.traveledPolyline = L.polyline([this.waypoints[0]], {
@@ -639,7 +786,11 @@ const GPSModule = {
             lineJoin: 'round'
         }).addTo(this.map);
 
-        this.map.fitBounds(this.routePolyline.getBounds(), { padding: [50, 50] });
+        // Fit map bounds to encompass both traveled and cancelled routes
+        const allBoundsPts = (isCancelledMidTrip && this.cancelledWaypoints.length > 0)
+            ? [...this.waypoints, ...this.cancelledWaypoints]
+            : this.waypoints;
+        this.map.fitBounds(L.polyline(allBoundsPts).getBounds(), { padding: [50, 50] });
 
         // Add Pickup Pin
         const pickupIcon = L.divIcon({
@@ -656,20 +807,53 @@ const GPSModule = {
         this.pickupMarker = L.marker(this.waypoints[0], { icon: pickupIcon }).addTo(this.map)
             .bindPopup(`<b>Pickup Location:</b><br>${booking.pickup}`);
 
-        // Add Dropoff Pin
-        const dropoffIcon = L.divIcon({
-            className: 'dropoff-flag',
-            html: `
-                <div class="flex items-center space-x-1 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white">
-                    <span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>
-                    <span class="whitespace-nowrap">Dropoff</span>
-                </div>
-            `,
-            iconSize: [65, 24],
-            iconAnchor: [32, 24]
-        });
-        this.dropoffMarker = L.marker(this.waypoints[this.waypoints.length - 1], { icon: dropoffIcon }).addTo(this.map)
-            .bindPopup(`<b>Destination:</b><br>${booking.dropoff}`);
+        // Add Dropoff / Cancellation Pin
+        if (isCancelledMidTrip) {
+            const cancelPinIcon = L.divIcon({
+                className: 'cancel-dropoff-flag',
+                html: `
+                    <div class="flex items-center space-x-1 bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white animate-pulse">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-200 inline-block"></span>
+                        <span class="whitespace-nowrap">⚠️ Cancelled Mid-Trip</span>
+                    </div>
+                `,
+                iconSize: [130, 24],
+                iconAnchor: [65, 24]
+            });
+            this.dropoffMarker = L.marker(this.waypoints[this.waypoints.length - 1], { icon: cancelPinIcon }).addTo(this.map)
+                .bindPopup(`<b>Trip Ended Mid-Transit:</b><br>${booking.cancellation_street || 'Mid-Trip Cancellation Point'}<br><span class="text-xs text-amber-600 font-bold">${booking.cancellation_note || 'Prorated ride completed early'}</span>`);
+
+            // Add faded original destination marker
+            if (this.cancelledWaypoints.length > 0) {
+                const origDestIcon = L.divIcon({
+                    className: 'orig-dest-flag',
+                    html: `
+                        <div class="flex items-center space-x-1 bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow border border-slate-300 opacity-60">
+                            <span class="line-through whitespace-nowrap">Original Dest: ${booking.dropoff.substring(0, 16)}...</span>
+                        </div>
+                    `,
+                    iconSize: [140, 20],
+                    iconAnchor: [70, 20]
+                });
+                const origDropoffPt = this.cancelledWaypoints[this.cancelledWaypoints.length - 1];
+                this.origDropoffMarker = L.marker(origDropoffPt, { icon: origDestIcon }).addTo(this.map)
+                    .bindPopup(`<b>Original Destination (Not Reached):</b><br>${booking.dropoff}`);
+            }
+        } else {
+            const dropoffIcon = L.divIcon({
+                className: 'dropoff-flag',
+                html: `
+                    <div class="flex items-center space-x-1 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg border border-white">
+                        <span class="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>
+                        <span class="whitespace-nowrap">Dropoff</span>
+                    </div>
+                `,
+                iconSize: [65, 24],
+                iconAnchor: [32, 24]
+            });
+            this.dropoffMarker = L.marker(this.waypoints[this.waypoints.length - 1], { icon: dropoffIcon }).addTo(this.map)
+                .bindPopup(`<b>Destination:</b><br>${booking.dropoff}`);
+        }
 
         // Add animated vehicle marker (motorcycle for parcel courier, taxi for standard)
         const markerAvatar = isParcel ? '<svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>' : '<svg class="w-5 h-5 text-gold-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg>';
@@ -685,16 +869,207 @@ const GPSModule = {
         });
         this.carMarker = L.marker(this.waypoints[0], { icon: carIcon, zIndexOffset: 1000 }).addTo(this.map);
 
+        // 6. Initialize Real-World Driving Dynamics Engine (synced with booking.js)
+        this.initDrivingDynamics();
+
         // Reset to initial location
         this.autoTrack = true;
         this.updateTrackButtonUI(true);
         this.seekToProgress(0);
     },
 
+    // -------------------------------------------------------------------------
+    // REAL-WORLD DRIVING DYNAMICS ENGINE INITIALIZATION (SYNCED WITH BOOKING.JS)
+    // -------------------------------------------------------------------------
+    initDrivingDynamics() {
+        const totalDist = this.totalDistM;
+        const waypoints = this.waypoints;
+        const cumDistances = this.cumDistances;
+
+        const computeBearing = (p1, p2) => {
+            const dLat = (p2[0] - p1[0]);
+            const avgLatRad = ((p1[0] + p2[0]) / 2) * Math.PI / 180;
+            const dLng = (p2[1] - p1[1]) * Math.cos(avgLatRad);
+            let angle = Math.atan2(dLng, dLat) * 180 / Math.PI;
+            return (angle + 360) % 360;
+        };
+
+        const milestones = this.stepMilestones || [];
+
+        // ---------------------------------------------------------------------
+        // 1. REAL TURNS & INTERSECTIONS (Stop only on actual turns and intersections!)
+        // No arbitrary mid-road stops on continuous straight roads or highways.
+        // ---------------------------------------------------------------------
+        const turnAndIntersectionStops = [];
+
+        // 1a. Extract turn & intersection milestones from route navigation steps
+        if (Array.isArray(milestones) && milestones.length > 0) {
+            milestones.forEach((step, idx) => {
+                if (idx === 0 || idx >= milestones.length - 1) return;
+
+                const mType = step.maneuver ? (step.maneuver.type || '').toLowerCase() : '';
+                const mMod = step.maneuver ? (step.maneuver.modifier || '').toLowerCase() : '';
+
+                const isTurn = mType.includes('turn') || mMod.includes('left') || mMod.includes('right') || 
+                               mMod.includes('uturn') || mType.includes('fork') || mType.includes('roundabout') || 
+                               mType.includes('rotary') || mType.includes('end of road');
+                const isIntersection = mType.includes('intersection') || mType.includes('junction') || 
+                                       mType.includes('new name');
+
+                if ((isTurn || isIntersection) && step.startDist > 45 && step.startDist < totalDist - 45) {
+                    const actionName = isTurn 
+                        ? (mMod.includes('left') ? 'Turn Left Junction' : mMod.includes('right') ? 'Turn Right Junction' : 'Turn Junction')
+                        : 'Road Intersection';
+
+                    turnAndIntersectionStops.push({
+                        dist: Math.round(step.startDist),
+                        name: step.name ? `${actionName} (${step.name})` : actionName,
+                        isTurn: isTurn,
+                        stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
+                        hasStopped: false,
+                        stopStartTime: 0
+                    });
+                }
+            });
+        }
+
+        // 1b. Also detect sharp physical road turns from polyline geometry (heading change >= 38 degrees)
+        if (waypoints.length >= 3) {
+            for (let i = 1; i < waypoints.length - 1; i++) {
+                let backIdx = i - 1;
+                while (backIdx > 0 && (cumDistances[i] - cumDistances[backIdx]) < 22) {
+                    backIdx--;
+                }
+                let fwdIdx = i + 1;
+                while (fwdIdx < waypoints.length - 1 && (cumDistances[fwdIdx] - cumDistances[i]) < 22) {
+                    fwdIdx++;
+                }
+
+                const bBack = computeBearing(waypoints[backIdx], waypoints[i]);
+                const bFwd = computeBearing(waypoints[i], waypoints[fwdIdx]);
+                let diff = Math.abs(bFwd - bBack);
+                if (diff > 180) diff = 360 - diff;
+
+                if (diff >= 38) {
+                    const turnDist = Math.round(cumDistances[i]);
+                    if (turnDist > 55 && turnDist < totalDist - 55) {
+                        const alreadyCaptured = turnAndIntersectionStops.some(st => Math.abs(st.dist - turnDist) < 90);
+                        if (!alreadyCaptured) {
+                            turnAndIntersectionStops.push({
+                                dist: turnDist,
+                                name: "Street Turn Corner",
+                                isTurn: true,
+                                stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
+                                hasStopped: false,
+                                stopStartTime: 0
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        turnAndIntersectionStops.sort((a, b) => a.dist - b.dist);
+
+        // Deduplicate any stops closer than 100m to each other
+        const finalStops = [];
+        for (const st of turnAndIntersectionStops) {
+            if (finalStops.length === 0 || (st.dist - finalStops[finalStops.length - 1].dist) >= 100) {
+                finalStops.push(st);
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // 2. CONNECTED SIDE STREETS (Slow down, go straight, accelerate - NO stop!)
+        // For side streets on the right or left where the vehicle continues straight
+        // ---------------------------------------------------------------------
+        const connectedIntersections = [];
+        if (Array.isArray(milestones) && milestones.length > 0) {
+            milestones.forEach((step, idx) => {
+                if (idx === 0 || idx >= milestones.length - 1) return;
+                const mType = step.maneuver ? (step.maneuver.type || '').toLowerCase() : '';
+                const mMod = step.maneuver ? (step.maneuver.modifier || '').toLowerCase() : '';
+                const isStraight = mMod.includes('straight') || mType.includes('continue');
+                if (isStraight && step.startDist > 60 && step.startDist < totalDist - 60) {
+                    const nearStop = finalStops.some(st => Math.abs(st.dist - step.startDist) < 110);
+                    const nearExisting = connectedIntersections.some(ci => Math.abs(ci.dist - step.startDist) < 90);
+                    if (!nearStop && !nearExisting) {
+                        connectedIntersections.push({
+                            dist: Math.round(step.startDist),
+                            name: step.name || "Connected Side Street",
+                            spanStart: Math.max(0, Math.round(step.startDist) - 25),
+                            spanEnd: Math.min(totalDist, Math.round(step.startDist) + 18)
+                        });
+                    }
+                }
+            });
+        }
+        connectedIntersections.sort((a, b) => a.dist - b.dist);
+
+        // 3. ROAD BENDS / CURVES (chord bearing change >= 12 deg across ~22m lookahead)
+        const roadBends = [];
+        if (waypoints.length >= 3) {
+            for (let i = 1; i < waypoints.length - 1; i++) {
+                let backIdx = i - 1;
+                while (backIdx > 0 && (cumDistances[i] - cumDistances[backIdx]) < 22) {
+                    backIdx--;
+                }
+                let fwdIdx = i + 1;
+                while (fwdIdx < waypoints.length - 1 && (cumDistances[fwdIdx] - cumDistances[i]) < 22) {
+                    fwdIdx++;
+                }
+
+                const bBack = computeBearing(waypoints[backIdx], waypoints[i]);
+                const bFwd = computeBearing(waypoints[i], waypoints[fwdIdx]);
+                let diff = Math.abs(bFwd - bBack);
+                if (diff > 180) diff = 360 - diff;
+
+                if (diff >= 12) {
+                    const spanStart = Math.max(0, cumDistances[i] - 25);
+                    const spanEnd = Math.min(totalDist, cumDistances[i] + 25);
+
+                    if (roadBends.length > 0 && (cumDistances[i] - roadBends[roadBends.length - 1].spanEnd) < 35) {
+                        roadBends[roadBends.length - 1].spanEnd = spanEnd;
+                        roadBends[roadBends.length - 1].dist = Math.round((roadBends[roadBends.length - 1].spanStart + spanEnd) / 2);
+                        roadBends[roadBends.length - 1].angleDiff = Math.max(roadBends[roadBends.length - 1].angleDiff, diff);
+                    } else {
+                        roadBends.push({
+                            dist: cumDistances[i],
+                            spanStart: spanStart,
+                            spanEnd: spanEnd,
+                            angleDiff: diff
+                        });
+                    }
+                }
+            }
+        }
+
+        this.drivingDynamics = {
+            finalStops: finalStops,
+            signalStops: finalStops,
+            connectedIntersections: connectedIntersections,
+            roadBends: roadBends,
+            trafficCruisingMultiplier: 1.15,
+            trafficLabel: "Normal Commute Speed",
+            trafficDotClass: "bg-emerald-400",
+            trafficModeClass: "text-emerald-400",
+            currentVarianceKmh: 0,
+            targetVarianceKmh: 0,
+            nextVarianceChangeTime: performance.now() + 2500,
+            currentSpeedFactor: 0.25,
+            smoothedSpeedKmh: 38,
+            activeStop: null
+        };
+    },
+
     getCurrentStreetName(targetDist, progress) {
         if (!this.activeBooking) return 'Ayala Malls Circuit, Makati';
         if (progress <= 0.02) return this.activeBooking.pickup || 'Pickup Location';
-        if (progress >= 0.98) return this.activeBooking.dropoff || 'Dropoff Destination';
+        if (progress >= 0.98) {
+            return this.isCancelledMidTrip
+                ? (this.activeBooking.cancellation_street || 'Ended Mid-Trip')
+                : (this.activeBooking.dropoff || 'Dropoff Destination');
+        }
 
         // Check milestones
         if (this.stepMilestones && this.stepMilestones.length > 0) {
@@ -703,7 +1078,7 @@ const GPSModule = {
         }
 
         // Interpolated default descriptions
-        if (this.activeBooking.pickup.includes('Circuit')) {
+        if (this.activeBooking.pickup && this.activeBooking.pickup.includes('Circuit')) {
             if (progress < 0.15) return 'A.P. Reyes Avenue, Makati';
             if (progress < 0.35) return 'Kalayaan Avenue, Makati';
             if (progress < 0.65) return 'Senator Gil J. Puyat Ave (Buendia)';
@@ -714,13 +1089,14 @@ const GPSModule = {
         return this.activeBooking.pickup;
     },
 
-    seekToProgress(progress) {
+    seekToProgress(progress, overrideBehavior = null) {
         if (!this.waypoints || this.waypoints.length === 0) return;
 
         progress = Math.max(0, Math.min(1.0, progress));
         this.currentProgress = progress;
+        this.currentDistM = progress * this.totalDistM;
 
-        const targetDist = progress * this.totalDistM;
+        const targetDist = this.currentDistM;
 
         // Find which road segment vehicle is currently on
         let segIdx = 0;
@@ -754,7 +1130,7 @@ const GPSModule = {
             this.traveledPolyline.setLatLngs(traveledPts);
         }
 
-        // Auto-Tracking Feature from Booking: pan map to follow vehicle if enabled
+        // Auto-Tracking Feature: pan map to follow vehicle if enabled
         if (this.autoTrack && this.map) {
             try {
                 this.map.panTo([curLat, curLng], { animate: false });
@@ -783,15 +1159,71 @@ const GPSModule = {
         const elapsedEl = document.getElementById('hud-elapsed-time');
         if (elapsedEl) elapsedEl.innerText = elapsedStr;
 
-        // Realistic instantaneous speed
-        let speed = 0.0;
-        if (progress > 0.001 && progress < 0.995) {
-            const curve = Math.sin(progress * Math.PI);
-            const cornerSlowing = 0.8 + 0.2 * Math.sin(progress * 25);
-            speed = Math.max(18.0, Math.min(58.0, (28.0 + curve * 24.0) * cornerSlowing));
+        // Calculate Road Driving Dynamics Speed & Behavior (synced with booking.js)
+        let speed = 0;
+        let behavior = "Cruising";
+        let behaviorClass = "text-emerald-400";
+
+        if (overrideBehavior) {
+            speed = overrideBehavior.speed;
+            behavior = overrideBehavior.behavior;
+            behaviorClass = overrideBehavior.behaviorClass;
+        } else {
+            // Seek state calculation: compute speed factor from targetDist
+            const dyn = this.drivingDynamics;
+            const dist = targetDist;
+            const totalDist = this.totalDistM;
+
+            let targetFactor = 1.0;
+            behavior = "Cruising";
+
+            if (dist < 35) {
+                targetFactor = 0.25 + (dist / 35) * 0.35;
+                behavior = "Departing";
+                behaviorClass = "text-teal-300";
+            } else if (dist >= totalDist - 50) {
+                const arriveRatio = Math.max(0, (totalDist - dist) / 50);
+                targetFactor = 0.20 + (arriveRatio * 0.25);
+                behavior = this.isCancelledMidTrip ? "Trip Ended Mid-Transit" : "Arriving at Destination";
+                behaviorClass = this.isCancelledMidTrip ? "text-amber-400" : "text-emerald-300";
+            } else {
+                // Check stops (turns and intersections)
+                const nearStop = (dyn.finalStops || dyn.signalStops) && (dyn.finalStops || dyn.signalStops).find(st => Math.abs(st.dist - dist) < 55);
+                if (nearStop) {
+                    const ratio = Math.abs(nearStop.dist - dist) / 55;
+                    targetFactor = Math.pow(ratio, 1.4) * 0.70;
+                    behavior = nearStop.isTurn ? "Stopping for Turn" : "Stopping at Intersection";
+                    behaviorClass = "text-amber-400";
+                } else {
+                    const nearBend = dyn.roadBends && dyn.roadBends.find(b => dist >= b.spanStart && dist <= b.spanEnd);
+                    const nearIntersection = dyn.connectedIntersections && dyn.connectedIntersections.find(ci => dist >= ci.spanStart && dist <= ci.spanEnd);
+                    if (nearBend) {
+                        targetFactor = 0.46;
+                        behavior = "Navigating Bend";
+                        behaviorClass = "text-teal-400";
+                    } else if (nearIntersection) {
+                        targetFactor = 0.48;
+                        behavior = "Crossing Intersection";
+                        behaviorClass = "text-amber-300";
+                    } else {
+                        targetFactor = dyn.trafficCruisingMultiplier || 1.15;
+                        behavior = dyn.trafficLabel || "Cruising Speed";
+                        behaviorClass = "text-emerald-400";
+                    }
+                }
+            }
+
+            speed = (dist <= 0 || dist >= totalDist) ? 0 : Math.max(12, Math.round(38 * targetFactor));
         }
+
         const speedEl = document.getElementById('hud-speed');
         if (speedEl) speedEl.innerText = `${speed.toFixed(1)} km/h`;
+
+        const behaviorEl = document.getElementById('hud-driving-behavior');
+        if (behaviorEl) {
+            behaviorEl.innerText = behavior;
+            behaviorEl.className = `text-[10px] font-bold ${behaviorClass} mt-0.5 truncate`;
+        }
 
         // Current Location (Street Name) and Coordinates Below It
         const currentLocEl = document.getElementById('hud-current-location');
@@ -830,6 +1262,7 @@ const GPSModule = {
         // If at the end, restart from beginning
         if (this.currentProgress >= 1.0) {
             this.seekToProgress(0);
+            this.initDrivingDynamics();
         }
 
         this.isPlaying = true;
@@ -837,18 +1270,192 @@ const GPSModule = {
 
         this.lastFrameTime = performance.now();
 
+        const totalDist = this.totalDistM;
+        const totalDurationMs = this.baseDurationMs;
+        const dyn = this.drivingDynamics;
+
         const animateLoop = (now) => {
             if (!this.isPlaying) return;
 
-            const deltaMs = now - this.lastFrameTime;
+            const dtSec = Math.max(0.001, Math.min(0.1, (now - this.lastFrameTime) / 1000));
             this.lastFrameTime = now;
 
-            // Total replay duration scaled by playback speed (1x = 22s, 2x = 11s, 4x = 5.5s)
-            const activeDurationMs = this.baseDurationMs / this.playbackSpeed;
-            const stepProgress = deltaMs / activeDurationMs;
+            // 1. Calculate base nominal speed factor (m/s) scaled by playbackSpeed
+            const scaledDurationMs = totalDurationMs / this.playbackSpeed;
+            const nominalSpeedMps = totalDist / (scaledDurationMs / 1000);
 
-            const newProgress = Math.min(1.0, this.currentProgress + stepProgress);
-            this.seekToProgress(newProgress);
+            // Periodic commuter variance update (-10 to +10 km/h)
+            if (now >= dyn.nextVarianceChangeTime) {
+                dyn.targetVarianceKmh = (Math.random() * 20) - 10;
+                dyn.nextVarianceChangeTime = now + (3500 + Math.random() * 3500);
+            }
+            dyn.currentVarianceKmh += (dyn.targetVarianceKmh - dyn.currentVarianceKmh) * Math.min(1.0, dtSec * 1.5);
+
+            let currentDist = this.currentDistM;
+
+            // 2. Identify nearest upcoming turn or intersection stop or active halt
+            let activeStop = dyn.activeStop;
+            if (!activeStop) {
+                const frameStep = Math.max(2, nominalSpeedMps * dyn.currentSpeedFactor * dtSec * 1.2);
+                for (const st of (dyn.finalStops || dyn.signalStops)) {
+                    if (!st.hasStopped) {
+                        if (currentDist >= st.dist - frameStep && currentDist <= st.dist + 4) {
+                            activeStop = st;
+                            dyn.activeStop = st;
+                            currentDist = st.dist;
+                            dyn.currentSpeedFactor = 0.0;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            let targetSpeedFactor = 1.0;
+            let drivingBehavior = "Cruising";
+            let behaviorClass = "text-emerald-400";
+
+            if (activeStop) {
+                // FULL STOP AT TURN OR INTERSECTION (2s - 4s scaled by replay speed)
+                if (activeStop.stopStartTime === 0) {
+                    activeStop.stopStartTime = now;
+                }
+                const scaledStopDuration = activeStop.stopDurationMs / this.playbackSpeed;
+                const stoppedElapsed = now - activeStop.stopStartTime;
+                if (stoppedElapsed < scaledStopDuration) {
+                    currentDist = activeStop.dist;
+                    targetSpeedFactor = 0.0;
+                    dyn.currentSpeedFactor = 0.0;
+                    dyn.smoothedSpeedKmh = 0;
+                    drivingBehavior = activeStop.isTurn ? "Stopped for Turn" : "Stopped at Intersection";
+                    behaviorClass = "text-rose-400";
+                } else {
+                    // Clear to go: Accelerate smoothly out
+                    activeStop.hasStopped = true;
+                    dyn.activeStop = null;
+                    activeStop = null;
+                    targetSpeedFactor = 0.45;
+                    dyn.currentSpeedFactor = 0.05;
+                    drivingBehavior = "Accelerating into Road";
+                    behaviorClass = "text-amber-300";
+                }
+            } else {
+                // Check if approaching a turn or intersection stop ahead
+                let distToNextStop = 99999;
+                let nextStopObj = null;
+                for (const st of (dyn.finalStops || dyn.signalStops)) {
+                    if (!st.hasStopped && st.dist > currentDist) {
+                        const d = st.dist - currentDist;
+                        if (d < distToNextStop) {
+                            distToNextStop = d;
+                            nextStopObj = st;
+                        }
+                    }
+                }
+
+                const stopDecelHorizon = Math.max(65, nominalSpeedMps * 1.3);
+                if (distToNextStop <= stopDecelHorizon) {
+                    const stopRatio = Math.max(0, distToNextStop / stopDecelHorizon);
+                    targetSpeedFactor = Math.pow(stopRatio, 1.4) * 0.70;
+                    drivingBehavior = nextStopObj?.isTurn ? "Stopping for Turn" : "Stopping at Intersection";
+                    behaviorClass = "text-amber-400";
+                } else {
+                    // Check bends
+                    let activeBend = null;
+                    let distToNextBend = 99999;
+                    for (const b of dyn.roadBends) {
+                        if (currentDist >= b.spanStart && currentDist <= b.spanEnd) {
+                            activeBend = b;
+                            break;
+                        }
+                        if (b.dist > currentDist) {
+                            const d = b.dist - currentDist;
+                            if (d < distToNextBend) distToNextBend = d;
+                        }
+                    }
+
+                    // Check connected intersections
+                    let activeConnected = null;
+                    let distToNextConnected = 99999;
+                    for (const ci of dyn.connectedIntersections) {
+                        if (currentDist >= ci.spanStart && currentDist <= ci.spanEnd) {
+                            activeConnected = ci;
+                            break;
+                        }
+                        if (ci.dist > currentDist) {
+                            const d = ci.dist - currentDist;
+                            if (d < distToNextConnected) distToNextConnected = d;
+                        }
+                    }
+
+                    const bendDecelHorizon = Math.max(40, nominalSpeedMps * 0.8);
+
+                    if (activeBend) {
+                        targetSpeedFactor = 0.46;
+                        drivingBehavior = "Navigating Bend";
+                        behaviorClass = "text-teal-400";
+                    } else if (distToNextBend <= bendDecelHorizon) {
+                        const bendRatio = Math.max(0, distToNextBend / bendDecelHorizon);
+                        targetSpeedFactor = 0.46 + (bendRatio * 0.24);
+                        drivingBehavior = "Slowing for Bend";
+                        behaviorClass = "text-teal-300";
+                    } else if (activeConnected) {
+                        targetSpeedFactor = 0.48;
+                        drivingBehavior = "Crossing Intersection (Straight)";
+                        behaviorClass = "text-amber-300";
+                    } else if (distToNextConnected <= 40) {
+                        const ciRatio = Math.max(0, distToNextConnected / 40);
+                        targetSpeedFactor = 0.48 + (ciRatio * 0.22);
+                        drivingBehavior = "Yielding at Cross Street";
+                        behaviorClass = "text-amber-300";
+                    } else if (currentDist < 35) {
+                        const departRatio = Math.min(1.0, currentDist / 35);
+                        targetSpeedFactor = 0.25 + (departRatio * 0.35);
+                        drivingBehavior = "Departing";
+                        behaviorClass = "text-teal-300";
+                    } else if (currentDist >= totalDist - 50) {
+                        const arriveRatio = Math.max(0, (totalDist - currentDist) / 50);
+                        targetSpeedFactor = 0.20 + (arriveRatio * 0.25);
+                        drivingBehavior = this.isCancelledMidTrip ? "Trip Ended Mid-Transit" : "Arriving at Destination";
+                        behaviorClass = this.isCancelledMidTrip ? "text-amber-400" : "text-emerald-300";
+                    } else {
+                        const varianceFactor = dyn.currentVarianceKmh / 42.0;
+                        targetSpeedFactor = Math.max(0.35, dyn.trafficCruisingMultiplier + varianceFactor);
+                        if (dyn.currentVarianceKmh >= 3.0) {
+                            drivingBehavior = `${dyn.trafficLabel} (+${Math.round(dyn.currentVarianceKmh)} km/h)`;
+                        } else if (dyn.currentVarianceKmh <= -3.0) {
+                            drivingBehavior = `${dyn.trafficLabel} (${Math.round(dyn.currentVarianceKmh)} km/h)`;
+                        } else {
+                            drivingBehavior = dyn.trafficLabel;
+                        }
+                        behaviorClass = dyn.trafficModeClass;
+                    }
+                }
+            }
+
+            // Progressive Acceleration & Deceleration Smoothing Curve
+            if (!activeStop) {
+                const easeRate = (targetSpeedFactor < dyn.currentSpeedFactor) ? 2.2 : 1.5;
+                dyn.currentSpeedFactor += (targetSpeedFactor - dyn.currentSpeedFactor) * Math.min(1.0, dtSec * easeRate);
+                currentDist += nominalSpeedMps * dyn.currentSpeedFactor * dtSec;
+                if (currentDist > totalDist) currentDist = totalDist;
+            }
+
+            const speedFactor = dyn.currentSpeedFactor;
+            const targetKmh = (speedFactor < 0.05 || activeStop) ? 0 : Math.max(12, Math.round(38 * speedFactor + (Math.sin(now / 450) * 1.5)));
+            if (activeStop) {
+                dyn.smoothedSpeedKmh = 0;
+            } else {
+                dyn.smoothedSpeedKmh = Math.round(dyn.smoothedSpeedKmh + (targetKmh - dyn.smoothedSpeedKmh) * Math.min(1.0, dtSec * 3.5));
+            }
+
+            const newProgress = totalDist > 0 ? Math.min(1.0, currentDist / totalDist) : 1.0;
+            this.currentDistM = currentDist;
+
+            this.seekToProgress(newProgress, {
+                speed: dyn.smoothedSpeedKmh,
+                behavior: drivingBehavior,
+                behaviorClass: behaviorClass
+            });
 
             if (newProgress >= 1.0) {
                 this.pause();
@@ -872,6 +1479,7 @@ const GPSModule = {
 
     reset() {
         this.pause();
+        this.initDrivingDynamics();
         this.seekToProgress(0);
     },
 
