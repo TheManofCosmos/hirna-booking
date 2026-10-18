@@ -5,14 +5,12 @@ const App = {
     async init() {
         console.log("[Hirna] Initializing Hirna: Transport & Delivery Platform...");
         
-        // 1. Initialize Supabase / Local DB safely
+        // 1. Hydrate local DB synchronously so all modules and active trips resume immediately (0ms delay)
         try {
-            if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.init) {
-                await SupabaseBridge.init();
+            if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.hydrateAllFromLocalStorage) {
+                SupabaseBridge.hydrateAllFromLocalStorage();
             }
-        } catch(e) {
-            console.warn("Supabase init warning:", e);
-        }
+        } catch(e) {}
 
         // Helper to safely initialize each submodule
         const safeInit = (modName, fn) => {
@@ -26,7 +24,7 @@ const App = {
             }
         };
 
-        // 2. Initialize Submodules defensively
+        // 2. Initialize Submodules immediately without waiting on remote network timeouts
         safeInit('AuthModule', () => typeof AuthModule !== 'undefined' && AuthModule.init && AuthModule.init());
         safeInit('BookingModule', () => typeof BookingModule !== 'undefined' && BookingModule.init && BookingModule.init());
         safeInit('PaymentsModule', () => typeof PaymentsModule !== 'undefined' && PaymentsModule.init && PaymentsModule.init());
@@ -39,6 +37,20 @@ const App = {
         // 3. Bind Navigation Tabs (Guaranteed to execute)
         this.bindNavigation();
         console.log("[Hirna] Hirna: Transport & Delivery Platform ready!");
+
+        // 4. Sync with Supabase Cloud / remote DB in background and refresh views on new records
+        try {
+            if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.init) {
+                await SupabaseBridge.init();
+                if (SupabaseBridge.refreshActiveModules) {
+                    ['bookings', 'payments', 'support_tickets', 'feedback', 'audit_logs'].forEach(tbl => {
+                        SupabaseBridge.refreshActiveModules(tbl);
+                    });
+                }
+            }
+        } catch(e) {
+            console.warn("Supabase init warning:", e);
+        }
     },
 
     bindNavigation() {
