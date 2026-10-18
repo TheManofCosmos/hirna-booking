@@ -7146,8 +7146,13 @@ const BookingModule = {
                 // FULL STOP AT TURN OR INTERSECTION (2s to 4s randomized duration)
                 if (activeStop.stopStartTime === 0) {
                     activeStop.stopStartTime = now;
+                    activeStop.stoppedMs = 0;
+                } else {
+                    // Accumulate real elapsed stop time frame-by-frame (dt is clamped, so a
+                    // throttled/background tab can't skip or stretch the 2-4s stop)
+                    activeStop.stoppedMs += dtSec * 1000;
                 }
-                const stoppedElapsed = now - activeStop.stopStartTime;
+                const stoppedElapsed = activeStop.stoppedMs;
                 if (stoppedElapsed < activeStop.stopDurationMs) {
                     // Vehicle fully halted at turn or intersection! Firmly pinned without sudden moves
                     currentDist = activeStop.dist;

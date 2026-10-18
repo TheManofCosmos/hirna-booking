@@ -1389,9 +1389,12 @@ const GPSModule = {
                 // FULL STOP AT TURN OR INTERSECTION (2s - 4s scaled by replay speed)
                 if (activeStop.stopStartTime === 0) {
                     activeStop.stopStartTime = now;
+                    activeStop.stoppedMs = 0;
+                } else {
+                    activeStop.stoppedMs += dtSec * 1000;
                 }
                 const scaledStopDuration = activeStop.stopDurationMs / this.playbackSpeed;
-                const stoppedElapsed = now - activeStop.stopStartTime;
+                const stoppedElapsed = activeStop.stoppedMs;
                 if (stoppedElapsed < scaledStopDuration) {
                     currentDist = activeStop.dist;
                     targetSpeedFactor = 0.0;
