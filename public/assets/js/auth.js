@@ -930,23 +930,60 @@ const AuthModule = {
     },
 
     disableChromeAutofill() {
+        const nonTextTypes = new Set(['radio', 'checkbox', 'hidden', 'range', 'button', 'submit', 'reset', 'image']);
+
+        const unlockInput = (el) => {
+            if (el && el.dataset && el.dataset.hirnaLocked === '1') {
+                delete el.dataset.hirnaLocked;
+                el.removeAttribute('readonly');
+            }
+        };
+
         const applyNoAutofill = (root = document) => {
             if (!root || !root.querySelectorAll) return;
             root.querySelectorAll('form').forEach(form => {
                 form.setAttribute('autocomplete', 'off');
             });
-            const nonTextTypes = new Set(['radio', 'checkbox', 'hidden', 'range', 'button', 'submit', 'reset', 'image']);
+
             root.querySelectorAll('input, textarea').forEach(el => {
+                if (el.dataset && el.dataset.hirnaNoAutofillBound === '1') return;
                 const type = (el.getAttribute('type') || (el.tagName === 'TEXTAREA' ? 'textarea' : 'text')).toLowerCase();
                 if (nonTextTypes.has(type)) return;
+
+                if (el.dataset) el.dataset.hirnaNoAutofillBound = '1';
+
+                // Assign a randomized non-heuristic name attribute so Chrome does not use id/label heuristics
+                if (!el.getAttribute('name')) {
+                    el.setAttribute('name', 'hn_q_' + Math.random().toString(36).substring(2, 10));
+                }
 
                 el.setAttribute('autocomplete', type === 'password' ? 'new-password' : 'off');
                 el.setAttribute('autocorrect', 'off');
                 el.setAttribute('autocapitalize', 'off');
                 el.setAttribute('spellcheck', 'false');
+                el.setAttribute('role', 'presentation');
                 el.setAttribute('data-lpignore', 'true');
                 el.setAttribute('data-form-type', 'other');
                 el.setAttribute('data-1p-ignore', 'true');
+                el.setAttribute('data-bwignore', 'true');
+
+                // Lock with readonly initially so Chrome suppresses autofill popup on focus, then unlock immediately on pointerdown/keydown/touchstart
+                if (!el.hasAttribute('readonly') && !el.disabled) {
+                    el.setAttribute('readonly', 'readonly');
+                    if (el.dataset) el.dataset.hirnaLocked = '1';
+
+                    const handleActivate = () => {
+                        unlockInput(el);
+                    };
+
+                    el.addEventListener('pointerdown', handleActivate, { passive: true });
+                    el.addEventListener('mousedown', handleActivate, { passive: true });
+                    el.addEventListener('touchstart', handleActivate, { passive: true });
+                    el.addEventListener('keydown', handleActivate, { passive: true });
+                    el.addEventListener('focus', () => {
+                        setTimeout(() => unlockInput(el), 40);
+                    }, { passive: true });
+                }
             });
         };
 

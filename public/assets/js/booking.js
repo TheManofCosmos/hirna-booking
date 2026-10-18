@@ -2496,12 +2496,9 @@ const BookingModule = {
 
         // Suppress Google Chrome native autocomplete aggressively on all inputs and textareas
         try {
-            document.querySelectorAll('input:not([type="radio"]):not([type="checkbox"]):not([type="hidden"]):not([type="range"]), textarea').forEach(el => {
-                el.setAttribute('autocomplete', 'chrome-off');
-                el.setAttribute('data-lpignore', 'true');
-                el.setAttribute('data-form-type', 'other');
-                el.setAttribute('spellcheck', 'false');
-            });
+            if (typeof AuthModule !== 'undefined' && AuthModule.disableChromeAutofill) {
+                AuthModule.disableChromeAutofill();
+            }
         } catch(e) {}
 
         // Initialize HUD scroll observer for taskbar-pinned floating behavior
