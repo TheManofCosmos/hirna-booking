@@ -5,11 +5,274 @@
 const AnalyticsModule = {
     revenueChart: null,
     demandChart: null,
+    fleetFilter: 'all',
+
+    defaultFleetOwners: [
+        {
+            id: "drv-101",
+            name: "Ricardo Dalisay",
+            phone: "+63 920 555 1234",
+            license: "N01-19-123456",
+            vehicle_model: "Toyota Vios 1.5G (Silver)",
+            vehicle_plate: "NFD-8892",
+            vehicle_class: "Sedan (4-Seater)",
+            vehicle_type: "car",
+            status: "available",
+            rating: 4.92,
+            safety_score: 99,
+            total_trips: 520
+        },
+        {
+            id: "drv-102",
+            name: "Elena Roces",
+            phone: "+63 922 444 9876",
+            license: "N02-20-654321",
+            vehicle_model: "Mitsubishi Xpander (White)",
+            vehicle_plate: "NBL-3301",
+            vehicle_class: "MPV (6-Seater)",
+            vehicle_type: "car",
+            status: "available",
+            rating: 4.85,
+            safety_score: 96,
+            total_trips: 310
+        },
+        {
+            id: "drv-103",
+            name: "Arman Mendoza",
+            phone: "+63 919 777 4321",
+            license: "N03-21-987123",
+            vehicle_model: "Honda Civic RS (Black)",
+            vehicle_plate: "NDS-4099",
+            vehicle_class: "Executive (4-Seater)",
+            vehicle_type: "car",
+            status: "available",
+            rating: 4.98,
+            safety_score: 100,
+            total_trips: 415
+        },
+        {
+            id: "drv-104",
+            name: "Danilo Cruz",
+            phone: "+63 918 333 4455",
+            license: "N04-22-334455",
+            vehicle_model: "Yamaha NMAX 155 (Midnight Blue)",
+            vehicle_plate: "MTR-9821",
+            vehicle_class: "Scooter (155cc)",
+            vehicle_type: "scooter",
+            status: "available",
+            rating: 4.95,
+            safety_score: 99,
+            total_trips: 680
+        },
+        {
+            id: "drv-105",
+            name: "Jomar Reyes",
+            phone: "+63 917 888 1122",
+            license: "N05-23-556677",
+            vehicle_model: "Honda Click 125i (Pearl White)",
+            vehicle_plate: "MC-4412",
+            vehicle_class: "Scooter (125cc)",
+            vehicle_type: "scooter",
+            status: "available",
+            rating: 4.91,
+            safety_score: 98,
+            total_trips: 450
+        },
+        {
+            id: "drv-106",
+            name: "Arnel Bautista",
+            phone: "+63 928 444 3322",
+            license: "N06-20-112233",
+            vehicle_model: "Honda Wave 125i (Sport Red)",
+            vehicle_plate: "MC-8109",
+            vehicle_class: "Manual/Underbone (125cc)",
+            vehicle_type: "manual",
+            status: "available",
+            rating: 4.89,
+            safety_score: 97,
+            total_trips: 520
+        },
+        {
+            id: "drv-107",
+            name: "Mark Dizon",
+            phone: "+63 915 222 7788",
+            license: "N07-21-998877",
+            vehicle_model: "Yamaha Aerox 155 (Racing Cyan)",
+            vehicle_plate: "MC-2930",
+            vehicle_class: "Scooter (155cc)",
+            vehicle_type: "scooter",
+            status: "available",
+            rating: 4.93,
+            safety_score: 99,
+            total_trips: 610
+        },
+        {
+            id: "drv-108",
+            name: "Roderick Tan",
+            phone: "+63 929 666 4433",
+            license: "N08-22-445566",
+            vehicle_model: "Yamaha Sniper 155 (Matte Black)",
+            vehicle_plate: "MC-6754",
+            vehicle_class: "Manual (155cc)",
+            vehicle_type: "manual",
+            status: "available",
+            rating: 4.94,
+            safety_score: 100,
+            total_trips: 580
+        },
+        {
+            id: "drv-109",
+            name: "Carlo Mendoza",
+            phone: "+63 916 555 9900",
+            license: "N09-24-778899",
+            vehicle_model: "Honda ADV 160 (Matte Solar Red)",
+            vehicle_plate: "MC-5128",
+            vehicle_class: "Scooter (160cc)",
+            vehicle_type: "scooter",
+            status: "available",
+            rating: 4.97,
+            safety_score: 100,
+            total_trips: 720
+        }
+    ],
 
     init() {
         this.renderKPIs();
+        this.renderFleetInventory();
         this.renderCharts();
         this.renderDemandForecastTable();
+    },
+
+    isMotorcycleOwner(driver) {
+        if (!driver) return false;
+        const vt = (driver.vehicle_type || '').toLowerCase();
+        const vc = (driver.vehicle_class || '').toLowerCase();
+        const vm = (driver.vehicle_model || '').toLowerCase();
+        return vt === 'scooter' || vt === 'manual' || vt === 'motorcycle' ||
+               vc.includes('scooter') || vc.includes('manual') || vc.includes('underbone') || vc.includes('motorcycle') ||
+               vm.includes('nmax') || vm.includes('click') || vm.includes('wave') || vm.includes('aerox') || vm.includes('sniper') || vm.includes('adv');
+    },
+
+    getFleetOwners() {
+        const dbDrivers = (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.getData)
+            ? (SupabaseBridge.getData('drivers') || [])
+            : [];
+
+        const mapByKey = new Map();
+        this.defaultFleetOwners.forEach(d => {
+            const key = d.id || d.vehicle_plate || d.name;
+            mapByKey.set(key, { ...d });
+        });
+
+        dbDrivers.forEach(d => {
+            if (!d || typeof d !== 'object') return;
+            const key = d.id || d.vehicle_plate || d.name;
+            if (key && mapByKey.has(key)) {
+                mapByKey.set(key, { ...mapByKey.get(key), ...d });
+            } else if (key) {
+                mapByKey.set(key, { ...d });
+            }
+        });
+
+        return Array.from(mapByKey.values());
+    },
+
+    setFleetFilter(filter) {
+        this.fleetFilter = filter || 'all';
+        this.renderFleetInventory();
+    },
+
+    renderFleetInventory() {
+        const tbody = document.getElementById('fleet-inventory-tbody');
+        if (!tbody) return;
+
+        const allOwners = this.getFleetOwners();
+        const carOwners = allOwners.filter(d => !this.isMotorcycleOwner(d));
+        const motoOwners = allOwners.filter(d => this.isMotorcycleOwner(d));
+
+        const totalBadge = document.getElementById('fleet-total-count-badge');
+        if (totalBadge) {
+            totalBadge.textContent = `${allOwners.length} Owners (${carOwners.length} Cars • ${motoOwners.length} Motorcycles)`;
+        }
+
+        const btnAll = document.getElementById('fleet-filter-all');
+        const btnCar = document.getElementById('fleet-filter-car');
+        const btnMoto = document.getElementById('fleet-filter-motorcycle');
+
+        if (btnAll) btnAll.textContent = `All Fleet (${allOwners.length})`;
+        if (btnCar) btnCar.textContent = `Car Owners (${carOwners.length})`;
+        if (btnMoto) btnMoto.textContent = `Motorcycle Owners (${motoOwners.length})`;
+
+        const activeClass = "px-3 py-1.5 bg-hirna-700 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer";
+        const inactiveClass = "px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg shadow-sm transition cursor-pointer";
+
+        if (btnAll) btnAll.className = this.fleetFilter === 'all' ? activeClass : inactiveClass;
+        if (btnCar) btnCar.className = this.fleetFilter === 'car' ? activeClass : inactiveClass;
+        if (btnMoto) btnMoto.className = this.fleetFilter === 'motorcycle' ? activeClass : inactiveClass;
+
+        let displayed = allOwners;
+        if (this.fleetFilter === 'car') {
+            displayed = carOwners;
+        } else if (this.fleetFilter === 'motorcycle') {
+            displayed = motoOwners;
+        }
+
+        tbody.innerHTML = displayed.map(d => {
+            const isMoto = this.isMotorcycleOwner(d);
+            const vcLower = (d.vehicle_class || '').toLowerCase();
+            const vtLower = (d.vehicle_type || '').toLowerCase();
+
+            let categoryBadge = '';
+            let capacityText = d.vehicle_class || 'Standard Class';
+
+            if (isMoto) {
+                const isManual = vtLower === 'manual' || vcLower.includes('manual') || vcLower.includes('underbone');
+                if (isManual) {
+                    categoryBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">Motorcycle • Manual</span>';
+                } else {
+                    categoryBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Motorcycle • Scooter</span>';
+                }
+                if (!capacityText.toLowerCase().includes('seater') && !capacityText.toLowerCase().includes('passenger')) {
+                    capacityText = `${capacityText} • 1-Seater`;
+                }
+            } else {
+                if (vcLower.includes('mpv') || vcLower.includes('suv')) {
+                    categoryBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">Car • MPV / SUV</span>';
+                } else if (vcLower.includes('executive')) {
+                    categoryBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">Car • Executive Sedan</span>';
+                } else {
+                    categoryBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">Car • Taxi Sedan</span>';
+                }
+            }
+
+            const rating = d.rating != null ? Number(d.rating).toFixed(2) : '4.90';
+            const safety = d.safety_score != null ? d.safety_score : 99;
+            const trips = d.total_trips != null ? Number(d.total_trips).toLocaleString() : '300';
+            const isAvail = !d.status || d.status === 'available' || d.status === 'active';
+            const statusHtml = isAvail
+                ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Active</span>'
+                : `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">● ${d.status}</span>`;
+
+            return `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-4 py-3">
+                        <div class="font-bold text-slate-900">${d.name || 'Fleet Driver'}</div>
+                        <div class="text-[10px] text-slate-500 font-mono">${d.phone || '+63 917 000 0000'} • Lic: ${d.license || 'N01-20-000000'}</div>
+                    </td>
+                    <td class="px-4 py-3 font-semibold text-slate-800">${d.vehicle_model || 'Hirna Fleet Vehicle'}</td>
+                    <td class="px-4 py-3"><span class="plate-badge">${d.vehicle_plate || 'HIR-0000'}</span></td>
+                    <td class="px-4 py-3">${categoryBadge}</td>
+                    <td class="px-4 py-3 text-slate-600 font-mono">${capacityText}</td>
+                    <td class="px-4 py-3">
+                        <span class="font-bold text-amber-600">${rating} ★</span>
+                        <span class="text-slate-400 mx-1">•</span>
+                        <span class="font-mono font-semibold text-emerald-700">${safety}% Safety</span>
+                        <span class="block text-[10px] text-slate-400">${trips} trips completed</span>
+                    </td>
+                    <td class="px-4 py-3">${statusHtml}</td>
+                </tr>
+            `;
+        }).join('');
     },
 
     renderKPIs() {

@@ -6284,6 +6284,11 @@ const SupabaseBridge = {
                     if (CRMModule.renderFeedback) CRMModule.renderFeedback();
                 }
             }
+            if (table === 'drivers') {
+                if (typeof AnalyticsModule !== 'undefined' && AnalyticsModule.renderFleetInventory) {
+                    AnalyticsModule.renderFleetInventory();
+                }
+            }
             if (typeof AuditModule !== 'undefined') {
                 if (AuditModule.renderArchives) AuditModule.renderArchives();
                 if (AuditModule.renderAuditLogs) AuditModule.renderAuditLogs();

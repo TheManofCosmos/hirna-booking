@@ -167,44 +167,187 @@
 
             <!-- Hirna Fleet Inventory Table -->
             <div class="bg-white rounded-2xl border border-hirna-100 shadow-sm overflow-hidden">
-                <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-hirna-50/40">
+                <div class="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-hirna-50/40">
                     <div>
-                        <h3 class="text-sm font-bold text-hirna-900">Hirna Mobility Fleet Inventory</h3>
-                        <p class="text-xs text-slate-500">Active vehicle lines deployed across Hirna regional transport hubs</p>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-sm font-bold text-hirna-900">Hirna Mobility Fleet Inventory</h3>
+                            <span id="fleet-total-count-badge" class="px-2 py-0.5 bg-hirna-100 text-hirna-800 border border-hirna-200 rounded-full text-[10px] font-black">9 Owners (3 Cars • 6 Motorcycles)</span>
+                        </div>
+                        <p class="text-xs text-slate-500">Registered car &amp; motorcycle owners actively deployed across Hirna regional transport &amp; delivery hubs</p>
                     </div>
-                    <span class="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg shadow-sm">Manage Fleet</span>
+                    <div class="flex items-center space-x-1.5">
+                        <button type="button" id="fleet-filter-all" onclick="AnalyticsModule.setFleetFilter('all')" class="px-3 py-1.5 bg-hirna-700 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer">All Fleet (9)</button>
+                        <button type="button" id="fleet-filter-car" onclick="AnalyticsModule.setFleetFilter('car')" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg shadow-sm transition cursor-pointer">Car Owners (3)</button>
+                        <button type="button" id="fleet-filter-motorcycle" onclick="AnalyticsModule.setFleetFilter('motorcycle')" class="px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg shadow-sm transition cursor-pointer">Motorcycle Owners (6)</button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead class="bg-slate-50 text-[11px] uppercase font-bold text-slate-500 border-b border-slate-200">
                             <tr>
+                                <th class="px-4 py-3">Vehicle Owner / Driver</th>
                                 <th class="px-4 py-3">Hirna Model</th>
                                 <th class="px-4 py-3">License Plate</th>
                                 <th class="px-4 py-3">Category</th>
                                 <th class="px-4 py-3">Capacity / Class</th>
+                                <th class="px-4 py-3">Safety &amp; Rating</th>
                                 <th class="px-4 py-3">Status</th>
                             </tr>
                         </thead>
-                        <tbody class="text-xs divide-y divide-slate-100">
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-4 py-3 font-semibold text-slate-800">Toyota Vios Hirna Taxi</td>
-                                <td class="px-4 py-3"><span class="plate-badge">TXI-5431</span></td>
-                                <td class="px-4 py-3 text-slate-600">Taxi Sedan</td>
-                                <td class="px-4 py-3 text-slate-600 font-mono">4-Seater (45 kWh)</td>
+                        <tbody id="fleet-inventory-tbody" class="text-xs divide-y divide-slate-100">
+                            <!-- Car Owners (3) -->
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3">
+                                    <div class="font-bold text-slate-900">Ricardo Dalisay</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">+63 920 555 1234 • Lic: N01-19-123456</div>
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-800">Toyota Vios 1.5G (Silver)</td>
+                                <td class="px-4 py-3"><span class="plate-badge">NFD-8892</span></td>
+                                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">Car • Taxi Sedan</span></td>
+                                <td class="px-4 py-3 text-slate-600 font-mono">Sedan (4-Seater)</td>
+                                <td class="px-4 py-3">
+                                    <span class="font-bold text-amber-600">4.92 ★</span>
+                                    <span class="text-slate-400 mx-1">•</span>
+                                    <span class="font-mono font-semibold text-emerald-700">99% Safety</span>
+                                    <span class="block text-[10px] text-slate-400">520 trips completed</span>
+                                </td>
                                 <td class="px-4 py-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Active</span></td>
                             </tr>
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-4 py-3 font-semibold text-slate-800">Hyundai Accent Hirna Taxi</td>
-                                <td class="px-4 py-3"><span class="plate-badge">TXI-8876</span></td>
-                                <td class="px-4 py-3 text-slate-600">Taxi Sedan</td>
-                                <td class="px-4 py-3 text-slate-600 font-mono">4-Seater (42 kWh)</td>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3">
+                                    <div class="font-bold text-slate-900">Elena Roces</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">+63 922 444 9876 • Lic: N02-20-654321</div>
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-800">Mitsubishi Xpander (White)</td>
+                                <td class="px-4 py-3"><span class="plate-badge">NBL-3301</span></td>
+                                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">Car • MPV / SUV</span></td>
+                                <td class="px-4 py-3 text-slate-600 font-mono">MPV (6-Seater)</td>
+                                <td class="px-4 py-3">
+                                    <span class="font-bold text-amber-600">4.85 ★</span>
+                                    <span class="text-slate-400 mx-1">•</span>
+                                    <span class="font-mono font-semibold text-emerald-700">96% Safety</span>
+                                    <span class="block text-[10px] text-slate-400">310 trips completed</span>
+                                </td>
                                 <td class="px-4 py-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Active</span></td>
                             </tr>
-                            <tr class="hover:bg-slate-50">
-                                <td class="px-4 py-3 font-semibold text-slate-800">Toyota Innova Fleet MPV</td>
-                                <td class="px-4 py-3"><span class="plate-badge">MPV-3626</span></td>
-                                <td class="px-4 py-3 text-slate-600">MPV / SUV</td>
-                                <td class="px-4 py-3 text-slate-600 font-mono">6-Seater (55 kWh)</td>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3">
+                                    <div class="font-bold text-slate-900">Arman Mendoza</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">+63 919 777 4321 • Lic: N03-21-987123</div>
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-800">Honda Civic RS (Black)</td>
+                                <td class="px-4 py-3"><span class="plate-badge">NDS-4099</span></td>
+                                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">Car • Executive Sedan</span></td>
+                                <td class="px-4 py-3 text-slate-600 font-mono">Executive (4-Seater)</td>
+                                <td class="px-4 py-3">
+                                    <span class="font-bold text-amber-600">4.98 ★</span>
+                                    <span class="text-slate-400 mx-1">•</span>
+                                    <span class="font-mono font-semibold text-emerald-700">100% Safety</span>
+                                    <span class="block text-[10px] text-slate-400">415 trips completed</span>
+                                </td>
+                                <td class="px-4 py-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Active</span></td>
+                            </tr>
+                            <!-- Motorcycle Owners (6) -->
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3">
+                                    <div class="font-bold text-slate-900">Danilo Cruz</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">+63 918 333 4455 • Lic: N04-22-334455</div>
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-800">Yamaha NMAX 155 (Midnight Blue)</td>
+                                <td class="px-4 py-3"><span class="plate-badge">MTR-9821</span></td>
+                                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Motorcycle • Scooter</span></td>
+                                <td class="px-4 py-3 text-slate-600 font-mono">Scooter (155cc) • 1-Seater</td>
+                                <td class="px-4 py-3">
+                                    <span class="font-bold text-amber-600">4.95 ★</span>
+                                    <span class="text-slate-400 mx-1">•</span>
+                                    <span class="font-mono font-semibold text-emerald-700">99% Safety</span>
+                                    <span class="block text-[10px] text-slate-400">680 trips completed</span>
+                                </td>
+                                <td class="px-4 py-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Active</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3">
+                                    <div class="font-bold text-slate-900">Jomar Reyes</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">+63 917 888 1122 • Lic: N05-23-556677</div>
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-800">Honda Click 125i (Pearl White)</td>
+                                <td class="px-4 py-3"><span class="plate-badge">MC-4412</span></td>
+                                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Motorcycle • Scooter</span></td>
+                                <td class="px-4 py-3 text-slate-600 font-mono">Scooter (125cc) • 1-Seater</td>
+                                <td class="px-4 py-3">
+                                    <span class="font-bold text-amber-600">4.91 ★</span>
+                                    <span class="text-slate-400 mx-1">•</span>
+                                    <span class="font-mono font-semibold text-emerald-700">98% Safety</span>
+                                    <span class="block text-[10px] text-slate-400">450 trips completed</span>
+                                </td>
+                                <td class="px-4 py-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Active</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3">
+                                    <div class="font-bold text-slate-900">Arnel Bautista</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">+63 928 444 3322 • Lic: N06-20-112233</div>
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-800">Honda Wave 125i (Sport Red)</td>
+                                <td class="px-4 py-3"><span class="plate-badge">MC-8109</span></td>
+                                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">Motorcycle • Manual</span></td>
+                                <td class="px-4 py-3 text-slate-600 font-mono">Manual/Underbone (125cc) • 1-Seater</td>
+                                <td class="px-4 py-3">
+                                    <span class="font-bold text-amber-600">4.89 ★</span>
+                                    <span class="text-slate-400 mx-1">•</span>
+                                    <span class="font-mono font-semibold text-emerald-700">97% Safety</span>
+                                    <span class="block text-[10px] text-slate-400">520 trips completed</span>
+                                </td>
+                                <td class="px-4 py-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Active</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3">
+                                    <div class="font-bold text-slate-900">Mark Dizon</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">+63 915 222 7788 • Lic: N07-21-998877</div>
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-800">Yamaha Aerox 155 (Racing Cyan)</td>
+                                <td class="px-4 py-3"><span class="plate-badge">MC-2930</span></td>
+                                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Motorcycle • Scooter</span></td>
+                                <td class="px-4 py-3 text-slate-600 font-mono">Scooter (155cc) • 1-Seater</td>
+                                <td class="px-4 py-3">
+                                    <span class="font-bold text-amber-600">4.93 ★</span>
+                                    <span class="text-slate-400 mx-1">•</span>
+                                    <span class="font-mono font-semibold text-emerald-700">99% Safety</span>
+                                    <span class="block text-[10px] text-slate-400">610 trips completed</span>
+                                </td>
+                                <td class="px-4 py-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Active</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3">
+                                    <div class="font-bold text-slate-900">Roderick Tan</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">+63 929 666 4433 • Lic: N08-22-445566</div>
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-800">Yamaha Sniper 155 (Matte Black)</td>
+                                <td class="px-4 py-3"><span class="plate-badge">MC-6754</span></td>
+                                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">Motorcycle • Manual</span></td>
+                                <td class="px-4 py-3 text-slate-600 font-mono">Manual (155cc) • 1-Seater</td>
+                                <td class="px-4 py-3">
+                                    <span class="font-bold text-amber-600">4.94 ★</span>
+                                    <span class="text-slate-400 mx-1">•</span>
+                                    <span class="font-mono font-semibold text-emerald-700">100% Safety</span>
+                                    <span class="block text-[10px] text-slate-400">580 trips completed</span>
+                                </td>
+                                <td class="px-4 py-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Active</span></td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="px-4 py-3">
+                                    <div class="font-bold text-slate-900">Carlo Mendoza</div>
+                                    <div class="text-[10px] text-slate-500 font-mono">+63 916 555 9900 • Lic: N09-24-778899</div>
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-800">Honda ADV 160 (Matte Solar Red)</td>
+                                <td class="px-4 py-3"><span class="plate-badge">MC-5128</span></td>
+                                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Motorcycle • Scooter</span></td>
+                                <td class="px-4 py-3 text-slate-600 font-mono">Scooter (160cc) • 1-Seater</td>
+                                <td class="px-4 py-3">
+                                    <span class="font-bold text-amber-600">4.97 ★</span>
+                                    <span class="text-slate-400 mx-1">•</span>
+                                    <span class="font-mono font-semibold text-emerald-700">100% Safety</span>
+                                    <span class="block text-[10px] text-slate-400">720 trips completed</span>
+                                </td>
                                 <td class="px-4 py-3"><span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">● Active</span></td>
                             </tr>
                         </tbody>
