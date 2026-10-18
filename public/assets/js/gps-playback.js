@@ -1276,51 +1276,34 @@ const GPSModule = {
 
             let currentDist = this.currentDistM;
 
-            // 2. Identify nearest upcoming turn or intersection stop or active halt
+            // 2. Identify active stop if currently halted at a stop line
             let activeStop = dyn.activeStop;
-            if (!activeStop) {
-                const frameStep = Math.max(2, nominalSpeedMps * dyn.currentSpeedFactor * dtSec * 1.2);
-                for (const st of (dyn.finalStops || dyn.signalStops)) {
-                    if (!st.hasStopped) {
-                        if (currentDist >= st.dist - frameStep && currentDist <= st.dist + 4) {
-                            activeStop = st;
-                            dyn.activeStop = st;
-                            currentDist = st.dist;
-                            dyn.currentSpeedFactor = 0.0;
-                            break;
-                        }
-                    }
-                }
-            }
 
             let targetSpeedFactor = 1.0;
             let drivingBehavior = "Cruising";
             let behaviorClass = "text-emerald-400";
 
             if (activeStop) {
-                // FULL STOP AT TURN OR INTERSECTION (2s - 4s scaled by replay speed)
+                // FULL STOP AT TURN OR INTERSECTION (exact 2s - 4s wall-clock duration)
                 if (activeStop.stopStartTime === 0) {
                     activeStop.stopStartTime = now;
-                    activeStop.stoppedMs = 0;
-                } else {
-                    activeStop.stoppedMs += dtSec * 1000;
                 }
-                const scaledStopDuration = activeStop.stopDurationMs / this.playbackSpeed;
-                const stoppedElapsed = activeStop.stoppedMs;
-                if (stoppedElapsed < scaledStopDuration) {
+                const stoppedElapsed = now - activeStop.stopStartTime;
+                if (stoppedElapsed < activeStop.stopDurationMs) {
                     currentDist = activeStop.dist;
                     targetSpeedFactor = 0.0;
                     dyn.currentSpeedFactor = 0.0;
                     dyn.smoothedSpeedKmh = 0;
-                    drivingBehavior = `Stopped at ${activeStop.label || "Intersection"}`;
+                    drivingBehavior = activeStop.kind === 'turn' ? "Stopped for Turn" : `Stopped at ${activeStop.label || "4-Way Intersection"}`;
                     behaviorClass = "text-rose-400";
                 } else {
                     // Clear to go: Accelerate smoothly out
                     activeStop.hasStopped = true;
                     dyn.activeStop = null;
                     activeStop = null;
-                    targetSpeedFactor = 0.45;
-                    dyn.currentSpeedFactor = 0.05;
+                    targetSpeedFactor = 0.55;
+                    dyn.currentSpeedFactor = 0.22;
+                    dyn.smoothedSpeedKmh = 12;
                     drivingBehavior = "Accelerating into Road";
                     behaviorClass = "text-amber-300";
                 }
@@ -1341,8 +1324,8 @@ const GPSModule = {
                 const stopDecelHorizon = Math.max(65, nominalSpeedMps * 1.3);
                 if (distToNextStop <= stopDecelHorizon) {
                     const stopRatio = Math.max(0, distToNextStop / stopDecelHorizon);
-                    targetSpeedFactor = Math.pow(stopRatio, 1.4) * 0.70;
-                    drivingBehavior = `Approaching ${nextStopObj?.label || "Intersection"}`;
+                    targetSpeedFactor = 0.22 + Math.pow(stopRatio, 1.2) * 0.52;
+                    drivingBehavior = nextStopObj?.kind === 'turn' ? "Approaching Turn" : `Approaching ${nextStopObj?.label || "4-Way Intersection"}`;
                     behaviorClass = "text-amber-400";
                 } else {
                     // Check bends
@@ -1437,12 +1420,26 @@ const GPSModule = {
             if (!activeStop) {
                 const easeRate = (targetSpeedFactor < dyn.currentSpeedFactor) ? 2.2 : 1.5;
                 dyn.currentSpeedFactor += (targetSpeedFactor - dyn.currentSpeedFactor) * Math.min(1.0, dtSec * easeRate);
-                currentDist += nominalSpeedMps * dyn.currentSpeedFactor * dtSec;
-                if (currentDist > totalDist) currentDist = totalDist;
+                const stepMove = nominalSpeedMps * dyn.currentSpeedFactor * dtSec;
+                const stopsList = dyn.finalStops || dyn.signalStops || [];
+                const nextUnstopped = stopsList.find(st => !st.hasStopped && st.dist >= currentDist);
+                if (nextUnstopped && (currentDist + stepMove) >= nextUnstopped.dist) {
+                    currentDist = nextUnstopped.dist;
+                    activeStop = nextUnstopped;
+                    dyn.activeStop = nextUnstopped;
+                    activeStop.stopStartTime = now;
+                    dyn.currentSpeedFactor = 0.0;
+                    dyn.smoothedSpeedKmh = 0;
+                    drivingBehavior = activeStop.kind === 'turn' ? "Stopped for Turn" : `Stopped at ${activeStop.label || "4-Way Intersection"}`;
+                    behaviorClass = "text-rose-400";
+                } else {
+                    currentDist += stepMove;
+                    if (currentDist > totalDist) currentDist = totalDist;
+                }
             }
 
             const speedFactor = dyn.currentSpeedFactor;
-            const targetKmh = (speedFactor < 0.05 || activeStop) ? 0 : Math.max(12, Math.round(38 * speedFactor + (Math.sin(now / 450) * 1.5)));
+            const targetKmh = activeStop ? 0 : Math.max(12, Math.round(38 * speedFactor + (Math.sin(now / 450) * 1.5)));
             if (activeStop) {
                 dyn.smoothedSpeedKmh = 0;
             } else {
@@ -1511,15 +1508,16 @@ if (document.readyState === 'loading') {
 // -----------------------------------------------------------------------------
 // ROAD EVENT EXTRACTION (shared by booking.js and gps-playback.js)
 // Uses the per-step `intersections[]` returned by Mapbox/OSRM directions:
-//   - traffic_signal / stop_sign flags  -> FULL STOP (2-4s)
-//   - 4-way intersection that the route TURNS at (no signal) -> FULL STOP (2-4s)
-//   - every other junction (3-way, side streets, plain turns) -> slowdown only
-// Without intersection data (e.g. synthetic/fallback routes) no full stops are created.
+//   - traffic_signal / stop_sign flags        -> FULL STOP (2-4s)
+//   - 4-way intersection (legs >= 4)          -> FULL STOP (2-4s), labeled "4-Way Intersection"
+//   - 3-way street turn maneuver (legs === 3) -> FULL STOP (2-4s), labeled "Turn" (NOT an intersection)
+//   - 3-way side street going straight        -> Slowdown only (NO full stop)
+//   - 2-way road bends / curves               -> Slowdown only via roadBends (NO full stop)
 // -----------------------------------------------------------------------------
 function buildRoadEvents(waypoints, cumDistances, totalDist, milestones) {
     const finalStops = [];
     const connectedIntersections = [];
-    if (!Array.isArray(milestones) || !Array.isArray(waypoints) || waypoints.length < 2) {
+    if (!Array.isArray(waypoints) || waypoints.length < 2) {
         return { finalStops, connectedIntersections };
     }
 
@@ -1541,97 +1539,149 @@ function buildRoadEvents(waypoints, cumDistances, totalDist, milestones) {
             const d2 = dx * dx + dy * dy;
             if (d2 < best) { best = d2; bestIdx = i; }
         }
-        if (bestIdx < 0 || Math.sqrt(best) * 111320 > 40) return null;
+        if (bestIdx < 0 || Math.sqrt(best) * 111320 > 45) return null;
         return cumDistances[bestIdx];
     };
 
-    const raw = [];
-    milestones.forEach((step) => {
-        const ints = step && step.intersections;
-        if (!Array.isArray(ints)) return;
-        const lo = (step.startDist || 0) - 60;
-        const hi = (step.endDist != null ? step.endDist : (step.startDist || 0)) + 60;
-        ints.forEach((it) => {
-            // Skip depart/arrive points (no incoming or outgoing road)
-            if (!it || !Array.isArray(it.location) || it.in === undefined || it.out === undefined) return;
-            const bearings = Array.isArray(it.bearings) ? it.bearings : [];
-            let turnAngle = 0;
-            if (bearings[it.in] !== undefined && bearings[it.out] !== undefined) {
-                // bearings[in] points back along the road we arrived on
-                turnAngle = angDiff(bearings[it.out], (bearings[it.in] + 180) % 360);
-            }
-            const d = locateDist(it.location[1], it.location[0], lo, hi);
-            if (d === null || d <= 45 || d >= totalDist - 45) return;
-            raw.push({
-                dist: Math.round(d),
-                signal: !!it.traffic_signal,
-                stopSign: !!it.stop_sign,
-                legs: bearings.length,
-                turnAngle: turnAngle,
-                name: step.name || null
+    const hasStepIntersections = Array.isArray(milestones) && milestones.some(s => Array.isArray(s && s.intersections) && s.intersections.length > 0);
+
+    if (hasStepIntersections) {
+        const raw = [];
+        milestones.forEach((step, stepIdx) => {
+            const ints = step && step.intersections;
+            if (!Array.isArray(ints)) return;
+            const lo = (step.startDist || 0) - 60;
+            const hi = (step.endDist != null ? step.endDist : (step.startDist || 0)) + 60;
+
+            const mType = step.maneuver ? (step.maneuver.type || '').toLowerCase() : '';
+            const mMod = step.maneuver ? (step.maneuver.modifier || '').toLowerCase() : '';
+            const stepIsTurn = stepIdx > 0 && (
+                mType.includes('turn') || mType.includes('end of road') ||
+                mType.includes('fork') || mType.includes('roundabout') ||
+                mType.includes('rotary') || mMod.includes('left') ||
+                mMod.includes('right') || mMod.includes('uturn')
+            ) && !mMod.includes('slight');
+
+            ints.forEach((it, intIdx) => {
+                // Skip depart/arrive points (no incoming or outgoing road)
+                if (!it || !Array.isArray(it.location) || it.in === undefined || it.out === undefined) return;
+                const bearings = Array.isArray(it.bearings) ? it.bearings : [];
+                let turnAngle = 0;
+                if (bearings[it.in] !== undefined && bearings[it.out] !== undefined) {
+                    // bearings[in] points back along the road we arrived on
+                    turnAngle = angDiff(bearings[it.out], (bearings[it.in] + 180) % 360);
+                }
+                const d = (intIdx === 0 && step.startDist > 0)
+                    ? step.startDist
+                    : locateDist(it.location[1], it.location[0], lo, hi);
+                if (d === null || d <= 45 || d >= totalDist - 45) return;
+                raw.push({
+                    dist: Math.round(d),
+                    signal: !!it.traffic_signal,
+                    stopSign: !!it.stop_sign,
+                    legs: bearings.length,
+                    turnAngle: turnAngle,
+                    isStepTurn: (intIdx === 0 && stepIsTurn),
+                    name: step.name || null
+                });
             });
         });
-    });
-    raw.sort((a, b) => a.dist - b.dist);
+        raw.sort((a, b) => a.dist - b.dist);
 
-    // Merge duplicate reports of the same junction (within 25m)
-    const events = [];
-    for (const e of raw) {
-        const prev = events[events.length - 1];
-        if (prev && e.dist - prev.dist < 25) {
-            prev.signal = prev.signal || e.signal;
-            prev.stopSign = prev.stopSign || e.stopSign;
-            prev.legs = Math.max(prev.legs, e.legs);
-            prev.turnAngle = Math.max(prev.turnAngle, e.turnAngle);
-        } else {
-            events.push(e);
-        }
-    }
-
-    const classify = (e) => {
-        if (e.signal) return { kind: 'signal', label: 'Traffic Light' };
-        if (e.stopSign) return { kind: 'stop_sign', label: 'Stop Sign' };
-        if (e.legs >= 4 && e.turnAngle >= 35) return { kind: 'intersection', label: '4-Way Intersection' };
-        return null;
-    };
-
-    for (const e of events) {
-        const cls = classify(e);
-        if (cls) {
-            const stop = {
-                dist: e.dist,
-                name: e.name ? `${cls.label} (${e.name})` : cls.label,
-                kind: cls.kind,
-                label: cls.label,
-                isTurn: e.turnAngle >= 35,
-                stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
-                hasStopped: false,
-                stopStartTime: 0
-            };
-            const prev = finalStops[finalStops.length - 1];
-            if (prev && stop.dist - prev.dist < 60) {
-                // Keep the more authoritative control (signal > stop sign > 4-way)
-                const rank = (s) => (s.kind === 'signal' ? 3 : s.kind === 'stop_sign' ? 2 : 1);
-                if (rank(stop) > rank(prev)) finalStops[finalStops.length - 1] = stop;
+        // Merge duplicate reports of the same junction (within 25m)
+        const events = [];
+        for (const e of raw) {
+            const prev = events[events.length - 1];
+            if (prev && e.dist - prev.dist < 25) {
+                prev.signal = prev.signal || e.signal;
+                prev.stopSign = prev.stopSign || e.stopSign;
+                prev.legs = Math.max(prev.legs, e.legs);
+                prev.turnAngle = Math.max(prev.turnAngle, e.turnAngle);
+                prev.isStepTurn = prev.isStepTurn || e.isStepTurn;
             } else {
-                finalStops.push(stop);
+                events.push(e);
             }
         }
-    }
 
-    // Uncontrolled junctions: slow down & go through (no full stop)
-    for (const e of events) {
-        if (e.legs < 3) continue;
-        if (finalStops.some(st => Math.abs(st.dist - e.dist) < 60)) continue;
-        if (connectedIntersections.some(ci => Math.abs(ci.dist - e.dist) < 40)) continue;
-        connectedIntersections.push({
-            dist: e.dist,
-            name: e.name || "Connected Side Street",
-            spanStart: Math.max(0, e.dist - 25),
-            spanEnd: Math.min(totalDist, e.dist + 18)
+        const classify = (e) => {
+            if (e.signal) return { kind: 'signal', label: 'Traffic Light', minGap: 90 };
+            if (e.stopSign) return { kind: 'stop_sign', label: 'Stop Sign', minGap: 90 };
+            if (e.legs >= 4 && (e.turnAngle >= 35 || e.isStepTurn)) {
+                return { kind: 'intersection', label: '4-Way Intersection', minGap: 90 };
+            }
+            if (e.legs >= 4) {
+                // Straight through a 4-way crossroad intersection
+                return { kind: 'intersection', label: '4-Way Intersection', minGap: 240 };
+            }
+            if (e.legs === 3 && e.isStepTurn && e.turnAngle >= 40) {
+                // Turning onto a new street at a 3-way T-junction (labeled Turn, NOT Intersection)
+                return { kind: 'turn', label: 'Turn', minGap: 110 };
+            }
+            return null;
+        };
+
+        for (const e of events) {
+            const cls = classify(e);
+            if (cls) {
+                const stop = {
+                    dist: e.dist,
+                    name: e.name ? `${cls.label} (${e.name})` : cls.label,
+                    kind: cls.kind,
+                    label: cls.label,
+                    isTurn: (cls.kind === 'turn' || e.turnAngle >= 35 || e.isStepTurn),
+                    stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
+                    hasStopped: false,
+                    stopStartTime: 0
+                };
+                const prev = finalStops[finalStops.length - 1];
+                const minGap = cls.minGap || 100;
+                if (prev && stop.dist - prev.dist < minGap) {
+                    const rank = (s) => (s.kind === 'signal' ? 4 : s.kind === 'stop_sign' ? 3 : s.kind === 'intersection' ? 2 : 1);
+                    if (rank(stop) > rank(prev)) finalStops[finalStops.length - 1] = stop;
+                } else {
+                    finalStops.push(stop);
+                }
+            }
+        }
+
+        // Uncontrolled 3-way side streets where vehicle continues straight: slow down & go through (no full stop)
+        for (const e of events) {
+            if (e.legs < 3) continue;
+            if (finalStops.some(st => Math.abs(st.dist - e.dist) < 70)) continue;
+            if (connectedIntersections.some(ci => Math.abs(ci.dist - e.dist) < 50)) continue;
+            connectedIntersections.push({
+                dist: e.dist,
+                name: e.name || "Connected Side Street",
+                spanStart: Math.max(0, e.dist - 25),
+                spanEnd: Math.min(totalDist, e.dist + 18)
+            });
+        }
+    } else if (Array.isArray(milestones) && milestones.length > 0) {
+        // Fallback when route has no raw OSM intersections array (e.g. synthetic/stored telemetry route)
+        milestones.forEach((step, idx) => {
+            if (idx === 0 || idx >= milestones.length - 1) return;
+            const d = Math.round(step.startDist || 0);
+            if (d <= 50 || d >= totalDist - 50) return;
+            const mType = step.maneuver ? (step.maneuver.type || '').toLowerCase() : '';
+            const mMod = step.maneuver ? (step.maneuver.modifier || '').toLowerCase() : '';
+            const isTurn = (mType.includes('turn') || mMod.includes('left') || mMod.includes('right')) && !mMod.includes('slight');
+            const label = isTurn ? 'Turn' : '4-Way Intersection';
+            const prev = finalStops[finalStops.length - 1];
+            if (!prev || d - prev.dist >= 140) {
+                finalStops.push({
+                    dist: d,
+                    name: step.name ? `${label} (${step.name})` : label,
+                    kind: isTurn ? 'turn' : 'intersection',
+                    label: label,
+                    isTurn: isTurn,
+                    stopDurationMs: Math.round(2000 + Math.random() * 2000),
+                    hasStopped: false,
+                    stopStartTime: 0
+                });
+            }
         });
     }
-    connectedIntersections.sort((a, b) => a.dist - b.dist);
 
+    connectedIntersections.sort((a, b) => a.dist - b.dist);
     return { finalStops, connectedIntersections };
 }
