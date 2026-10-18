@@ -6,6 +6,7 @@ const AnalyticsModule = {
     revenueChart: null,
     demandChart: null,
     fleetFilter: 'all',
+    dispatchFilter: 'all',
     forecastDays: [],
     selectedDayIndex: 7, // Default to Tomorrow (Next Day Forecast)
 
@@ -138,11 +139,187 @@ const AnalyticsModule = {
         }
     ],
 
+    // Baseline recent dispatches covering all 9 fleet drivers across diverse passenger/user accounts
+    defaultRecentDispatches: [
+        {
+            id: "bk-101",
+            booking_code: "TNVS-2026-0091",
+            driver_id: "drv-101",
+            driver_name: "Ricardo Dalisay",
+            vehicle_model: "Toyota Vios 1.5G (Silver)",
+            vehicle_plate: "NFD-8892",
+            vehicle_class: "Sedan (4-Seater)",
+            vehicle_type: "car",
+            passenger_name: "Juan Dela Cruz",
+            user_email: "juan.delacruz@example.com",
+            service_type: "transport",
+            pickup: "Ayala Malls Circuit, Makati",
+            dropoff: "BGC High Street, Taguig",
+            total_fare: 237.60,
+            surge_multiplier: 1.35,
+            status: "Completed",
+            time_label: "2 mins ago"
+        },
+        {
+            id: "bk-104",
+            booking_code: "MOTO-2026-0114",
+            driver_id: "drv-104",
+            driver_name: "Danilo Cruz",
+            vehicle_model: "Yamaha NMAX 155 (Midnight Blue)",
+            vehicle_plate: "MTR-9821",
+            vehicle_class: "Scooter (155cc)",
+            vehicle_type: "scooter",
+            passenger_name: "Kevin Lim",
+            user_email: "kevin.lim@gmail.com",
+            service_type: "transport",
+            pickup: "Greenbelt 5, Makati CBD",
+            dropoff: "Uptown Mall BGC, Taguig",
+            total_fare: 128.50,
+            surge_multiplier: 1.30,
+            status: "In Transit",
+            time_label: "4 mins ago"
+        },
+        {
+            id: "bk-102",
+            booking_code: "TNVS-2026-0092",
+            driver_id: "drv-102",
+            driver_name: "Elena Roces",
+            vehicle_model: "Mitsubishi Xpander (White)",
+            vehicle_plate: "NBL-3301",
+            vehicle_class: "MPV (6-Seater)",
+            vehicle_type: "car",
+            passenger_name: "Maria Santos",
+            user_email: "maria.santos@yahoo.com",
+            service_type: "transport",
+            pickup: "SM Megamall, Ortigas Center",
+            dropoff: "SM Mall of Asia, Pasay",
+            total_fare: 520.80,
+            surge_multiplier: 1.25,
+            status: "Completed",
+            time_label: "7 mins ago"
+        },
+        {
+            id: "bk-105",
+            booking_code: "PRCL-2026-0041",
+            driver_id: "drv-105",
+            driver_name: "Jomar Reyes",
+            vehicle_model: "Honda Click 125i (Pearl White)",
+            vehicle_plate: "MC-4412",
+            vehicle_class: "Scooter (125cc)",
+            vehicle_type: "scooter",
+            passenger_name: "Angela Reyes",
+            user_email: "angela.reyes@outlook.com",
+            service_type: "parcel",
+            pickup: "PBCom Tower, Makati CBD",
+            dropoff: "Greenhills Promenade, San Juan",
+            total_fare: 185.00,
+            surge_multiplier: 1.20,
+            status: "In Transit",
+            time_label: "11 mins ago"
+        },
+        {
+            id: "bk-103",
+            booking_code: "EXEC-2026-0095",
+            driver_id: "drv-103",
+            driver_name: "Arman Mendoza",
+            vehicle_model: "Honda Civic RS (Black)",
+            vehicle_plate: "NDS-4099",
+            vehicle_class: "Executive (4-Seater)",
+            vehicle_type: "car",
+            passenger_name: "Paolo Villanueva",
+            user_email: "paolo.villanueva@corp.ph",
+            service_type: "transport",
+            pickup: "NAIA Terminal 3 Arrival Bay",
+            dropoff: "Shangri-La at the Fort, BGC",
+            total_fare: 465.00,
+            surge_multiplier: 1.25,
+            status: "Completed",
+            time_label: "15 mins ago"
+        },
+        {
+            id: "bk-106",
+            booking_code: "FOOD-2026-0063",
+            driver_id: "drv-106",
+            driver_name: "Arnel Bautista",
+            vehicle_model: "Honda Wave 125i (Sport Red)",
+            vehicle_plate: "MC-8109",
+            vehicle_class: "Manual/Underbone (125cc)",
+            vehicle_type: "manual",
+            passenger_name: "Camille Tan",
+            user_email: "camille.tan@gmail.com",
+            service_type: "food",
+            pickup: "mendokoro Ramenba, BGC",
+            dropoff: "McKinley Hill Cyberpark, Taguig",
+            total_fare: 112.00,
+            surge_multiplier: 1.15,
+            status: "Completed",
+            time_label: "19 mins ago"
+        },
+        {
+            id: "bk-107",
+            booking_code: "MOTO-2026-0118",
+            driver_id: "drv-107",
+            driver_name: "Mark Dizon",
+            vehicle_model: "Yamaha Aerox 155 (Racing Cyan)",
+            vehicle_plate: "MC-2930",
+            vehicle_class: "Scooter (155cc)",
+            vehicle_type: "scooter",
+            passenger_name: "Miguelito Ramos",
+            user_email: "miguel.ramos@up.edu.ph",
+            service_type: "transport",
+            pickup: "SM North EDSA, Quezon City",
+            dropoff: "Araneta City Cubao, QC",
+            total_fare: 134.00,
+            surge_multiplier: 1.20,
+            status: "Completed",
+            time_label: "24 mins ago"
+        },
+        {
+            id: "bk-108",
+            booking_code: "PRCL-2026-0048",
+            driver_id: "drv-108",
+            driver_name: "Roderick Tan",
+            vehicle_model: "Yamaha Sniper 155 (Matte Black)",
+            vehicle_plate: "MC-6754",
+            vehicle_class: "Manual (155cc)",
+            vehicle_type: "manual",
+            passenger_name: "Patricia Gomez",
+            user_email: "patricia.gomez@enterprise.ph",
+            service_type: "parcel",
+            pickup: "Robinsons Galleria, Ortigas",
+            dropoff: "Eastwood City Cyberpark, QC",
+            total_fare: 164.50,
+            surge_multiplier: 1.22,
+            status: "Completed",
+            time_label: "29 mins ago"
+        },
+        {
+            id: "bk-109",
+            booking_code: "MART-2026-0032",
+            driver_id: "drv-109",
+            driver_name: "Carlo Mendoza",
+            vehicle_model: "Honda ADV 160 (Matte Solar Red)",
+            vehicle_plate: "MC-5128",
+            vehicle_class: "Scooter (160cc)",
+            vehicle_type: "scooter",
+            passenger_name: "Rafael Chua",
+            user_email: "rafael.chua@gmail.com",
+            service_type: "mart",
+            pickup: "Landers Superstore, Arcovia Pasig",
+            dropoff: "Capitol Commons, Pasig City",
+            total_fare: 148.00,
+            surge_multiplier: 1.18,
+            status: "Completed",
+            time_label: "34 mins ago"
+        }
+    ],
+
     init() {
         this.renderKPIs();
         this.renderFleetInventory();
         this.renderCharts();
         this.renderDemandForecastTable();
+        this.renderRecentDispatches();
     },
 
     isMotorcycleOwner(driver) {
@@ -410,6 +587,7 @@ const AnalyticsModule = {
         this.renderDaySelector();
         this.renderSelectedDayInspector();
         this.renderHourlyChartForSelectedDay();
+        this.renderDemandForecastTable();
 
         // Update point highlight on the 7-day chart if rendered
         if (this.revenueChart && this.revenueChart.data && this.revenueChart.data.datasets) {
@@ -795,26 +973,286 @@ const AnalyticsModule = {
             }
         }
 
-        // 2. Render Hourly Demand Curve for the currently selected day
+        // 2. Render Hourly Demand Curve & High-Demand Hotspots for the currently selected day
         this.renderHourlyChartForSelectedDay();
+        this.renderDemandForecastTable();
     },
 
     renderDemandForecastTable() {
         const tbody = document.getElementById('demand-forecast-tbody');
         if (!tbody) return;
 
-        const zones = AIEngines.DemandPrediction.getForecast();
-        tbody.innerHTML = zones.map(z => `
-            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                <td class="px-4 py-3 font-semibold text-slate-800 text-xs">${z.zoneName}</td>
-                <td class="px-4 py-3 text-xs font-mono font-bold text-blue-600">${z.predictedTripsPerHour} req/hr</td>
-                <td class="px-4 py-3 text-xs font-semibold text-slate-700">${z.recommendedDriverCount} drivers</td>
-                <td class="px-4 py-3 text-xs">
-                    <span class="px-2 py-0.5 rounded text-[11px] font-bold ${z.surgeMultiplier > 1.2 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
-                        ${z.surgeLevel} (${z.surgeMultiplier}x)
-                    </span>
-                </td>
-            </tr>
-        `).join('');
+        const dayObj = (this.forecastDays && this.forecastDays.length)
+            ? (this.forecastDays[this.selectedDayIndex] || this.forecastDays[7] || this.forecastDays[0])
+            : null;
+
+        const zones = AIEngines.DemandPrediction.getForecast({ dayObj });
+        if (!zones || !zones.length) return;
+
+        const syncBadge = document.getElementById('hotspots-sync-badge');
+        if (syncBadge && dayObj) {
+            const label = dayObj.isTomorrow
+                ? `Synced: Tomorrow (${dayObj.dayName})`
+                : (dayObj.isToday ? `Synced: Today (Live)` : `Synced: ${dayObj.shortLabel || dayObj.dayName}`);
+            syncBadge.innerText = label;
+            syncBadge.className = dayObj.isHistorical
+                ? 'px-2 py-0.5 rounded-full text-[10px] font-black bg-hirna-50 text-hirna-800 border border-hirna-200'
+                : 'px-2 py-0.5 rounded-full text-[10px] font-black bg-orange-50 text-orange-800 border border-orange-200';
+        }
+
+        const syncSub = document.getElementById('hotspots-sync-subtitle');
+        if (syncSub && dayObj) {
+            const peakLabel = zones[0]?.syncedPeakHourLabel || 'Peak Rush';
+            syncSub.innerText = `${dayObj.fullDayName}: ${dayObj.trips} daily trips • Peak bar (${peakLabel}): ${zones[0]?.syncedPeakHourlyTotal || 0} req/hr • +${dayObj.trafficDelayPct}% corridor delay`;
+        }
+
+        const totalPeakReq = zones.reduce((s, z) => s + (Number(z.predictedTripsPerHour) || 0), 0);
+        const totalDayTrips = zones.reduce((s, z) => s + (Number(z.dailyZoneTrips) || 0), 0);
+        const avgDelay = Math.round(zones.reduce((s, z) => s + (Number(z.corridorDelayPct) || 0), 0) / zones.length);
+        const avgSurge = (zones.reduce((s, z) => s + (parseFloat(z.surgeMultiplier) || 1.2), 0) / zones.length).toFixed(2);
+
+        const totalSummaryEl = document.getElementById('hotspots-total-summary');
+        if (totalSummaryEl) {
+            totalSummaryEl.innerText = `Peak Sum: ${totalPeakReq} req/hr (= Hourly Peak Bar) • Day Sum: ${totalDayTrips} trips (= 7-Day Curve)`;
+        }
+
+        const surgeSummaryEl = document.getElementById('hotspots-surge-summary');
+        if (surgeSummaryEl) {
+            surgeSummaryEl.innerText = `Corridor Delay: +${avgDelay}% • Avg AI Surge: ${avgSurge}x`;
+        }
+
+        tbody.innerHTML = zones.map(z => {
+            const mult = parseFloat(z.surgeMultiplier || 1.1);
+            let badgeStyle = 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+            if (mult >= 1.38) {
+                badgeStyle = 'bg-rose-100 text-rose-800 border border-rose-200';
+            } else if (mult >= 1.24) {
+                badgeStyle = 'bg-amber-100 text-amber-800 border border-amber-200';
+            } else if (mult >= 1.15) {
+                badgeStyle = 'bg-blue-100 text-blue-800 border border-blue-200';
+            }
+
+            const liveTag = z.liveZoneBookings > 0
+                ? `<span class="ml-1 px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[9px] font-black">+${z.liveZoneBookings} live</span>`
+                : '';
+
+            return `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="py-2.5 pr-2">
+                        <div class="font-bold text-slate-800 text-xs flex items-center flex-wrap">
+                            <span>${z.zoneName}</span>
+                            ${liveTag}
+                        </div>
+                        <div class="text-[10px] text-slate-500 font-medium">
+                            ${z.corridor || 'Metro Corridor'} • <span class="text-amber-700 font-mono font-bold">+${z.corridorDelayPct}% delay</span>
+                        </div>
+                    </td>
+                    <td class="py-2.5 px-2">
+                        <div class="text-xs font-mono font-black text-blue-700">${z.predictedTripsPerHour} req/hr <span class="text-[10px] font-semibold text-slate-400">peak</span></div>
+                        <div class="text-[10px] font-mono text-slate-600 font-semibold">${z.dailyZoneTrips} trips/day <span class="text-slate-400">(${z.carZoneTrips}C • ${z.motoZoneTrips}M)</span></div>
+                    </td>
+                    <td class="py-2.5 px-2">
+                        <div class="text-xs font-bold text-slate-800">${z.recommendedDriverCount} units</div>
+                        <div class="text-[10px] font-mono text-slate-500">${z.recommendedCars} Car • ${z.recommendedMotos} Moto</div>
+                    </td>
+                    <td class="py-2.5 pl-2 text-right">
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-black ${badgeStyle} inline-block whitespace-nowrap">
+                            ${z.surgeLevel} (${z.surgeMultiplier}x)
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    },
+
+    setDispatchFilter(filter) {
+        this.dispatchFilter = filter || 'all';
+        this.renderRecentDispatches();
+    },
+
+    getAllDriverDispatches() {
+        const fleetOwners = this.getFleetOwners();
+        const ownerById = new Map();
+        const ownerByName = new Map();
+        fleetOwners.forEach(d => {
+            if (d.id) ownerById.set(String(d.id), d);
+            if (d.name) ownerByName.set(String(d.name).toLowerCase(), d);
+        });
+
+        // Pull ALL non-archived bookings from all users in SupabaseBridge
+        const rawBookings = (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.getData)
+            ? (SupabaseBridge.getData('bookings') || []).filter(b => b && !b.is_archived)
+            : [];
+
+        const normalizedLive = rawBookings.map((b, idx) => {
+            // Match with registered fleet driver
+            let matchedDriver = null;
+            if (b.driver_id && ownerById.has(String(b.driver_id))) {
+                matchedDriver = ownerById.get(String(b.driver_id));
+            } else if (b.driver_name && ownerByName.has(String(b.driver_name).toLowerCase())) {
+                matchedDriver = ownerByName.get(String(b.driver_name).toLowerCase());
+            } else {
+                // Assign deterministically to a matching Car or Motorcycle fleet owner if not explicitly linked
+                const vc = (b.vehicle_class || '').toLowerCase();
+                const st = (b.service_type || '').toLowerCase();
+                const isMoto = st === 'parcel' || st === 'food' || st === 'mart' || st === 'express' ||
+                               vc.includes('scooter') || vc.includes('manual') || vc.includes('moto') || vc.includes('underbone');
+                const pool = fleetOwners.filter(d => this.isMotorcycleOwner(d) === isMoto);
+                matchedDriver = pool.length ? pool[idx % pool.length] : fleetOwners[idx % fleetOwners.length];
+            }
+
+            const driverName = b.driver_name || matchedDriver?.name || 'Ricardo Dalisay';
+            const vehicleModel = b.vehicle_model || matchedDriver?.vehicle_model || 'Toyota Vios 1.5G';
+            const vehiclePlate = b.vehicle_plate || matchedDriver?.vehicle_plate || 'NFD-8892';
+            const vehicleClass = b.vehicle_class || matchedDriver?.vehicle_class || 'Sedan (4-Seater)';
+            const vehicleType = b.vehicle_type || matchedDriver?.vehicle_type || 'car';
+            const passengerName = b.passenger_name || b.sender_name || b.customer_name || b.user_name || 'Juan Dela Cruz';
+            const userEmail = b.user_email || b.passenger_email || b.email || b.created_by || `${passengerName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@hirna.ph`;
+
+            return {
+                id: b.id || b.booking_code || `live-${idx}`,
+                booking_code: b.booking_code || b.id || `TNVS-2026-01${idx}`,
+                driver_id: matchedDriver?.id || b.driver_id || 'drv-101',
+                driver_name: driverName,
+                vehicle_model: vehicleModel,
+                vehicle_plate: vehiclePlate,
+                vehicle_class: vehicleClass,
+                vehicle_type: vehicleType,
+                passenger_name: passengerName,
+                user_email: userEmail,
+                service_type: (b.service_type || 'transport').toLowerCase(),
+                pickup: b.pickup || 'Makati CBD',
+                dropoff: b.dropoff || 'BGC High Street',
+                total_fare: parseFloat(b.total_fare || 185.00),
+                surge_multiplier: parseFloat(b.surge_multiplier || 1.20),
+                status: b.status || 'Dispatched',
+                time_label: b.time_label || (b.created_at ? 'Just now' : 'Recent'),
+                is_live_user_booking: true
+            };
+        });
+
+        // Merge live user bookings across all users with baseline recent dispatches for all 9 drivers
+        const seenCodes = new Set();
+        const combined = [];
+
+        normalizedLive.forEach(item => {
+            const key = String(item.booking_code || item.id).toUpperCase();
+            if (!seenCodes.has(key)) {
+                seenCodes.add(key);
+                combined.push(item);
+            }
+        });
+
+        this.defaultRecentDispatches.forEach(item => {
+            const key = String(item.booking_code || item.id).toUpperCase();
+            if (!seenCodes.has(key)) {
+                seenCodes.add(key);
+                combined.push({ ...item });
+            }
+        });
+
+        return combined;
+    },
+
+    renderRecentDispatches() {
+        const container = document.getElementById('dashboard-recent-bookings');
+        if (!container) return;
+
+        const allDispatches = this.getAllDriverDispatches();
+        const carDispatches = allDispatches.filter(d => !this.isMotorcycleOwner(d));
+        const motoDispatches = allDispatches.filter(d => this.isMotorcycleOwner(d));
+
+        const uniqueDrivers = new Set(allDispatches.map(d => d.driver_name)).size;
+        const uniqueUsers = new Set(allDispatches.map(d => d.passenger_name)).size;
+
+        const countBadge = document.getElementById('recent-dispatches-count-badge');
+        if (countBadge) {
+            countBadge.innerText = `${allDispatches.length} Trips • ${uniqueDrivers} Drivers • ${uniqueUsers} Users`;
+        }
+
+        const btnAll = document.getElementById('dispatch-filter-all');
+        const btnCar = document.getElementById('dispatch-filter-car');
+        const btnMoto = document.getElementById('dispatch-filter-moto');
+
+        if (btnAll) btnAll.innerText = `All (${allDispatches.length})`;
+        if (btnCar) btnCar.innerText = `Cars (${carDispatches.length})`;
+        if (btnMoto) btnMoto.innerText = `Moto (${motoDispatches.length})`;
+
+        const activeBtnClass = "px-2.5 py-1 bg-hirna-700 text-white text-[10px] font-bold rounded-lg transition cursor-pointer";
+        const inactiveBtnClass = "px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition cursor-pointer";
+
+        if (btnAll) btnAll.className = this.dispatchFilter === 'all' ? activeBtnClass : inactiveBtnClass;
+        if (btnCar) btnCar.className = this.dispatchFilter === 'car' ? activeBtnClass : inactiveBtnClass;
+        if (btnMoto) btnMoto.className = this.dispatchFilter === 'moto' ? activeBtnClass : inactiveBtnClass;
+
+        let displayed = allDispatches;
+        if (this.dispatchFilter === 'car') {
+            displayed = carDispatches;
+        } else if (this.dispatchFilter === 'moto') {
+            displayed = motoDispatches;
+        }
+
+        const summaryEl = document.getElementById('recent-dispatches-summary');
+        if (summaryEl) {
+            summaryEl.innerText = `Showing ${displayed.length} recent trips across ${uniqueDrivers} fleet drivers & ${uniqueUsers} passenger accounts`;
+        }
+
+        container.innerHTML = displayed.map(d => {
+            const isMoto = this.isMotorcycleOwner(d);
+            const st = (d.service_type || 'transport').toLowerCase();
+
+            let serviceBadge = '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800 uppercase">Ride</span>';
+            if (st === 'parcel' || st === 'express') {
+                serviceBadge = '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-100 text-purple-800 uppercase">Parcel</span>';
+            } else if (st === 'food') {
+                serviceBadge = '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-100 text-orange-800 uppercase">Food</span>';
+            } else if (st === 'mart') {
+                serviceBadge = '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-100 text-teal-800 uppercase">Mart</span>';
+            }
+
+            const vehicleBadge = isMoto
+                ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800">Moto</span>'
+                : '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 text-indigo-800">Car</span>';
+
+            const statusStr = String(d.status || 'Completed');
+            const isCompleted = statusStr.toLowerCase().includes('complete');
+            const statusColor = isCompleted ? 'text-emerald-600' : 'text-blue-600';
+
+            const fareFormatted = Number(d.total_fare || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const surgeFormatted = Number(d.surge_multiplier || 1.0).toFixed(2);
+
+            return `
+                <div class="p-3 bg-slate-50/90 hover:bg-slate-100/80 rounded-xl border border-slate-200/70 transition flex items-start justify-between gap-3">
+                    <div class="flex items-start space-x-2.5 min-w-0">
+                        <div class="w-8 h-8 rounded-lg ${isMoto ? 'bg-amber-100 text-amber-800' : 'bg-hirna-100 text-hirna-800'} flex items-center justify-center font-black text-xs shrink-0 mt-0.5">
+                            ${isMoto ? 'M' : 'C'}
+                        </div>
+                        <div class="min-w-0 space-y-0.5">
+                            <div class="flex items-center flex-wrap gap-1.5">
+                                <span class="font-bold text-slate-900">${d.driver_name}</span>
+                                ${vehicleBadge}
+                                <span class="text-[10px] font-mono text-slate-500">${d.vehicle_model} • <strong class="text-slate-700">${d.vehicle_plate}</strong></span>
+                            </div>
+                            <div class="text-[11px] text-slate-700 font-medium truncate">
+                                <span class="font-mono font-bold text-hirna-800">${d.booking_code}</span>
+                                ${serviceBadge}
+                                <span class="text-slate-400 mx-1">•</span>
+                                <span>User: <strong class="text-slate-800">${d.passenger_name}</strong> <span class="text-[10px] text-slate-400">(${d.user_email})</span></span>
+                            </div>
+                            <div class="text-slate-500 text-[11px] truncate">
+                                ${d.pickup} → <span class="text-slate-700 font-semibold">${d.dropoff}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0 space-y-0.5">
+                        <span class="font-mono font-black text-hirna-900 text-xs block">₱${fareFormatted}</span>
+                        <span class="block text-[9px] font-mono text-amber-700 font-bold">${surgeFormatted}x surge</span>
+                        <span class="block text-[10px] ${statusColor} font-bold">● ${statusStr}</span>
+                        <a href="gps.html?trip=${encodeURIComponent(d.booking_code)}" class="inline-block text-[9px] font-bold text-hirna-700 hover:underline">${d.time_label || 'Track GPS →'}</a>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 };
+

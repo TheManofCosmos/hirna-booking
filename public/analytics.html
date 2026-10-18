@@ -520,6 +520,73 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Real-Time Multi-User Trip Dispatches & Graph-Synced High-Demand Hotspots -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Left 6-Col: Recent Live Trip Dispatches (All Drivers & All Users) -->
+                <div class="lg:col-span-6 bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm space-y-3 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="text-sm font-bold text-hirna-900">Recent Live Trip Dispatches</h3>
+                                    <span id="recent-dispatches-count-badge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200">9 Active Trips • All Users</span>
+                                </div>
+                                <p class="text-xs text-slate-500">Complete multi-user trip log across all 9 Car &amp; Motorcycle fleet drivers</p>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button type="button" id="dispatch-filter-all" onclick="AnalyticsModule.setDispatchFilter('all')" class="px-2.5 py-1 bg-hirna-700 text-white text-[10px] font-bold rounded-lg transition cursor-pointer">All (9)</button>
+                                <button type="button" id="dispatch-filter-car" onclick="AnalyticsModule.setDispatchFilter('car')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition cursor-pointer">Cars (3)</button>
+                                <button type="button" id="dispatch-filter-moto" onclick="AnalyticsModule.setDispatchFilter('moto')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition cursor-pointer">Moto (6)</button>
+                            </div>
+                        </div>
+                        <div class="space-y-2 text-xs max-h-[380px] overflow-y-auto pr-1 scrollbar-thin" id="dashboard-recent-bookings">
+                            <!-- Populated dynamically by AnalyticsModule.renderRecentDispatches() -->
+                        </div>
+                    </div>
+                    <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                        <span id="recent-dispatches-summary">Showing all 9 fleet drivers across all passenger accounts</span>
+                        <a href="booking.html" class="text-xs font-bold text-hirna-700 hover:text-hirna-900 transition flex items-center space-x-1">
+                            <span>Dispatch Console</span>
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right 6-Col: High-Demand Hotspots & AI Surge (100% Graph-Synced) -->
+                <div class="lg:col-span-6 bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm space-y-3 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="text-sm font-bold text-hirna-900">High-Demand Hotspots &amp; AI Surge</h3>
+                                    <span id="hotspots-sync-badge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-orange-50 text-orange-800 border border-orange-200">Synced: Tomorrow</span>
+                                </div>
+                                <p id="hotspots-sync-subtitle" class="text-xs text-slate-500">Synchronized with 7-Day Demand Curve, Corridor Traffic Delay &amp; Hourly Peak</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100">
+                                        <th class="pb-2">Zone &amp; Corridor Delay</th>
+                                        <th class="pb-2">Peak / Daily Demand</th>
+                                        <th class="pb-2">Rec. Fleet Split</th>
+                                        <th class="pb-2 text-right">AI Surge Level</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="demand-forecast-tbody" class="divide-y divide-slate-100 font-medium">
+                                    <!-- Dynamically synced with #chart-revenue-forecast & #chart-hourly-demand -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 font-semibold">
+                        <span id="hotspots-total-summary">Total Peak: -- req/hr • Total Day: -- trips</span>
+                        <span id="hotspots-surge-summary" class="font-mono font-bold text-amber-700">Avg Corridor Delay: --% • Avg Surge: --x</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- ================================================================= -->

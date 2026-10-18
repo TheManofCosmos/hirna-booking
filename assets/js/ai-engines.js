@@ -264,36 +264,169 @@ const AIEngines = {
     // --------------------------------------------------------------------------
     DemandPrediction: {
         zones: [
-            { id: "z1", name: "Makati CBD / Ayala", coords: [14.5547, 121.0244], baseDemand: 180 },
-            { id: "z2", name: "BGC / Taguig High Street", coords: [14.5517, 121.0509], baseDemand: 210 },
-            { id: "z3", name: "Ortigas Center, Pasig", coords: [14.5869, 121.0614], baseDemand: 140 },
-            { id: "z4", name: "Mall of Asia / Pasay", coords: [14.5353, 120.9829], baseDemand: 165 },
-            { id: "z5", name: "Quezon City Circle", coords: [14.6507, 121.0494], baseDemand: 120 }
+            {
+                id: "z1",
+                name: "Makati Central Business District",
+                corridor: "Ayala Ave • Paseo • Legazpi Village",
+                coords: [14.5547, 121.0244],
+                baseDemand: 180,
+                demandShare: 0.27,
+                carRatio: 0.34,
+                surgeOffset: 0.08,
+                delayOffset: 6,
+                keywords: ["makati", "ayala", "circuit", "glorietta", "greenbelt", "paseo", "poblacion"]
+            },
+            {
+                id: "z2",
+                name: "Bonifacio Global City (BGC)",
+                corridor: "High Street • Uptown • McKinley",
+                coords: [14.5517, 121.0509],
+                baseDemand: 210,
+                demandShare: 0.24,
+                carRatio: 0.32,
+                surgeOffset: 0.05,
+                delayOffset: 4,
+                keywords: ["bgc", "bonifacio", "taguig", "high street", "uptown", "market market", "mckinley"]
+            },
+            {
+                id: "z3",
+                name: "Ortigas Center, Pasig",
+                corridor: "Emerald Ave • Megamall • Shaw Blvd",
+                coords: [14.5869, 121.0614],
+                baseDemand: 140,
+                demandShare: 0.19,
+                carRatio: 0.26,
+                surgeOffset: 0.01,
+                delayOffset: 2,
+                keywords: ["ortigas", "pasig", "megamall", "emerald", "shaw", "mandaluyong", "greenhills", "kapitolyo"]
+            },
+            {
+                id: "z4",
+                name: "NAIA & Mall of Asia Bay Area",
+                corridor: "MOA Complex • NAIA T3 • Macapagal",
+                coords: [14.5353, 120.9829],
+                baseDemand: 165,
+                demandShare: 0.16,
+                carRatio: 0.38,
+                surgeOffset: -0.02,
+                delayOffset: -2,
+                keywords: ["mall of asia", "moa", "pasay", "naia", "airport", "terminal", "paranaque", "macapagal", "bay"]
+            },
+            {
+                id: "z5",
+                name: "Quezon City Triangle & Cubao Hub",
+                corridor: "North EDSA • Araneta • Eastwood",
+                coords: [14.6507, 121.0494],
+                baseDemand: 120,
+                demandShare: 0.14,
+                carRatio: 0.24,
+                surgeOffset: -0.05,
+                delayOffset: -4,
+                keywords: ["quezon", "qc", "cubao", "trinoma", "north edsa", "eastwood", "katipunan", "circle", "timog"]
+            }
         ],
 
-        getForecast(hourOfDay = new Date().getHours()) {
-            return this.zones.map(zone => {
-                // Peak morning (7-9 AM) and peak evening (5-8 PM) curve
-                let timeFactor = 0.6;
-                if ((hourOfDay >= 7 && hourOfDay <= 9) || (hourOfDay >= 17 && hourOfDay <= 20)) {
-                    timeFactor = 1.45;
-                } else if (hourOfDay >= 11 && hourOfDay <= 14) {
-                    timeFactor = 1.0;
+        getForecast(options = {}) {
+            const now = new Date();
+            const hourOfDay = typeof options === 'number'
+                ? options
+                : (options && options.hourOfDay != null ? options.hourOfDay : now.getHours());
+
+            // Synchronize directly with the active day in AnalyticsModule or generate Today's Holt-Winters forecast
+            let dayObj = (options && options.dayObj) ? options.dayObj : null;
+            if (!dayObj && typeof AnalyticsModule !== 'undefined' && Array.isArray(AnalyticsModule.forecastDays) && AnalyticsModule.forecastDays.length > 0) {
+                const idx = AnalyticsModule.selectedDayIndex != null ? AnalyticsModule.selectedDayIndex : 7;
+                dayObj = AnalyticsModule.forecastDays[idx] || AnalyticsModule.forecastDays[6] || AnalyticsModule.forecastDays[0];
+            }
+            if (!dayObj && AIEngines.RevenueForecast && AIEngines.RevenueForecast.generate7DayForecast) {
+                const fc = AIEngines.RevenueForecast.generate7DayForecast(null, now);
+                dayObj = (fc.forecast && fc.forecast[0]) || (fc.historical && fc.historical[fc.historical.length - 1]);
+            }
+
+            const totalDayTrips = dayObj ? (Number(dayObj.trips) || 220) : 220;
+            const dayTrafficDelay = dayObj ? (Number(dayObj.trafficDelayPct) || 32) : 32;
+            const daySurgeBase = dayObj ? (Number(dayObj.surgeRatio) || 1.22) : 1.22;
+            const hourlySlots = (dayObj && Array.isArray(dayObj.hourlyProfile)) ? dayObj.hourlyProfile : [];
+
+            // Find peak hourly demand & active hourly demand from the Hourly Demand Curve
+            const peakSlot = hourlySlots.reduce((best, s) => (!best || s.total > best.total) ? s : best, null);
+            const peakHourTotal = peakSlot ? peakSlot.total : Math.round(totalDayTrips * 0.19);
+
+            // Count live bookings per zone so user dispatches immediately reflect in hotspot density
+            const liveBookings = (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.getData)
+                ? (SupabaseBridge.getData('bookings') || []).filter(b => !b.is_archived)
+                : [];
+
+            const zoneLiveCounts = this.zones.map(z => {
+                let count = 0;
+                liveBookings.forEach(b => {
+                    const routeText = `${b.pickup || ''} ${b.dropoff || ''}`.toLowerCase();
+                    if (z.keywords.some(kw => routeText.includes(kw))) {
+                        count++;
+                    }
+                });
+                return count;
+            });
+
+            let allocatedDailySum = 0;
+            let allocatedPeakSum = 0;
+
+            const results = this.zones.map((zone, idx) => {
+                const isLast = idx === this.zones.length - 1;
+                const dailyTrips = isLast
+                    ? Math.max(10, totalDayTrips - allocatedDailySum)
+                    : Math.round(totalDayTrips * zone.demandShare);
+                allocatedDailySum += dailyTrips;
+
+                const peakReqPerHour = isLast
+                    ? Math.max(3, peakHourTotal - allocatedPeakSum)
+                    : Math.max(3, Math.round(peakHourTotal * zone.demandShare));
+                allocatedPeakSum += peakReqPerHour;
+
+                const liveCount = zoneLiveCounts[idx] || 0;
+                const carDailyTrips = Math.round(dailyTrips * zone.carRatio);
+                const motoDailyTrips = Math.max(0, dailyTrips - carDailyTrips);
+
+                // Synced surge multiplier anchored to the graph's daySurgeBase + zone offset + live dispatch boost
+                const rawSurge = daySurgeBase + zone.surgeOffset + Math.min(0.08, liveCount * 0.02);
+                const surgeIndex = parseFloat(Math.max(1.05, Math.min(1.65, rawSurge)).toFixed(2));
+                const zoneDelayPct = Math.max(8, Math.round(dayTrafficDelay + zone.delayOffset));
+
+                let surgeLevel = "Normal";
+                if (surgeIndex >= 1.32) {
+                    surgeLevel = "Critical";
+                } else if (surgeIndex >= 1.22) {
+                    surgeLevel = "High";
+                } else if (surgeIndex >= 1.12) {
+                    surgeLevel = "Moderate";
                 }
 
-                const predictedTrips = Math.round(zone.baseDemand * timeFactor * (0.9 + Math.random() * 0.2));
-                const surgeIndex = predictedTrips > 180 ? 1.4 : (predictedTrips > 140 ? 1.2 : 1.0);
+                // Recommended drivers scaled to peak hourly demand & fleet mix
+                const recTotalDrivers = Math.max(2, Math.round(peakReqPerHour * 0.65));
+                const recCars = Math.max(1, Math.round(recTotalDrivers * zone.carRatio));
+                const recMotos = Math.max(1, recTotalDrivers - recCars);
 
                 return {
                     zoneId: zone.id,
                     zoneName: zone.name,
+                    corridor: zone.corridor,
                     coordinates: zone.coords,
-                    predictedTripsPerHour: predictedTrips,
-                    recommendedDriverCount: Math.ceil(predictedTrips * 0.65),
-                    surgeLevel: surgeIndex > 1.2 ? "High Demand" : (surgeIndex > 1.0 ? "Moderate" : "Normal"),
-                    surgeMultiplier: surgeIndex
+                    predictedTripsPerHour: peakReqPerHour,
+                    dailyProjectedTrips: dailyTrips,
+                    carDailyTrips: carDailyTrips,
+                    motoDailyTrips: motoDailyTrips,
+                    liveDispatches: liveCount,
+                    recommendedDriverCount: recTotalDrivers,
+                    recommendedCars: recCars,
+                    recommendedMotos: recMotos,
+                    trafficDelayPct: zoneDelayPct,
+                    surgeLevel: surgeLevel,
+                    surgeMultiplier: surgeIndex,
+                    syncedDayLabel: dayObj ? (dayObj.isTomorrow ? `Tomorrow (${dayObj.dayName})` : (dayObj.isToday ? `Today (${dayObj.dayName})` : dayObj.shortLabel)) : "Today"
                 };
             });
+
+            return results;
         }
     },
 
