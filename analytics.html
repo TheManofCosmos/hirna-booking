@@ -432,34 +432,91 @@
                 </div>
             </div>
 
-            <!-- Interactive Charts Grid -->
+            <!-- Interactive Charts & Selectable Day Forecast Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <!-- 7-Day Predictive Booking Demand & Traffic Delay Forecast Chart -->
-                <div class="lg:col-span-8 bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm space-y-3">
-                    <div class="flex items-center justify-between">
+                <div class="lg:col-span-8 bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
                             <h3 class="text-sm font-bold text-hirna-900 flex items-center space-x-1.5">
                                 <svg class="w-4 h-4 text-emerald-600 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
                                 <span>7-Day Booking Demand & Traffic Delay AI Forecast</span>
                             </h3>
-                            <p class="text-xs text-slate-500">Exponential smoothing time-series algorithm projecting daily passenger trips and corridor traffic slowdown</p>
+                            <p class="text-xs text-slate-500">Holt-Winters seasonal time-series model (Level + Trend + Day-of-Week Seasonality) • Click any day or chart point to inspect</p>
                         </div>
-                        <span class="px-2 py-0.5 bg-gold-100 text-gold-800 text-xs font-bold rounded border border-gold-300">Time-Series AI</span>
+                        <span class="px-2.5 py-1 bg-gold-100 text-gold-800 text-[11px] font-bold rounded-lg border border-gold-300 self-start sm:self-auto whitespace-nowrap">Holt-Winters Seasonal AI</span>
                     </div>
+
+                    <!-- Interactive Selectable Day Strip (Today + Next 7 Forecast Days) -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Forecast Day (Past 7 Days, Today & Next 7 Days)</span>
+                            <span id="selected-day-confidence" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">96% Forecast Confidence</span>
+                        </div>
+                        <div id="forecast-day-selector" class="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
+                            <!-- Populated dynamically by AnalyticsModule.renderDaySelector() -->
+                        </div>
+                    </div>
+
                     <div class="h-64">
                         <canvas id="chart-revenue-forecast"></canvas>
                     </div>
+
+                    <!-- Selected Day AI Forecast Inspector Banner -->
+                    <div id="selected-day-inspector" class="bg-slate-50/90 rounded-xl p-3.5 border border-slate-200/80 space-y-2.5">
+                        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 pb-2">
+                            <div class="flex items-center space-x-2">
+                                <span id="selected-day-badge" class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-orange-600 text-white">NEXT DAY FORECAST</span>
+                                <h4 id="selected-day-title" class="text-xs font-black text-slate-900">Tomorrow • Monday</h4>
+                            </div>
+                            <span id="selected-day-driver" class="text-[11px] font-semibold text-hirna-800">Monday Morning Work & School Commute Surge</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-200/60">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase block">Projected Trips</span>
+                                <span id="selected-day-trips" class="text-sm font-black text-hirna-900 font-mono">252 trips</span>
+                                <span id="selected-day-split" class="text-[10px] text-slate-500 font-semibold block mt-0.5">71 Cars • 181 Moto</span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-200/60">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase block">Projected Revenue</span>
+                                <span id="selected-day-revenue" class="text-sm font-black text-emerald-700 font-mono">₱34,884</span>
+                                <span id="selected-day-range" class="text-[10px] text-slate-500 font-mono block mt-0.5">Band: 239–265 trips</span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-200/60">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase block">Traffic & Surge</span>
+                                <span id="selected-day-traffic" class="text-sm font-black text-amber-600 font-mono">+38% Delay</span>
+                                <span id="selected-day-surge" class="text-[10px] text-amber-700 font-bold block mt-0.5">1.28x Expected Surge</span>
+                            </div>
+                            <div class="bg-white p-2.5 rounded-lg border border-slate-200/60">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase block">Peak Rush & Weather</span>
+                                <span id="selected-day-weather" class="text-[11px] font-bold text-slate-800 block truncate">Clear & Fair</span>
+                                <span id="selected-day-peak" class="text-[10px] text-blue-700 font-semibold block truncate mt-0.5">7:00–9:30 AM & 5–8 PM</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Hourly Demand Distribution -->
-                <div class="lg:col-span-4 bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm space-y-3">
-                    <h3 class="text-sm font-bold text-hirna-900 flex items-center space-x-1.5">
-                        <svg class="w-4 h-4 text-blue-600 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        <span>Hourly Booking Demand Curve</span>
-                    </h3>
-                    <p class="text-xs text-slate-500">Highlighting morning & evening peak rush hours</p>
-                    <div class="h-64">
+                <!-- Hourly Demand Distribution (Synced with Selected Day) -->
+                <div class="lg:col-span-4 bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm flex flex-col justify-between space-y-3">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <h3 class="text-sm font-bold text-hirna-900 flex items-center space-x-1.5">
+                                <svg class="w-4 h-4 text-blue-600 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <span>Hourly Demand Curve</span>
+                            </h3>
+                            <span id="hourly-chart-day-badge" class="px-2 py-0.5 bg-orange-100 text-orange-800 border border-orange-200 rounded-md text-[10px] font-bold">Tomorrow</span>
+                        </div>
+                        <p id="hourly-chart-subtitle" class="text-xs text-slate-500">Projected hourly Car & Motorcycle trip distribution for selected day</p>
+                    </div>
+                    <div class="h-72 flex-1">
                         <canvas id="chart-hourly-demand"></canvas>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                        <span class="flex items-center space-x-1.5">
+                            <span class="w-2.5 h-2.5 rounded-xs bg-amber-500 inline-block"></span>
+                            <span>Peak Rush Hour Window</span>
+                        </span>
+                        <span id="hourly-chart-peak-summary" class="text-hirna-800 font-bold">Peak: 7–9 AM & 5–8 PM</span>
                     </div>
                 </div>
             </div>

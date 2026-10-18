@@ -6288,6 +6288,7 @@ const SupabaseBridge = {
                 if (typeof AnalyticsModule !== 'undefined') {
                     if (AnalyticsModule.renderKPIs) AnalyticsModule.renderKPIs();
                     if (AnalyticsModule.renderFleetInventory) AnalyticsModule.renderFleetInventory();
+                    if (AnalyticsModule.renderCharts) AnalyticsModule.renderCharts();
                 }
             }
             if (typeof AuditModule !== 'undefined') {

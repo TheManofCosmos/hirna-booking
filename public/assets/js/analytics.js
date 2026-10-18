@@ -6,6 +6,8 @@ const AnalyticsModule = {
     revenueChart: null,
     demandChart: null,
     fleetFilter: 'all',
+    forecastDays: [],
+    selectedDayIndex: 7, // Default to Tomorrow (Next Day Forecast)
 
     defaultFleetOwners: [
         {
@@ -402,9 +404,265 @@ const AnalyticsModule = {
         }
     },
 
+    selectForecastDay(index) {
+        if (!this.forecastDays || index < 0 || index >= this.forecastDays.length) return;
+        this.selectedDayIndex = index;
+        this.renderDaySelector();
+        this.renderSelectedDayInspector();
+        this.renderHourlyChartForSelectedDay();
+
+        // Update point highlight on the 7-day chart if rendered
+        if (this.revenueChart && this.revenueChart.data && this.revenueChart.data.datasets) {
+            const dsHist = this.revenueChart.data.datasets[0];
+            const dsPred = this.revenueChart.data.datasets[1];
+            if (dsHist) {
+                dsHist.pointRadius = this.forecastDays.map((_, i) => i === this.selectedDayIndex ? 8 : 4);
+                dsHist.pointBorderWidth = this.forecastDays.map((_, i) => i === this.selectedDayIndex ? 3 : 1.5);
+            }
+            if (dsPred) {
+                dsPred.pointRadius = this.forecastDays.map((_, i) => i === this.selectedDayIndex ? 8 : 4);
+                dsPred.pointBorderWidth = this.forecastDays.map((_, i) => i === this.selectedDayIndex ? 3 : 1.5);
+            }
+            this.revenueChart.update('none');
+        }
+    },
+
+    renderDaySelector() {
+        const container = document.getElementById('forecast-day-selector');
+        if (!container || !this.forecastDays.length) return;
+
+        container.innerHTML = this.forecastDays.map((dayObj, idx) => {
+            const isSelected = idx === this.selectedDayIndex;
+            const isToday = !!dayObj.isToday;
+            const isTomorrow = !!dayObj.isTomorrow;
+            const isPred = !dayObj.isHistorical;
+
+            let baseClasses = "flex-shrink-0 px-3 py-1.5 rounded-xl border text-left transition cursor-pointer select-none ";
+            if (isSelected) {
+                baseClasses += isPred
+                    ? "bg-orange-600 text-white border-orange-600 shadow-sm ring-2 ring-orange-200"
+                    : "bg-hirna-800 text-white border-hirna-800 shadow-sm ring-2 ring-hirna-200";
+            } else if (isTomorrow) {
+                baseClasses += "bg-orange-50/90 hover:bg-orange-100 text-orange-900 border-orange-300";
+            } else if (isToday) {
+                baseClasses += "bg-hirna-50 hover:bg-hirna-100 text-hirna-900 border-hirna-300";
+            } else if (isPred) {
+                baseClasses += "bg-white hover:bg-amber-50/60 text-slate-700 border-slate-200";
+            } else {
+                baseClasses += "bg-slate-50/80 hover:bg-slate-100 text-slate-600 border-slate-200/80";
+            }
+
+            let tagHtml = '';
+            if (isTomorrow) {
+                tagHtml = `<span class="text-[9px] font-black uppercase tracking-wider ${isSelected ? 'text-orange-100' : 'text-orange-600'} block">Next Day</span>`;
+            } else if (isToday) {
+                tagHtml = `<span class="text-[9px] font-black uppercase tracking-wider ${isSelected ? 'text-hirna-100' : 'text-hirna-700'} block">Today (Live)</span>`;
+            } else if (isPred) {
+                tagHtml = `<span class="text-[9px] font-bold uppercase tracking-wider ${isSelected ? 'text-orange-100' : 'text-amber-600'} block">Day +${dayObj.horizonDays}</span>`;
+            } else {
+                tagHtml = `<span class="text-[9px] font-semibold uppercase tracking-wider ${isSelected ? 'text-slate-200' : 'text-slate-400'} block">Past</span>`;
+            }
+
+            const dateNum = dayObj.date ? dayObj.date.getDate() : '';
+            const shortDay = `${dayObj.dayName} ${dateNum}`;
+
+            return `
+                <button type="button" data-day-idx="${idx}" onclick="AnalyticsModule.selectForecastDay(${idx})" class="${baseClasses}">
+                    ${tagHtml}
+                    <div class="text-xs font-black leading-tight whitespace-nowrap">${shortDay}</div>
+                    <div class="text-[10px] font-mono ${isSelected ? 'text-white/90' : 'text-slate-500'} whitespace-nowrap">${dayObj.trips} trips</div>
+                </button>
+            `;
+        }).join('');
+    },
+
+    renderSelectedDayInspector() {
+        if (!this.forecastDays.length) return;
+        const dayObj = this.forecastDays[this.selectedDayIndex] || this.forecastDays[7] || this.forecastDays[0];
+        if (!dayObj) return;
+
+        const confEl = document.getElementById('selected-day-confidence');
+        if (confEl) {
+            confEl.innerText = dayObj.isHistorical
+                ? (dayObj.isToday ? 'Live Telemetry Anchor (100%)' : 'Recorded Historical Day (100%)')
+                : `${dayObj.confidencePct || 95}% Forecast Confidence`;
+        }
+
+        const badgeEl = document.getElementById('selected-day-badge');
+        if (badgeEl) {
+            if (dayObj.isTomorrow) {
+                badgeEl.innerText = 'NEXT DAY FORECAST';
+                badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-black uppercase bg-orange-600 text-white';
+            } else if (dayObj.isToday) {
+                badgeEl.innerText = 'TODAY (LIVE)';
+                badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-black uppercase bg-hirna-700 text-white';
+            } else if (!dayObj.isHistorical) {
+                badgeEl.innerText = `DAY +${dayObj.horizonDays} FORECAST`;
+                badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-600 text-white';
+            } else {
+                badgeEl.innerText = 'HISTORICAL RECORD';
+                badgeEl.className = 'px-2 py-0.5 rounded text-[10px] font-black uppercase bg-slate-600 text-white';
+            }
+        }
+
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const dateStr = dayObj.date ? `${monthNames[dayObj.date.getMonth()]} ${dayObj.date.getDate()}, ${dayObj.date.getFullYear()}` : '';
+        const titleEl = document.getElementById('selected-day-title');
+        if (titleEl) {
+            titleEl.innerText = `${dayObj.fullDayName || dayObj.dayName} • ${dateStr}`;
+        }
+
+        const driverEl = document.getElementById('selected-day-driver');
+        if (driverEl) driverEl.innerText = dayObj.primaryDriver || 'Standard Fleet Demand';
+
+        const tripsEl = document.getElementById('selected-day-trips');
+        if (tripsEl) tripsEl.innerText = `${Number(dayObj.trips).toLocaleString()} trips`;
+
+        const splitEl = document.getElementById('selected-day-split');
+        if (splitEl) splitEl.innerText = `${dayObj.carTrips || 0} Cars • ${dayObj.motoTrips || 0} Motorcycles`;
+
+        const revEl = document.getElementById('selected-day-revenue');
+        if (revEl) revEl.innerText = `₱${Number(dayObj.revenue || 0).toLocaleString('en-US')}`;
+
+        const rangeEl = document.getElementById('selected-day-range');
+        if (rangeEl) {
+            rangeEl.innerText = dayObj.isHistorical
+                ? `Actual Recorded Volume`
+                : `95% Band: ${dayObj.lowerBound}–${dayObj.upperBound} trips`;
+        }
+
+        const trafficEl = document.getElementById('selected-day-traffic');
+        if (trafficEl) trafficEl.innerText = `+${dayObj.trafficDelayPct}% Delay`;
+
+        const surgeEl = document.getElementById('selected-day-surge');
+        if (surgeEl) surgeEl.innerText = `${Number(dayObj.surgeRatio || 1.2).toFixed(2)}x Expected Surge`;
+
+        const weatherEl = document.getElementById('selected-day-weather');
+        if (weatherEl) weatherEl.innerText = dayObj.weatherSummary || 'Clear & Fair';
+
+        const peakEl = document.getElementById('selected-day-peak');
+        if (peakEl) peakEl.innerText = dayObj.peakWindow || '7:30–9:30 AM & 5–8 PM';
+    },
+
+    renderHourlyChartForSelectedDay() {
+        const demandCtx = document.getElementById('chart-hourly-demand')?.getContext('2d');
+        if (!demandCtx || !this.forecastDays.length) return;
+
+        const dayObj = this.forecastDays[this.selectedDayIndex] || this.forecastDays[7] || this.forecastDays[0];
+        if (!dayObj) return;
+
+        const currentHour = new Date().getHours();
+        const hourlySlots = Array.isArray(dayObj.hourlyProfile) ? dayObj.hourlyProfile : [];
+
+        // Update Hourly Chart header badges
+        const badgeEl = document.getElementById('hourly-chart-day-badge');
+        if (badgeEl) {
+            badgeEl.innerText = dayObj.isTomorrow
+                ? `Tomorrow (${dayObj.dayName})`
+                : (dayObj.isToday ? `Today (${dayObj.dayName})` : dayObj.shortLabel);
+            badgeEl.className = dayObj.isHistorical
+                ? 'px-2 py-0.5 bg-hirna-100 text-hirna-800 border border-hirna-200 rounded-md text-[10px] font-bold'
+                : 'px-2 py-0.5 bg-orange-100 text-orange-800 border border-orange-200 rounded-md text-[10px] font-bold';
+        }
+
+        const subEl = document.getElementById('hourly-chart-subtitle');
+        if (subEl) {
+            subEl.innerText = `${dayObj.fullDayName} (${dayObj.trips} total trips): ${dayObj.carTrips} Car rides & ${dayObj.motoTrips} Motorcycle trips`;
+        }
+
+        const peakSumEl = document.getElementById('hourly-chart-peak-summary');
+        if (peakSumEl) {
+            peakSumEl.innerText = `Peak: ${dayObj.peakWindow || '7–9 AM & 5–8 PM'}`;
+        }
+
+        if (this.demandChart) {
+            try { this.demandChart.destroy(); } catch (e) {}
+            this.demandChart = null;
+        }
+
+        const labels = hourlySlots.map(s => {
+            if (dayObj.isToday && Math.abs(s.h - currentHour) <= 1) {
+                return `● ${s.label} [NOW]`;
+            }
+            return s.label;
+        });
+
+        const bgColors = hourlySlots.map(s => {
+            if (dayObj.isToday && Math.abs(s.h - currentHour) <= 1) {
+                return '#10b981'; // Live current hour emerald highlight
+            }
+            if (s.isPeak) {
+                return '#f59e0b'; // Peak commute rush window highlight
+            }
+            return dayObj.isHistorical ? '#b91c1c' : '#ea580c';
+        });
+
+        this.demandChart = new Chart(demandCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `${dayObj.fullDayName} Hourly Demand`,
+                    data: hourlySlots.map(s => s.total),
+                    backgroundColor: bgColors,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const slot = hourlySlots[ctx.dataIndex];
+                                if (!slot) return ` Demand: ${ctx.parsed.y} trips/hr`;
+                                return [
+                                    ` Total Demand: ${slot.total} trips/hr`,
+                                    ` • Car Owners: ${slot.car} trips`,
+                                    ` • Motorcycle Owners: ${slot.moto} trips`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: val => `${val}`
+                        }
+                    }
+                }
+            }
+        });
+    },
+
     renderCharts() {
         const now = new Date();
-        const currentHour = now.getHours();
+
+        const forecastResult = AIEngines.RevenueForecast.generate7DayForecast(null, now);
+        const historical = forecastResult.historical;
+        const forecast = forecastResult.forecast;
+        this.forecastDays = [...historical, ...forecast];
+
+        if (this.selectedDayIndex == null || this.selectedDayIndex < 0 || this.selectedDayIndex >= this.forecastDays.length) {
+            this.selectedDayIndex = historical.length; // Default to Tomorrow (index 7)
+        }
+
+        this.renderDaySelector();
+        this.renderSelectedDayInspector();
+
+        // Scroll selector so Today & Tomorrow are visible nicely on load
+        setTimeout(() => {
+            const container = document.getElementById('forecast-day-selector');
+            const activeBtn = container?.querySelector(`[data-day-idx="${this.selectedDayIndex}"]`);
+            if (container && activeBtn) {
+                const scrollLeft = activeBtn.offsetLeft - container.offsetLeft - (container.clientWidth / 2) + (activeBtn.clientWidth / 2);
+                container.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' });
+            }
+        }, 50);
 
         // 1. 7-Day Demand & Traffic Forecast Chart - Synchronized with current date & next 7 days
         const revCtx = document.getElementById('chart-revenue-forecast')?.getContext('2d');
@@ -414,21 +672,15 @@ const AnalyticsModule = {
                 this.revenueChart = null;
             }
 
-            const forecastResult = AIEngines.RevenueForecast.generate7DayForecast(null, now);
-            const historical = forecastResult.historical;
-            const forecast = forecastResult.forecast;
-
-            const allLabels = [...historical.map(h => h.label), ...forecast.map(f => f.day)];
+            const allLabels = this.forecastDays.map(d => d.label);
             const histTrips = [...historical.map(h => h.trips), ...new Array(forecast.length).fill(null)];
             
             // Connect trips forecast seamlessly starting from today's historical anchor point
             const todayTripAnchor = historical[historical.length - 1].trips;
             const predTrips = [...new Array(historical.length - 1).fill(null), todayTripAnchor, ...forecast.map(f => f.projectedTrips)];
 
-            // Traffic Delay Percentage Curve
-            const histTraffic = [...historical.map(h => h.trafficDelayPct), ...new Array(forecast.length).fill(null)];
-            const todayTrafficAnchor = historical[historical.length - 1].trafficDelayPct;
-            const predTraffic = [...new Array(historical.length - 1).fill(null), todayTrafficAnchor, ...forecast.map(f => f.trafficDelayPct)];
+            // Traffic Delay Percentage Curve across all 14 days
+            const allTraffic = this.forecastDays.map(d => d.trafficDelayPct);
 
             this.revenueChart = new Chart(revCtx, {
                 type: 'line',
@@ -442,32 +694,34 @@ const AnalyticsModule = {
                             backgroundColor: 'rgba(185, 28, 28, 0.08)',
                             fill: true,
                             tension: 0.35,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
+                            pointRadius: this.forecastDays.map((_, i) => i === this.selectedDayIndex ? 8 : 4),
+                            pointHoverRadius: 8,
+                            pointBorderWidth: this.forecastDays.map((_, i) => i === this.selectedDayIndex ? 3 : 1.5),
                             yAxisID: 'y'
                         },
                         {
-                            label: 'AI Predicted Demand (Trips/Day)',
+                            label: 'AI Predicted Demand (Holt-Winters Trips/Day)',
                             data: predTrips,
                             borderColor: '#ea580c',
                             borderDash: [6, 6],
                             backgroundColor: 'rgba(234, 88, 12, 0.12)',
                             fill: true,
                             tension: 0.35,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
+                            pointRadius: this.forecastDays.map((_, i) => i === this.selectedDayIndex ? 8 : 4),
+                            pointHoverRadius: 8,
+                            pointBorderWidth: this.forecastDays.map((_, i) => i === this.selectedDayIndex ? 3 : 1.5),
                             yAxisID: 'y'
                         },
                         {
                             label: 'Corridor Traffic Delay (% Slowdown)',
-                            data: predTraffic,
+                            data: allTraffic,
                             borderColor: '#eab308',
                             borderDash: [3, 3],
                             backgroundColor: 'transparent',
                             fill: false,
                             tension: 0.35,
                             pointRadius: 3,
-                            pointHoverRadius: 5,
+                            pointHoverRadius: 6,
                             yAxisID: 'y1'
                         }
                     ]
@@ -475,10 +729,31 @@ const AnalyticsModule = {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    onClick: (evt, activeElements) => {
+                        if (activeElements && activeElements.length > 0) {
+                            const clickedIndex = activeElements[0].index;
+                            this.selectForecastDay(clickedIndex);
+                        }
+                    },
                     plugins: {
                         legend: { position: 'top' },
                         tooltip: {
                             callbacks: {
+                                afterBody: (items) => {
+                                    if (!items || !items.length) return '';
+                                    const idx = items[0].dataIndex;
+                                    const dayObj = this.forecastDays[idx];
+                                    if (!dayObj) return '';
+                                    return [
+                                        `Split: ${dayObj.carTrips} Cars • ${dayObj.motoTrips} Motorcycles`,
+                                        `Est. Revenue: ₱${Number(dayObj.revenue).toLocaleString()} (${dayObj.surgeRatio}x surge)`,
+                                        `Click point to inspect ${dayObj.fullDayName}'s hourly curve`
+                                    ];
+                                },
                                 label: function(context) {
                                     const val = context.parsed.y;
                                     if (val === null) return '';
@@ -520,62 +795,8 @@ const AnalyticsModule = {
             }
         }
 
-        // 2. Hourly Demand & Surge Chart - Synchronized with current clock & peak rush hours
-        const demandCtx = document.getElementById('chart-hourly-demand')?.getContext('2d');
-        if (demandCtx) {
-            if (this.demandChart) {
-                try { this.demandChart.destroy(); } catch(e) {}
-                this.demandChart = null;
-            }
-
-            const hoursDef = [
-                { h: 6, label: '6 AM' },
-                { h: 8, label: '8 AM (Peak)' },
-                { h: 10, label: '10 AM' },
-                { h: 12, label: '12 PM (Lunch)' },
-                { h: 14, label: '2 PM' },
-                { h: 16, label: '4 PM' },
-                { h: 18, label: '6 PM (Peak)' },
-                { h: 20, label: '8 PM (Rush)' },
-                { h: 22, label: '10 PM' }
-            ];
-
-            const baseDemand = [45, 185, 95, 130, 80, 115, 215, 155, 70];
-            const bgColors = hoursDef.map(slot => {
-                // Highlight the active current hour segment with amber/gold
-                if (Math.abs(slot.h - currentHour) <= 1) {
-                    return '#f59e0b'; // Live hour active highlight
-                }
-                return '#b91c1c'; // Standard brand color
-            });
-
-            this.demandChart = new Chart(demandCtx, {
-                type: 'bar',
-                data: {
-                    labels: hoursDef.map(s => {
-                        return (Math.abs(s.h - currentHour) <= 1) ? `● ${s.label} [NOW]` : s.label;
-                    }),
-                    datasets: [{
-                        label: 'Trips Requested / Forecast',
-                        data: baseDemand,
-                        backgroundColor: bgColors,
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: ctx => ` Demand Volume: ${ctx.parsed.y} bookings/hr`
-                            }
-                        }
-                    }
-                }
-            });
-        }
+        // 2. Render Hourly Demand Curve for the currently selected day
+        this.renderHourlyChartForSelectedDay();
     },
 
     renderDemandForecastTable() {
