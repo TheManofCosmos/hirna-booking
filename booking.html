@@ -1176,7 +1176,7 @@
                             <div id="booking-map" class="w-full h-full min-h-[380px] z-0"></div>
 
                             <!-- Floating Live GPS Recenter Button -->
-                            <button type="button" id="btn-recenter-my-location" onclick="DeviceLocationManager.recenterMap()" title="Show and center on my live location" class="absolute top-3 right-3 z-[400] w-9 h-9 bg-white/95 hover:bg-white text-slate-700 hover:text-blue-600 rounded-xl shadow-md border border-slate-200 backdrop-blur-xs flex items-center justify-center transition cursor-pointer active:scale-95 group">
+                            <button type="button" id="btn-recenter-my-location" onclick="DeviceLocationManager.recenterMap()" title="Show and center on my live location" class="absolute top-3 right-3 z-[1001] w-9 h-9 bg-white/95 hover:bg-white text-slate-700 hover:text-blue-600 rounded-xl shadow-md border border-slate-200 backdrop-blur-xs flex items-center justify-center transition cursor-pointer active:scale-95 group">
                                 <svg class="w-4 h-4 text-slate-600 group-hover:text-blue-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <circle cx="12" cy="12" r="7" stroke-width="2"/>
                                     <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -1193,31 +1193,35 @@
 
                                 <div class="p-3.5 space-y-2.5">
                                     <!-- Google Maps Primary Row: Large Bold Green Distance • Remaining Time • Clock Time -->
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center flex-nowrap space-x-2 cursor-pointer select-none whitespace-nowrap" onclick="BookingModule.recenterTripMap()" title="Click to focus on map">
+                                    <div class="flex items-center justify-between gap-2 min-w-0">
+                                        <div class="flex items-center flex-nowrap space-x-2 cursor-pointer select-none whitespace-nowrap min-w-0 flex-shrink" onclick="BookingModule.recenterTripMap()" title="Click to center map on active vehicle">
                                             <!-- Prominent Green Distance (Highlighted) -->
-                                            <span id="hud-distance-value" class="text-2xl md:text-3xl font-black text-emerald-400 font-mono tracking-tight">850 m</span>
+                                            <span id="hud-distance-value" class="text-xl sm:text-2xl md:text-3xl font-black text-emerald-400 font-mono tracking-tight">850 m</span>
                                             <span class="text-slate-500 font-bold">•</span>
                                             <!-- Remaining Time (ETA) -->
                                             <span id="hud-eta-value" class="text-xs md:text-sm font-bold text-white font-sans">3 min</span>
                                             <span class="text-slate-500 font-bold">•</span>
                                             <!-- Arrival Clock Time -->
                                             <span id="hud-clock-arrival" class="text-xs md:text-sm font-semibold text-slate-300">3:58 PM</span>
-                                            <span class="text-slate-500 font-bold hidden xs:inline">•</span>
+                                            <span class="text-slate-500 font-bold hidden sm:inline">•</span>
                                             <!-- Live Road Speedometer & Driving Behavior Badge -->
-                                            <div id="hud-speedometer-badge" class="hidden xs:inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-lg bg-slate-800/90 border border-slate-700/80 text-[11px] font-mono font-bold" title="Live driving speed">
+                                            <div id="hud-speedometer-badge" class="hidden sm:inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-lg bg-slate-800/90 border border-slate-700/80 text-[11px] font-mono font-bold" title="Live driving speed">
                                                 <span id="hud-speed-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                                                 <span id="hud-speed-value" class="text-emerald-300">42 km/h</span>
                                                 <span id="hud-speed-mode" class="text-[9px] font-sans font-bold text-slate-400 uppercase tracking-wider pl-0.5">Cruising</span>
                                             </div>
                                         </div>
 
-                                        <!-- Track Current Location Action Button -->
-                                        <div class="flex items-center space-x-1.5">
-                                            <button type="button" id="btn-track-location" onclick="BookingModule.toggleAutoTrack()" title="Track current location on map" class="px-2.5 sm:px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-xs">
+                                        <!-- Action Buttons: Center Map & Track Current Location -->
+                                        <div class="flex items-center space-x-1.5 flex-shrink-0">
+                                            <button type="button" id="btn-hud-recenter" onclick="BookingModule.recenterTripMap()" title="Center map on driver and route" class="px-2 sm:px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-xl text-xs font-bold transition flex items-center space-x-1 cursor-pointer shadow-xs">
+                                                <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" stroke-width="2"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path stroke-linecap="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h2m16 0h2"/></svg>
+                                                <span class="hidden sm:inline text-[11px]">Center</span>
+                                            </button>
+                                            <button type="button" id="btn-track-location" onclick="BookingModule.toggleAutoTrack()" title="Track current location on map" class="px-2 sm:px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer shadow-xs">
                                                 <span id="hud-track-pulse" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg>
-                                                <span id="hud-track-label">Track current location</span>
+                                                <span id="hud-track-label" class="hidden sm:inline">Track</span>
                                             </button>
                                         </div>
                                     </div>
@@ -2290,7 +2294,7 @@
     <script src="assets/js/supabase-config.js?v=20260916_rev1"></script>
     <script src="assets/js/auth.js?v=20260916_rev1"></script>
     <script src="assets/js/sso-gateway.js?v=20260916_rev1"></script>
-    <script src="assets/js/booking.js?v=20261018_trippersist3"></script>
+    <script src="assets/js/booking.js?v=20261019_miniplayer1"></script>
     <script src="assets/js/payments.js?v=20260919_pay1"></script>
     <script src="assets/js/crm.js?v=20260916_rev1"></script>
     <script src="assets/js/gps-playback.js?v=20260916_rev1"></script>
@@ -2298,6 +2302,6 @@
     <script src="assets/js/audit.js?v=20260916_rev1"></script>
     <script src="assets/js/integrations.js?v=20260916_rev1"></script>
     <script src="assets/js/hirna-app-bridge.js?v=20260918_rev1"></script>
-    <script src="assets/js/app.js?v=20261018_trippersist3"></script>
+    <script src="assets/js/app.js?v=20261019_miniplayer1"></script>
 </body>
 </html>

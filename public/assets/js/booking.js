@@ -2603,8 +2603,8 @@ const BookingModule = {
                     const matched = dbBookings.find(b => (b.booking_code && b.booking_code === bKey) || (b.id && b.id === bKey));
                     const isStatusFinished = matched && (matched.status === 'completed' || matched.status === 'completed_early' || matched.status === 'cancelled');
 
-                    // If trip has already arrived at dropoff, is completed in DB, has no valid booking, or was last updated > 2 minutes ago, DO NOT resume
-                    if (!parsed || !parsed.booking || parsed.phase === 'arrived_dropoff' || isStatusFinished || elapsedMs > 120 * 1000) {
+                    // If trip is completed in DB, has no valid booking, or was last updated > 3 minutes ago, DO NOT resume
+                    if (!parsed || !parsed.booking || isStatusFinished || elapsedMs > 180 * 1000) {
                         localStorage.removeItem('hirna_active_trip_sim');
                         localStorage.removeItem('hirna_active_trip_route');
                     } else {
@@ -6696,10 +6696,23 @@ const BookingModule = {
         }
 
         if (phase === 'arrived_dropoff') {
-            this.cleanupTripSimulation();
+            this.tripSimulation._isResuming = false;
+            this.tripSimulation.phase = 'arrived_dropoff';
+            this.tripSimulation.currentProgress = 1.0;
+            this.tripSimulation.currentDist = this.tripSimulation.totalDistM || 2000;
+            if (this.map && dropoff && !this.tripSimulation.driverMarker) {
+                const driverIcon = this.getDriverIcon(booking, 'Arrived', 'Now');
+                this.tripSimulation.driverMarker = L.marker(dropoff, { icon: driverIcon, zIndexOffset: 2500 }).addTo(this.map);
+            }
+            this.onArrivedAtDropoff();
             return;
         } else if (phase === 'arrived_pickup') {
             this.tripSimulation._isResuming = false;
+            this.tripSimulation.phase = 'arrived_pickup';
+            this.tripSimulation.currentProgress = 1.0;
+            const pickupDist = Number(savedSim.totalDist) || Number(savedSim.currentDist) || 1000;
+            this.tripSimulation.totalDistM = pickupDist;
+            this.tripSimulation.currentDist = pickupDist;
             const arrivedElapsedMs = Math.max(0, Date.now() - (savedSim.phaseStartedAt || savedSim.lastUpdatedAt || savedSim.timestamp || Date.now()));
             const totalBoardWaitMs = booking.service_type === 'food' ? 3800 : 4000;
             if (this.map && pickup && !this.tripSimulation.driverMarker) {
@@ -6709,8 +6722,7 @@ const BookingModule = {
             if (arrivedElapsedMs >= totalBoardWaitMs) {
                 this.proceedToDropoff({
                     ...savedSim,
-                    currentDist: 0,
-                    progress: 0,
+                    phase: 'arrived_pickup',
                     extraAwayMs: arrivedElapsedMs - totalBoardWaitMs
                 });
             } else {
@@ -7723,6 +7735,10 @@ const BookingModule = {
             }
             hud.className = "fixed bottom-3 left-4 right-4 sm:left-auto sm:right-6 sm:w-[460px] z-[1500] bg-slate-900/95 text-white backdrop-blur-md rounded-2xl shadow-2xl border border-slate-700/80 transition-all duration-300 overflow-hidden";
         }
+
+        if (typeof App !== 'undefined' && App.checkTripMiniPlayerVisibility) {
+            App.checkTripMiniPlayerVisibility();
+        }
     },
 
     recenterTripMap() {
@@ -7835,13 +7851,21 @@ const BookingModule = {
         if (!isResumedCountdown) {
             this.tripSimulation.phaseStartedAt = Date.now();
         }
+        this.tripSimulation.currentProgress = 1.0;
+        const pickupDist = this.tripSimulation.totalDistM || 1000;
+        this.tripSimulation.currentDist = pickupDist;
         const pickup = this.normalizeCoords(this.tripSimulation.booking?.pickup_coords || this.pickupCoords, [14.5583, 121.0189]);
         this.saveActiveTripState({
             _forceSave: true,
             phase: 'arrived_pickup',
             currentCoords: pickup,
+            currentDist: pickupDist,
+            totalDist: pickupDist,
             progress: 1.0
         });
+        if (typeof App !== 'undefined' && App.checkTripMiniPlayerVisibility) {
+            App.checkTripMiniPlayerVisibility();
+        }
 
         if (!isResumedCountdown && typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
             const b = this.tripSimulation.booking || {};
@@ -8421,10 +8445,11 @@ const BookingModule = {
 
         let resumedDist = 0;
         if (resumeState) {
+            const isFromPickupArrival = resumeState.phase === 'arrived_pickup';
             const awayMs = typeof resumeState.extraAwayMs === 'number'
                 ? resumeState.extraAwayMs
                 : Math.max(0, Date.now() - (resumeState.lastUpdatedAt || resumeState.phaseStartedAt || resumeState.timestamp || Date.now()));
-            const savedDist = Number(resumeState.currentDist) || ((Number(resumeState.progress) || 0) * totalRouteDistM);
+            const savedDist = isFromPickupArrival ? 0 : (Number(resumeState.currentDist) || ((Number(resumeState.progress) || 0) * totalRouteDistM));
             const nominalMps = totalRouteDistM / (dropoffDurationMs / 1000);
             const effectiveMps = nominalMps * 0.82;
             resumedDist = savedDist + (effectiveMps * (awayMs / 1000));
@@ -8567,12 +8592,22 @@ const BookingModule = {
         this.tripSimulation.phase = 'arrived_dropoff';
         this.tripSimulation.phaseStartedAt = Date.now();
         this.tripSimulation.currentProgress = 1.0;
+        const dropoffDist = this.tripSimulation.totalDistM || 2000;
+        this.tripSimulation.currentDist = dropoffDist;
 
-        // Trip simulation is finished — clear from localStorage immediately so refreshing never shows "Arrived at Destination" without an active ride
-        try {
-            localStorage.removeItem('hirna_active_trip_sim');
-            localStorage.removeItem('hirna_active_trip_route');
-        } catch(e) {}
+        // Persist arrived dropoff state so refresh retains arrived status & payment modal instead of going to zero
+        this.saveActiveTripState({
+            _forceSave: true,
+            phase: 'arrived_dropoff',
+            currentCoords: dropoff,
+            currentDist: dropoffDist,
+            totalDist: dropoffDist,
+            progress: 1.0,
+            unsettled: true
+        });
+        if (typeof App !== 'undefined' && App.checkTripMiniPlayerVisibility) {
+            App.checkTripMiniPlayerVisibility();
+        }
 
         if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
             const b = this.tripSimulation.booking || {};
@@ -8657,11 +8692,6 @@ const BookingModule = {
     },
 
     onPaymentModalDismissed() {
-        try {
-            localStorage.removeItem('hirna_active_trip_sim');
-            localStorage.removeItem('hirna_active_trip_route');
-        } catch(e) {}
-
         // If payment modal is dismissed while trip is completed/waiting for payment, show minimized payment button in HUD
         if (this.tripSimulation && this.tripSimulation.booking && this.tripSimulation.phase === 'arrived_dropoff') {
             const payBar = document.getElementById('hud-payment-action-bar');
@@ -8672,6 +8702,9 @@ const BookingModule = {
                 hud.classList.remove('hidden');
                 this.checkHudDocking();
             }
+        }
+        if (typeof App !== 'undefined' && App.checkTripMiniPlayerVisibility) {
+            App.checkTripMiniPlayerVisibility();
         }
     },
 
@@ -8726,6 +8759,10 @@ const BookingModule = {
             localStorage.removeItem('hirna_active_trip_sim');
             localStorage.removeItem('hirna_active_trip_route');
         } catch(e) {}
+
+        if (typeof App !== 'undefined' && App.checkTripMiniPlayerVisibility) {
+            App.checkTripMiniPlayerVisibility();
+        }
     },
 
     closeReceipt() {
