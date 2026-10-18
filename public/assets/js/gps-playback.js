@@ -509,13 +509,21 @@ const GPSModule = {
                             const m = {
                                 name: (s.name && s.name.trim()) ? s.name.trim() : null,
                                 startDist: runningDist,
-                                endDist: runningDist + d
+                                endDist: runningDist + d,
+                                maneuver: s.maneuver || null,
+                                intersections: Array.isArray(s.intersections) ? s.intersections : null
                             };
                             runningDist += d;
                             return m;
-                        }).filter(m => m.name);
+                        });
 
-                        return { waypoints, steps: milestones };
+                        const congestion = [];
+                        for (const lg of (route.legs || [])) {
+                            const c = lg.annotation && lg.annotation.congestion;
+                            if (Array.isArray(c)) congestion.push(...c);
+                        }
+
+                        return { waypoints, steps: milestones, congestion };
                     }
                 }
             } catch (e) {}
@@ -711,6 +719,9 @@ const GPSModule = {
             fullWaypoints = routeResult.waypoints || [pickup, dropoff];
         }
         fullSteps = routeResult.steps || [];
+        this.routeCongestion = (Array.isArray(routeResult.congestion) && routeResult.congestion.length === fullWaypoints.length - 1)
+            ? routeResult.congestion
+            : [];
 
         if (isCancelledMidTrip) {
             // Check if traveled_waypoints was explicitly stored at cancellation time
@@ -946,114 +957,13 @@ const GPSModule = {
         const milestones = this.stepMilestones || [];
 
         // ---------------------------------------------------------------------
-        // 1. REAL TURNS & INTERSECTIONS (Stop only on actual turns and intersections!)
-        // No arbitrary mid-road stops on continuous straight roads or highways.
+        // REAL ROAD EVENTS from Mapbox/OSRM step intersection data:
+        //  - Full stop (2-4s) ONLY at traffic signals, stop signs, and 4-way intersections you turn at
+        //  - 3-way junctions, side streets and ordinary turns are slowdowns, NOT stops
         // ---------------------------------------------------------------------
-        const turnAndIntersectionStops = [];
-
-        // 1a. Extract turn & intersection milestones from route navigation steps
-        if (Array.isArray(milestones) && milestones.length > 0) {
-            milestones.forEach((step, idx) => {
-                if (idx === 0 || idx >= milestones.length - 1) return;
-
-                const mType = step.maneuver ? (step.maneuver.type || '').toLowerCase() : '';
-                const mMod = step.maneuver ? (step.maneuver.modifier || '').toLowerCase() : '';
-
-                const isTurn = mType.includes('turn') || mMod.includes('left') || mMod.includes('right') || 
-                               mMod.includes('uturn') || mType.includes('fork') || mType.includes('roundabout') || 
-                               mType.includes('rotary') || mType.includes('end of road');
-                const isIntersection = mType.includes('intersection') || mType.includes('junction') || 
-                                       mType.includes('new name');
-
-                if ((isTurn || isIntersection) && step.startDist > 45 && step.startDist < totalDist - 45) {
-                    const actionName = isTurn 
-                        ? (mMod.includes('left') ? 'Turn Left Junction' : mMod.includes('right') ? 'Turn Right Junction' : 'Turn Junction')
-                        : 'Road Intersection';
-
-                    turnAndIntersectionStops.push({
-                        dist: Math.round(step.startDist),
-                        name: step.name ? `${actionName} (${step.name})` : actionName,
-                        isTurn: isTurn,
-                        stopDurationMs: Math.round((2000 + Math.random() * 2000) * trafficStopDelayFactor), // 2s to 4s scaled by traffic
-                        hasStopped: false,
-                        stopStartTime: 0
-                    });
-                }
-            });
-        }
-
-        // 1b. Also detect sharp physical road turns from polyline geometry (heading change >= 38 degrees)
-        if (waypoints.length >= 3) {
-            for (let i = 1; i < waypoints.length - 1; i++) {
-                let backIdx = i - 1;
-                while (backIdx > 0 && (cumDistances[i] - cumDistances[backIdx]) < 22) {
-                    backIdx--;
-                }
-                let fwdIdx = i + 1;
-                while (fwdIdx < waypoints.length - 1 && (cumDistances[fwdIdx] - cumDistances[i]) < 22) {
-                    fwdIdx++;
-                }
-
-                const bBack = computeBearing(waypoints[backIdx], waypoints[i]);
-                const bFwd = computeBearing(waypoints[i], waypoints[fwdIdx]);
-                let diff = Math.abs(bFwd - bBack);
-                if (diff > 180) diff = 360 - diff;
-
-                if (diff >= 38) {
-                    const turnDist = Math.round(cumDistances[i]);
-                    if (turnDist > 55 && turnDist < totalDist - 55) {
-                        const alreadyCaptured = turnAndIntersectionStops.some(st => Math.abs(st.dist - turnDist) < 90);
-                        if (!alreadyCaptured) {
-                            turnAndIntersectionStops.push({
-                                dist: turnDist,
-                                name: "Street Turn Corner",
-                                isTurn: true,
-                                stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
-                                hasStopped: false,
-                                stopStartTime: 0
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        turnAndIntersectionStops.sort((a, b) => a.dist - b.dist);
-
-        // Deduplicate any stops closer than 100m to each other
-        const finalStops = [];
-        for (const st of turnAndIntersectionStops) {
-            if (finalStops.length === 0 || (st.dist - finalStops[finalStops.length - 1].dist) >= 100) {
-                finalStops.push(st);
-            }
-        }
-
-        // ---------------------------------------------------------------------
-        // 2. CONNECTED SIDE STREETS (Slow down, go straight, accelerate - NO stop!)
-        // For side streets on the right or left where the vehicle continues straight
-        // ---------------------------------------------------------------------
-        const connectedIntersections = [];
-        if (Array.isArray(milestones) && milestones.length > 0) {
-            milestones.forEach((step, idx) => {
-                if (idx === 0 || idx >= milestones.length - 1) return;
-                const mType = step.maneuver ? (step.maneuver.type || '').toLowerCase() : '';
-                const mMod = step.maneuver ? (step.maneuver.modifier || '').toLowerCase() : '';
-                const isStraight = mMod.includes('straight') || mType.includes('continue');
-                if (isStraight && step.startDist > 60 && step.startDist < totalDist - 60) {
-                    const nearStop = finalStops.some(st => Math.abs(st.dist - step.startDist) < 110);
-                    const nearExisting = connectedIntersections.some(ci => Math.abs(ci.dist - step.startDist) < 90);
-                    if (!nearStop && !nearExisting) {
-                        connectedIntersections.push({
-                            dist: Math.round(step.startDist),
-                            name: step.name || "Connected Side Street",
-                            spanStart: Math.max(0, Math.round(step.startDist) - 25),
-                            spanEnd: Math.min(totalDist, Math.round(step.startDist) + 18)
-                        });
-                    }
-                }
-            });
-        }
-        connectedIntersections.sort((a, b) => a.dist - b.dist);
+        const roadEvents = buildRoadEvents(waypoints, cumDistances, totalDist, milestones);
+        const finalStops = roadEvents.finalStops;
+        const connectedIntersections = roadEvents.connectedIntersections;
 
         // 3. ROAD BENDS / CURVES (chord bearing change >= 12 deg across ~22m lookahead)
         const roadBends = [];
@@ -1129,6 +1039,8 @@ const GPSModule = {
             nextVarianceChangeTime: performance.now() + 2500,
             currentSpeedFactor: 0.25,
             smoothedSpeedKmh: Math.round(38 * trafficCruisingMultiplier),
+            liveCongestion: Array.isArray(this.routeCongestion) ? this.routeCongestion : [],
+            cruiseSeg: 0,
             activeStop: null
         };
     },
@@ -1144,7 +1056,7 @@ const GPSModule = {
 
         // Check milestones
         if (this.stepMilestones && this.stepMilestones.length > 0) {
-            const m = this.stepMilestones.find(s => targetDist >= s.startDist && targetDist <= s.endDist);
+            const m = this.stepMilestones.find(s => s.name && targetDist >= s.startDist && targetDist <= s.endDist);
             if (m && m.name) return m.name;
         }
 
@@ -1263,7 +1175,7 @@ const GPSModule = {
                 if (nearStop) {
                     const ratio = Math.abs(nearStop.dist - dist) / 55;
                     targetFactor = Math.pow(ratio, 1.4) * 0.70;
-                    behavior = nearStop.isTurn ? "Stopping for Turn" : "Stopping at Intersection";
+                    behavior = `Approaching ${nearStop.label || "Intersection"}`;
                     behaviorClass = "text-amber-400";
                 } else {
                     const nearBend = dyn.roadBends && dyn.roadBends.find(b => dist >= b.spanStart && dist <= b.spanEnd);
@@ -1400,7 +1312,7 @@ const GPSModule = {
                     targetSpeedFactor = 0.0;
                     dyn.currentSpeedFactor = 0.0;
                     dyn.smoothedSpeedKmh = 0;
-                    drivingBehavior = activeStop.isTurn ? "Stopped for Turn" : "Stopped at Intersection";
+                    drivingBehavior = `Stopped at ${activeStop.label || "Intersection"}`;
                     behaviorClass = "text-rose-400";
                 } else {
                     // Clear to go: Accelerate smoothly out
@@ -1430,7 +1342,7 @@ const GPSModule = {
                 if (distToNextStop <= stopDecelHorizon) {
                     const stopRatio = Math.max(0, distToNextStop / stopDecelHorizon);
                     targetSpeedFactor = Math.pow(stopRatio, 1.4) * 0.70;
-                    drivingBehavior = nextStopObj?.isTurn ? "Stopping for Turn" : "Stopping at Intersection";
+                    drivingBehavior = `Approaching ${nextStopObj?.label || "Intersection"}`;
                     behaviorClass = "text-amber-400";
                 } else {
                     // Check bends
@@ -1492,16 +1404,31 @@ const GPSModule = {
                         drivingBehavior = this.isCancelledMidTrip ? "Trip Ended Mid-Transit" : "Arriving at Destination";
                         behaviorClass = this.isCancelledMidTrip ? "text-amber-400" : "text-emerald-300";
                     } else {
-                        const varianceFactor = dyn.currentVarianceKmh / 42.0;
-                        targetSpeedFactor = Math.max(0.35, dyn.trafficCruisingMultiplier + varianceFactor);
-                        if (dyn.currentVarianceKmh >= 3.0) {
-                            drivingBehavior = `${dyn.trafficLabel} (+${Math.round(dyn.currentVarianceKmh)} km/h)`;
-                        } else if (dyn.currentVarianceKmh <= -3.0) {
-                            drivingBehavior = `${dyn.trafficLabel} (${Math.round(dyn.currentVarianceKmh)} km/h)`;
-                        } else {
-                            drivingBehavior = dyn.trafficLabel;
+                        while (dyn.cruiseSeg > 0 && currentDist < this.cumDistances[dyn.cruiseSeg]) dyn.cruiseSeg--;
+                        while (dyn.cruiseSeg < this.cumDistances.length - 2 && currentDist > this.cumDistances[dyn.cruiseSeg + 1]) dyn.cruiseSeg++;
+                        const segLevel = dyn.liveCongestion ? dyn.liveCongestion[dyn.cruiseSeg] : undefined;
+                        let cruiseMul = dyn.trafficCruisingMultiplier;
+                        let cruiseLabel = dyn.trafficLabel;
+                        let cruiseClass = dyn.trafficModeClass;
+                        if (segLevel === 'low') {
+                            cruiseMul = 1.22; cruiseLabel = "Smooth Traffic Commute"; cruiseClass = "text-emerald-400";
+                        } else if (segLevel === 'moderate') {
+                            cruiseMul = 0.90; cruiseLabel = "Moderate Traffic Flow"; cruiseClass = "text-amber-400";
+                        } else if (segLevel === 'heavy') {
+                            cruiseMul = 0.65; cruiseLabel = "Heavy Traffic Slowdown"; cruiseClass = "text-orange-400";
+                        } else if (segLevel === 'severe') {
+                            cruiseMul = 0.42; cruiseLabel = "Severe Traffic Congestion"; cruiseClass = "text-rose-400";
                         }
-                        behaviorClass = dyn.trafficModeClass;
+                        const varianceFactor = dyn.currentVarianceKmh / 42.0;
+                        targetSpeedFactor = Math.max(0.25, cruiseMul + varianceFactor);
+                        if (dyn.currentVarianceKmh >= 3.0) {
+                            drivingBehavior = `${cruiseLabel} (+${Math.round(dyn.currentVarianceKmh)} km/h)`;
+                        } else if (dyn.currentVarianceKmh <= -3.0) {
+                            drivingBehavior = `${cruiseLabel} (${Math.round(dyn.currentVarianceKmh)} km/h)`;
+                        } else {
+                            drivingBehavior = cruiseLabel;
+                        }
+                        behaviorClass = cruiseClass;
                     }
                 }
             }
@@ -1579,4 +1506,132 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => GPSModule.init());
 } else {
     GPSModule.init();
+}
+
+// -----------------------------------------------------------------------------
+// ROAD EVENT EXTRACTION (shared by booking.js and gps-playback.js)
+// Uses the per-step `intersections[]` returned by Mapbox/OSRM directions:
+//   - traffic_signal / stop_sign flags  -> FULL STOP (2-4s)
+//   - 4-way intersection that the route TURNS at (no signal) -> FULL STOP (2-4s)
+//   - every other junction (3-way, side streets, plain turns) -> slowdown only
+// Without intersection data (e.g. synthetic/fallback routes) no full stops are created.
+// -----------------------------------------------------------------------------
+function buildRoadEvents(waypoints, cumDistances, totalDist, milestones) {
+    const finalStops = [];
+    const connectedIntersections = [];
+    if (!Array.isArray(milestones) || !Array.isArray(waypoints) || waypoints.length < 2) {
+        return { finalStops, connectedIntersections };
+    }
+
+    const angDiff = (a, b) => {
+        const d = Math.abs(a - b) % 360;
+        return d > 180 ? 360 - d : d;
+    };
+    const cosLat = Math.cos(waypoints[0][0] * Math.PI / 180);
+
+    // Distance along the route of the polyline vertex nearest to an intersection (lat, lng),
+    // restricted to the step's own distance window so repeated roads can't be confused.
+    const locateDist = (lat, lng, lo, hi) => {
+        let best = Infinity;
+        let bestIdx = -1;
+        for (let i = 0; i < waypoints.length; i++) {
+            if (cumDistances[i] < lo || cumDistances[i] > hi) continue;
+            const dy = waypoints[i][0] - lat;
+            const dx = (waypoints[i][1] - lng) * cosLat;
+            const d2 = dx * dx + dy * dy;
+            if (d2 < best) { best = d2; bestIdx = i; }
+        }
+        if (bestIdx < 0 || Math.sqrt(best) * 111320 > 40) return null;
+        return cumDistances[bestIdx];
+    };
+
+    const raw = [];
+    milestones.forEach((step) => {
+        const ints = step && step.intersections;
+        if (!Array.isArray(ints)) return;
+        const lo = (step.startDist || 0) - 60;
+        const hi = (step.endDist != null ? step.endDist : (step.startDist || 0)) + 60;
+        ints.forEach((it) => {
+            // Skip depart/arrive points (no incoming or outgoing road)
+            if (!it || !Array.isArray(it.location) || it.in === undefined || it.out === undefined) return;
+            const bearings = Array.isArray(it.bearings) ? it.bearings : [];
+            let turnAngle = 0;
+            if (bearings[it.in] !== undefined && bearings[it.out] !== undefined) {
+                // bearings[in] points back along the road we arrived on
+                turnAngle = angDiff(bearings[it.out], (bearings[it.in] + 180) % 360);
+            }
+            const d = locateDist(it.location[1], it.location[0], lo, hi);
+            if (d === null || d <= 45 || d >= totalDist - 45) return;
+            raw.push({
+                dist: Math.round(d),
+                signal: !!it.traffic_signal,
+                stopSign: !!it.stop_sign,
+                legs: bearings.length,
+                turnAngle: turnAngle,
+                name: step.name || null
+            });
+        });
+    });
+    raw.sort((a, b) => a.dist - b.dist);
+
+    // Merge duplicate reports of the same junction (within 25m)
+    const events = [];
+    for (const e of raw) {
+        const prev = events[events.length - 1];
+        if (prev && e.dist - prev.dist < 25) {
+            prev.signal = prev.signal || e.signal;
+            prev.stopSign = prev.stopSign || e.stopSign;
+            prev.legs = Math.max(prev.legs, e.legs);
+            prev.turnAngle = Math.max(prev.turnAngle, e.turnAngle);
+        } else {
+            events.push(e);
+        }
+    }
+
+    const classify = (e) => {
+        if (e.signal) return { kind: 'signal', label: 'Traffic Light' };
+        if (e.stopSign) return { kind: 'stop_sign', label: 'Stop Sign' };
+        if (e.legs >= 4 && e.turnAngle >= 35) return { kind: 'intersection', label: '4-Way Intersection' };
+        return null;
+    };
+
+    for (const e of events) {
+        const cls = classify(e);
+        if (cls) {
+            const stop = {
+                dist: e.dist,
+                name: e.name ? `${cls.label} (${e.name})` : cls.label,
+                kind: cls.kind,
+                label: cls.label,
+                isTurn: e.turnAngle >= 35,
+                stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
+                hasStopped: false,
+                stopStartTime: 0
+            };
+            const prev = finalStops[finalStops.length - 1];
+            if (prev && stop.dist - prev.dist < 60) {
+                // Keep the more authoritative control (signal > stop sign > 4-way)
+                const rank = (s) => (s.kind === 'signal' ? 3 : s.kind === 'stop_sign' ? 2 : 1);
+                if (rank(stop) > rank(prev)) finalStops[finalStops.length - 1] = stop;
+            } else {
+                finalStops.push(stop);
+            }
+        }
+    }
+
+    // Uncontrolled junctions: slow down & go through (no full stop)
+    for (const e of events) {
+        if (e.legs < 3) continue;
+        if (finalStops.some(st => Math.abs(st.dist - e.dist) < 60)) continue;
+        if (connectedIntersections.some(ci => Math.abs(ci.dist - e.dist) < 40)) continue;
+        connectedIntersections.push({
+            dist: e.dist,
+            name: e.name || "Connected Side Street",
+            spanStart: Math.max(0, e.dist - 25),
+            spanEnd: Math.min(totalDist, e.dist + 18)
+        });
+    }
+    connectedIntersections.sort((a, b) => a.dist - b.dist);
+
+    return { finalStops, connectedIntersections };
 }
