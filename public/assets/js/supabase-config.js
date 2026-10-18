@@ -5791,12 +5791,139 @@ const SupabaseBridge = {
         }
     },
 
+    toCloudRow(table, r) {
+        if (!r || typeof r !== 'object') return null;
+        if (table === 'bookings') {
+            return {
+                id: String(r.id || r.booking_code || `b-${Date.now()}`),
+                booking_code: String(r.booking_code || r.id || `HIRNA-${Date.now()}`),
+                user_email: r.user_email || '',
+                user_id: r.user_id || '',
+                service_type: r.service_type || 'standard',
+                passenger_name: r.passenger_name || '',
+                passenger_phone: r.passenger_phone || '',
+                driver_name: r.driver_name || '',
+                vehicle_plate: r.vehicle_plate || '',
+                vehicle_model: r.vehicle_model || '',
+                pickup: r.pickup || '',
+                dropoff: r.dropoff || '',
+                pickup_coords: r.pickup_coords || null,
+                dropoff_coords: r.dropoff_coords || null,
+                base_fare: parseFloat(r.base_fare || 0),
+                distance_fare: parseFloat(r.distance_fare || 0),
+                time_fare: parseFloat(r.time_fare || 0),
+                surge_multiplier: parseFloat(r.surge_multiplier || 1.0),
+                total_fare: parseFloat(r.total_fare || r.amount || 0),
+                payment_method: r.payment_method || 'GCash',
+                payment_status: r.payment_status || 'pending',
+                status: r.status || 'dispatched',
+                duration_min: parseFloat(r.duration_min || 0),
+                distance_km: parseFloat(r.distance_km || 0),
+                details: r
+            };
+        }
+        if (table === 'payments') {
+            return {
+                id: String(r.id || `pay-${Date.now()}`),
+                booking_code: r.booking_code || '',
+                booking_id: r.booking_id || '',
+                invoice_no: r.invoice_no || '',
+                txn_ref: r.txn_ref || '',
+                user_email: r.user_email || '',
+                user_id: r.user_id || '',
+                amount: parseFloat(r.amount != null ? r.amount : (r.total_fare || 0)),
+                payment_method: r.payment_method || 'GCash',
+                payment_status: r.payment_status || 'completed',
+                service_type: r.service_type || 'standard',
+                vehicle_class: r.vehicle_class || JSON.stringify({
+                    base_fare: r.base_fare,
+                    distance_fare: r.distance_fare,
+                    time_fare: r.time_fare,
+                    surge_multiplier: r.surge_multiplier,
+                    discount_amount: r.discount_amount,
+                    is_senior_pwd: r.is_senior_pwd,
+                    is_archived: !!r.is_archived,
+                    archived_at: r.archived_at,
+                    archived_by: r.archived_by,
+                    archive_reason: r.archive_reason,
+                    vehicle_class: r.vehicle_class
+                }),
+                passenger_name: r.passenger_name || '',
+                passenger_phone: r.passenger_phone || '',
+                driver_name: r.driver_name || '',
+                pickup: r.pickup || '',
+                dropoff: r.dropoff || ''
+            };
+        }
+        if (table === 'audit_logs') {
+            return {
+                id: String(r.id || `AUD-${Math.floor(10000 + Math.random() * 90000)}`),
+                module: r.module || 'System Core',
+                action: r.event || r.action || 'SYSTEM_EVENT',
+                record_id: r.entity || r.record_id || 'SYSTEM',
+                actor_email: r.user || r.actor_email || 'superadmin@hirna.ph',
+                details: r
+            };
+        }
+        if (table === 'sessions') {
+            return {
+                id: String(r.sessionId || r.id || `sess_${Date.now()}`),
+                user_email: r.email || r.user_email || '',
+                user_name: r.userName || r.user_name || '',
+                user_role: r.role || r.user_role || '',
+                device_name: r.deviceName || r.device_name || '',
+                browser: r.browser || '',
+                ip_address: r.ip || r.ip_address || '',
+                location: r.location || '',
+                is_active: r.status ? (r.status === 'active') : (r.is_active !== false)
+            };
+        }
+        return r;
+    },
+
+    fromCloudRow(table, row) {
+        if (!row || typeof row !== 'object') return null;
+        if (table === 'bookings') {
+            const extra = (row.details && typeof row.details === 'object') ? row.details : {};
+            return { ...extra, ...row, details: extra.details || row.details };
+        }
+        if (table === 'payments') {
+            let extra = {};
+            if (typeof row.vehicle_class === 'string' && row.vehicle_class.startsWith('{')) {
+                try { extra = JSON.parse(row.vehicle_class); } catch(e) {}
+            }
+            return {
+                ...row,
+                ...extra,
+                total_fare: row.amount != null ? parseFloat(row.amount) : (extra.total_fare || 0),
+                amount: row.amount != null ? parseFloat(row.amount) : (extra.amount || 0),
+                vehicle_class: extra.vehicle_class !== undefined ? extra.vehicle_class : row.vehicle_class
+            };
+        }
+        if (table === 'audit_logs') {
+            const extra = (row.details && typeof row.details === 'object' && row.details.id) ? row.details : {};
+            return {
+                id: row.id,
+                module: row.module || extra.module || 'System Core',
+                event: extra.event || row.action || 'SYSTEM_EVENT',
+                entity: extra.entity || row.record_id || 'SYSTEM',
+                user: extra.user || row.actor_email || 'superadmin@hirna.ph',
+                ip: extra.ip || '120.28.17.44',
+                status: extra.status || 'SUCCESS',
+                timestamp: extra.timestamp || (row.created_at ? row.created_at.replace('T', ' ').substring(0, 19) : ''),
+                details: extra.details || (typeof row.details === 'string' ? row.details : JSON.stringify(row.details || {})),
+                payload: extra.payload || row.details || {},
+                syslog_hash: extra.syslog_hash || this.generateAuditHash(row.id, row.created_at || '', row.action || '', row.record_id || '')
+            };
+        }
+        return row;
+    },
+
     async init() {
         // Immediate synchronous local hydration
         this.hydrateAllFromLocalStorage();
 
         let apiBase = this.getApiBase();
-        // 1. First fetch central server database (/api/db or database/data.json)
         // 1. Fetch live cloud database from Supabase REST API
         if (this.config.useCloud && this.config.supabaseUrl && this.config.supabaseAnonKey) {
             try {
@@ -5811,8 +5938,9 @@ const SupabaseBridge = {
                     }).catch(() => null);
 
                     if (cloudRes && cloudRes.ok) {
-                        const records = await cloudRes.json();
-                        if (Array.isArray(records)) {
+                        const rawRecords = await cloudRes.json();
+                        if (Array.isArray(rawRecords)) {
+                            const records = rawRecords.map(r => this.fromCloudRow(tbl, r)).filter(Boolean);
                             this.mergeTableRecords(tbl, records);
                         }
                     }
@@ -5960,6 +6088,38 @@ const SupabaseBridge = {
     },
 
     async pollRemoteUpdates() {
+        // 1. Poll Supabase Cloud directly so cross-device updates appear live on Vercel & all devices
+        if (this.config.useCloud && this.config.supabaseUrl && this.config.supabaseAnonKey) {
+            try {
+                let cloudChanged = false;
+                for (const tbl of ['bookings', 'payments', 'audit_logs']) {
+                    const cRes = await fetch(`${this.config.supabaseUrl}/rest/v1/${tbl}?select=*`, {
+                        headers: {
+                            'apikey': this.config.supabaseAnonKey,
+                            'Authorization': `Bearer ${this.config.supabaseAnonKey}`
+                        },
+                        cache: 'no-store'
+                    }).catch(() => null);
+                    if (cRes && cRes.ok) {
+                        const raw = await cRes.json();
+                        if (Array.isArray(raw)) {
+                            const mapped = raw.map(r => this.fromCloudRow(tbl, r)).filter(Boolean);
+                            if (this.mergeTableRecords(tbl, mapped)) {
+                                cloudChanged = true;
+                                this.refreshActiveModules(tbl);
+                            }
+                        }
+                    }
+                }
+                if (cloudChanged) {
+                    try {
+                        window.dispatchEvent(new CustomEvent('hirna:db_updated', { detail: { action: 'remote_sync' } }));
+                    } catch(e) {}
+                }
+            } catch(e) {}
+        }
+
+        // 2. Also poll local server API if running locally
         try {
             const apiBase = this.getApiBase();
             const res = await fetch(`${apiBase}/api/db`, { cache: 'no-store' }).catch(() => null);
@@ -6014,22 +6174,25 @@ const SupabaseBridge = {
             console.warn(`Could not persist ${table} to localStorage:`, e);
         }
 
-        // Push update to Supabase Cloud directly
+        // Push update to Supabase Cloud directly using schema-aligned payload
         if (this.config.useCloud && this.config.supabaseUrl && this.config.supabaseAnonKey) {
             try {
-                const cloudPayload = this.db[table];
-                if (Array.isArray(cloudPayload) && ['bookings', 'payments', 'audit_logs', 'sessions'].includes(table)) {
-                    fetch(`${this.config.supabaseUrl}/rest/v1/${table}?on_conflict=id`, {
-                        method: 'POST',
-                        keepalive: true,
-                        headers: {
-                            'apikey': this.config.supabaseAnonKey,
-                            'Authorization': `Bearer ${this.config.supabaseAnonKey}`,
-                            'Content-Type': 'application/json',
-                            'Prefer': 'resolution=merge-duplicates'
-                        },
-                        body: JSON.stringify(cloudPayload)
-                    }).catch(() => null);
+                const rawList = this.db[table];
+                if (Array.isArray(rawList) && ['bookings', 'payments', 'audit_logs', 'sessions'].includes(table)) {
+                    const cloudPayload = rawList.map(r => this.toCloudRow(table, r)).filter(Boolean);
+                    if (cloudPayload.length > 0) {
+                        fetch(`${this.config.supabaseUrl}/rest/v1/${table}?on_conflict=id`, {
+                            method: 'POST',
+                            keepalive: true,
+                            headers: {
+                                'apikey': this.config.supabaseAnonKey,
+                                'Authorization': `Bearer ${this.config.supabaseAnonKey}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'resolution=merge-duplicates'
+                            },
+                            body: JSON.stringify(cloudPayload)
+                        }).catch(() => null);
+                    }
                 }
             } catch(e) {}
         }
@@ -6521,6 +6684,26 @@ const SupabaseBridge = {
                 try {
                     this.channel.postMessage({ type: 'AUDIT_LOG', log: log });
                     this.channel.postMessage({ type: 'DB_UPDATE', table: 'audit_logs', action: 'insert', record: log });
+                } catch(e) {}
+            }
+
+            // Push audit log directly to Supabase Cloud
+            if (this.config.useCloud && this.config.supabaseUrl && this.config.supabaseAnonKey) {
+                try {
+                    const cloudLog = this.toCloudRow('audit_logs', log);
+                    if (cloudLog) {
+                        fetch(`${this.config.supabaseUrl}/rest/v1/audit_logs?on_conflict=id`, {
+                            method: 'POST',
+                            keepalive: true,
+                            headers: {
+                                'apikey': this.config.supabaseAnonKey,
+                                'Authorization': `Bearer ${this.config.supabaseAnonKey}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'resolution=merge-duplicates'
+                            },
+                            body: JSON.stringify([cloudLog])
+                        }).catch(() => null);
+                    }
                 } catch(e) {}
             }
 

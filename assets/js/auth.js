@@ -733,6 +733,31 @@ const AuthModule = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'register', session: newSession })
             }).catch(() => {});
+
+            if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.config && SupabaseBridge.config.supabaseUrl && SupabaseBridge.config.supabaseAnonKey) {
+                fetch(`${SupabaseBridge.config.supabaseUrl}/rest/v1/sessions?on_conflict=id`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SupabaseBridge.config.supabaseAnonKey,
+                        'Authorization': `Bearer ${SupabaseBridge.config.supabaseAnonKey}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify([{
+                        id: newSession.sessionId,
+                        user_email: newSession.email,
+                        user_name: user.name || '',
+                        user_role: user.role || 'passenger',
+                        device_name: newSession.deviceName,
+                        browser: newSession.browser,
+                        ip_address: newSession.ip,
+                        location: newSession.location,
+                        is_active: true,
+                        last_active: newSession.lastActive,
+                        login_time: newSession.loginTime
+                    }])
+                }).catch(() => {});
+            }
         }
         return newSession;
     },
@@ -752,6 +777,19 @@ const AuthModule = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'signout', sessionId: target.sessionId })
             }).catch(() => {});
+
+            if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.config && SupabaseBridge.config.supabaseUrl && SupabaseBridge.config.supabaseAnonKey) {
+                fetch(`${SupabaseBridge.config.supabaseUrl}/rest/v1/sessions?id=eq.${encodeURIComponent(target.sessionId)}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': SupabaseBridge.config.supabaseAnonKey,
+                        'Authorization': `Bearer ${SupabaseBridge.config.supabaseAnonKey}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({ is_active: false })
+                }).catch(() => {});
+            }
         }
         
         try {
