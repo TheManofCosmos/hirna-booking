@@ -2574,21 +2574,35 @@ const BookingModule = {
                     this.renderHistory();
                 }
             });
+
+            const persistOnLeave = () => {
+                if (this.tripSimulation && this.tripSimulation.active && this.tripSimulation.booking) {
+                    this.saveActiveTripState();
+                }
+            };
+            window.addEventListener('beforeunload', persistOnLeave);
+            window.addEventListener('pagehide', persistOnLeave);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') {
+                    persistOnLeave();
+                }
+            });
         }
 
-        // Resume ongoing trip simulation if user refreshed or navigated back
+        // Resume ongoing trip simulation if user refreshed or navigated back from another module
         try {
             const savedSim = localStorage.getItem('hirna_active_trip_sim');
             if (savedSim) {
                 const parsed = JSON.parse(savedSim);
-                if (parsed && parsed.booking && (Date.now() - (parsed.timestamp || 0)) < 20 * 60 * 1000) {
+                const refTime = parsed.lastUpdatedAt || parsed.timestamp || 0;
+                if (parsed && parsed.booking && (Date.now() - refTime) < 30 * 60 * 1000) {
                     const dbBookings = (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.getData) ? SupabaseBridge.getData('bookings') : [];
                     const bKey = parsed.booking.booking_code || parsed.booking.id;
                     const matched = dbBookings.find(b => (b.booking_code && b.booking_code === bKey) || (b.id && b.id === bKey));
-                    if (!matched || matched.status !== 'completed') {
+                    if (!matched || (matched.status !== 'completed' && matched.status !== 'cancelled')) {
                         setTimeout(() => {
                             this.resumeActiveTrip(parsed);
-                        }, 500);
+                        }, 120);
                     } else {
                         localStorage.removeItem('hirna_active_trip_sim');
                     }
@@ -6506,7 +6520,63 @@ const BookingModule = {
         };
     },
 
+    saveActiveTripState(extra = {}) {
+        if (!this.tripSimulation || !this.tripSimulation.active || !this.tripSimulation.booking) return;
+        try {
+            const prevRaw = localStorage.getItem('hirna_active_trip_sim');
+            const prev = prevRaw ? JSON.parse(prevRaw) : {};
+            const now = Date.now();
+            const state = {
+                ...prev,
+                booking: this.tripSimulation.booking,
+                phase: this.tripSimulation.phase,
+                driverCoords: this.tripSimulation.driverCoords || prev.driverCoords || null,
+                driverOriginName: this.tripSimulation.driverOriginName || prev.driverOriginName || null,
+                currentCoords: this.tripSimulation.currentCoords || prev.currentCoords || null,
+                currentDist: typeof this.tripSimulation.currentDist === 'number' ? this.tripSimulation.currentDist : 0,
+                totalDist: typeof this.tripSimulation.totalDistM === 'number' ? this.tripSimulation.totalDistM : (prev.totalDist || 0),
+                legDurationMs: typeof this.tripSimulation.legDurationMs === 'number' ? this.tripSimulation.legDurationMs : (prev.legDurationMs || 0),
+                progress: typeof this.tripSimulation.currentProgress === 'number' ? this.tripSimulation.currentProgress : 0,
+                targetArrivalClock: this.tripSimulation.targetArrivalClock || prev.targetArrivalClock || null,
+                phaseStartedAt: this.tripSimulation.phaseStartedAt || prev.phaseStartedAt || now,
+                timestamp: this.tripSimulation.startedAt || prev.timestamp || now,
+                lastUpdatedAt: now,
+                ...extra
+            };
+            localStorage.setItem('hirna_active_trip_sim', JSON.stringify(state));
+        } catch(e) {}
+    },
+
+    getPointAtDistance(waypoints, targetDist) {
+        if (!Array.isArray(waypoints) || waypoints.length === 0) return [14.5583, 121.0189];
+        if (waypoints.length === 1 || !(targetDist > 0)) return waypoints[0];
+        let cum = 0;
+        for (let i = 0; i < waypoints.length - 1; i++) {
+            const d = this.computeDistanceMeters(waypoints[i], waypoints[i + 1]);
+            if (cum + d >= targetDist) {
+                const r = d > 0 ? Math.max(0, Math.min(1, (targetDist - cum) / d)) : 0;
+                return [
+                    waypoints[i][0] + (waypoints[i + 1][0] - waypoints[i][0]) * r,
+                    waypoints[i][1] + (waypoints[i + 1][1] - waypoints[i][1]) * r
+                ];
+            }
+            cum += d;
+        }
+        return waypoints[waypoints.length - 1];
+    },
+
     resumeActiveTrip(savedSim) {
+        // Re-read freshest state in case localStorage was updated right before navigation
+        try {
+            const latestRaw = localStorage.getItem('hirna_active_trip_sim');
+            if (latestRaw) {
+                const latestParsed = JSON.parse(latestRaw);
+                if (latestParsed && latestParsed.booking) {
+                    savedSim = latestParsed;
+                }
+            }
+        } catch(e) {}
+
         if (!savedSim || !savedSim.booking) return;
         const booking = savedSim.booking;
         const phase = savedSim.phase || 'en_route_pickup';
@@ -6517,6 +6587,8 @@ const BookingModule = {
 
         const pickup = this.normalizeCoords(booking.pickup_coords, [14.5583, 121.0189]);
         const dropoff = this.normalizeCoords(booking.dropoff_coords, [14.5517, 121.0509]);
+        booking.pickup_coords = pickup;
+        booking.dropoff_coords = dropoff;
         this.pickupCoords = pickup;
         this.dropoffCoords = dropoff;
 
@@ -6542,34 +6614,79 @@ const BookingModule = {
         this.tripSimulation.phase = phase;
         this.tripSimulation._settled = false;
         this.tripSimulation.autoTrack = true;
+        this.tripSimulation.startedAt = savedSim.timestamp || Date.now();
+        this.tripSimulation.phaseStartedAt = savedSim.phaseStartedAt || savedSim.lastUpdatedAt || Date.now();
+        if (savedSim.driverCoords) {
+            this.tripSimulation.driverCoords = this.normalizeCoords(savedSim.driverCoords, pickup);
+        }
+        if (savedSim.driverOriginName) {
+            this.tripSimulation.driverOriginName = savedSim.driverOriginName;
+        }
+        if (savedSim.targetArrivalClock) {
+            this.tripSimulation.targetArrivalClock = savedSim.targetArrivalClock;
+        }
 
         if (phase === 'arrived_dropoff') {
+            if (this.map && dropoff && !this.tripSimulation.driverMarker) {
+                const driverIcon = this.getDriverIcon(booking, 'Arrived', 'Now');
+                this.tripSimulation.driverMarker = L.marker(dropoff, { icon: driverIcon, zIndexOffset: 2500 }).addTo(this.map);
+            }
             this.onArrivedAtDropoff();
         } else if (phase === 'arrived_pickup') {
-            this.onArrivedAtPickup();
+            const arrivedElapsedMs = Math.max(0, Date.now() - (savedSim.phaseStartedAt || savedSim.lastUpdatedAt || savedSim.timestamp || Date.now()));
+            const totalBoardWaitMs = booking.service_type === 'food' ? 3800 : 4000;
+            if (this.map && pickup && !this.tripSimulation.driverMarker) {
+                const driverIcon = this.getDriverIcon(booking, 'Arrived', 'Now');
+                this.tripSimulation.driverMarker = L.marker(pickup, { icon: driverIcon, zIndexOffset: 2500 }).addTo(this.map);
+            }
+            if (arrivedElapsedMs >= totalBoardWaitMs) {
+                this.proceedToDropoff({
+                    ...savedSim,
+                    currentDist: 0,
+                    progress: 0,
+                    extraAwayMs: arrivedElapsedMs - totalBoardWaitMs
+                });
+            } else {
+                const remSec = Math.max(1, Math.ceil((totalBoardWaitMs - arrivedElapsedMs) / 1000));
+                this.onArrivedAtPickup(remSec);
+            }
         } else if (phase === 'en_route_dropoff') {
-            this.proceedToDropoff();
+            this.proceedToDropoff(savedSim);
+        } else if (phase === 'assigning') {
+            const assignElapsedMs = Math.max(0, Date.now() - (savedSim.phaseStartedAt || savedSim.lastUpdatedAt || savedSim.timestamp || Date.now()));
+            if (assignElapsedMs >= 3400) {
+                this.spawnDriverAndStartLegToPickup(booking, {
+                    ...savedSim,
+                    currentDist: 0,
+                    progress: 0,
+                    extraAwayMs: assignElapsedMs - 3400
+                });
+            } else {
+                this.spawnDriverAndStartLegToPickup(booking, {
+                    ...savedSim,
+                    currentDist: 0,
+                    progress: 0,
+                    extraAwayMs: 0
+                });
+            }
         } else {
-            this.spawnDriverAndStartLegToPickup(booking);
+            this.spawnDriverAndStartLegToPickup(booking, savedSim);
         }
     },
 
     startTripSimulation(booking) {
         if (!booking) return;
 
+        const nowTs = Date.now();
         this.tripSimulation.active = true;
         this.tripSimulation.booking = booking;
         this.tripSimulation.phase = 'assigning';
         this.tripSimulation._settled = false;
         this.tripSimulation.autoTrack = true;
-
-        try {
-            localStorage.setItem('hirna_active_trip_sim', JSON.stringify({
-                booking: booking,
-                phase: 'assigning',
-                timestamp: Date.now()
-            }));
-        } catch(e) {}
+        this.tripSimulation.startedAt = nowTs;
+        this.tripSimulation.phaseStartedAt = nowTs;
+        this.tripSimulation.currentDist = 0;
+        this.tripSimulation.currentProgress = 0;
 
         // Pre-compute driverCoords and pre-fetch the driving route to pickup during assignment modal!
         const pickup = this.normalizeCoords(booking.pickup_coords || this.pickupCoords, [14.5583, 121.0189]);
@@ -6585,9 +6702,20 @@ const BookingModule = {
         this.tripSimulation.currentCoords = driverCoords;
         this.updateTrackButtonUI(true);
 
+        this.saveActiveTripState({
+            phase: 'assigning',
+            driverCoords: driverCoords,
+            currentCoords: driverCoords,
+            currentDist: 0,
+            progress: 0,
+            phaseStartedAt: nowTs,
+            timestamp: nowTs
+        });
+
         // Resolve driver's exact starting location right away
         this.reverseGeocodeLandmark(driverCoords[0], driverCoords[1], (resolved) => {
             this.tripSimulation.driverOriginName = resolved;
+            this.saveActiveTripState({ driverOriginName: resolved });
             const currLocEl = document.getElementById('hud-current-location');
             if (currLocEl && this.tripSimulation.phase === 'en_route_pickup') {
                 currLocEl.innerText = resolved;
@@ -6668,12 +6796,6 @@ const BookingModule = {
             if (nameEl) nameEl.innerText = booking.driver_name || 'Ricardo Dalisay';
             if (carEl) carEl.innerText = `${booking.vehicle_model || 'Toyota Vios'} • ${booking.vehicle_plate || 'TXI-5431'}`;
             if (avatarEl) {
-                const isMoto = (booking.vehicle_class || '').toLowerCase().includes('motorcycle') ||
-                               (booking.vehicle_model || '').toLowerCase().includes('motorcycle') ||
-                               (booking.vehicle_model || '').toLowerCase().includes('scooter') ||
-                               (booking.vehicle_model || '').toLowerCase().includes('honda') ||
-                               (booking.vehicle_model || '').toLowerCase().includes('yamaha') ||
-                               booking.service_type === 'food';
                 avatarEl.innerHTML = '<svg class="w-6 h-6 text-hirna-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
             }
             if (preview) preview.classList.remove('hidden');
@@ -6687,12 +6809,18 @@ const BookingModule = {
         }, 3400);
     },
 
-    async spawnDriverAndStartLegToPickup(booking) {
+    async spawnDriverAndStartLegToPickup(booking, resumeState = null) {
         if (!this.tripSimulation.active || (this.tripSimulation.phase !== 'assigning' && this.tripSimulation.phase !== 'en_route_pickup')) return;
         const pickup = this.normalizeCoords(booking.pickup_coords || this.pickupCoords, [14.5583, 121.0189]);
         booking.pickup_coords = pickup;
 
-        // Use pre-computed driverCoords or generate nearby (~600m - 1.1km)
+        // Use saved/pre-computed driverCoords or generate nearby (~600m - 1.1km)
+        if (resumeState && resumeState.driverCoords) {
+            this.tripSimulation.driverCoords = this.normalizeCoords(resumeState.driverCoords, pickup);
+        }
+        if (resumeState && resumeState.driverOriginName) {
+            this.tripSimulation.driverOriginName = resumeState.driverOriginName;
+        }
         let driverCoords = this.tripSimulation.driverCoords;
         if (!driverCoords) {
             const angle = Math.random() * 2 * Math.PI;
@@ -6702,6 +6830,16 @@ const BookingModule = {
                 pickup[1] + Math.sin(angle) * distDeg
             ];
             this.tripSimulation.driverCoords = driverCoords;
+        }
+        if (!this.tripSimulation.driverOriginName) {
+            this.reverseGeocodeLandmark(driverCoords[0], driverCoords[1], (resolved) => {
+                this.tripSimulation.driverOriginName = resolved;
+                this.saveActiveTripState({ driverOriginName: resolved });
+                const currLocEl = document.getElementById('hud-current-location');
+                if (currLocEl && this.tripSimulation.phase === 'en_route_pickup') {
+                    currLocEl.innerText = resolved;
+                }
+            });
         }
 
         // Ensure Leaflet map is ready
@@ -6714,8 +6852,63 @@ const BookingModule = {
         this._pendingPickupRoute = null;
         this.tripSimulation.activeRouteData = routeData;
 
-        const initDistText = routeData.distanceMeters >= 1000 ? `${(routeData.distanceMeters / 1000).toFixed(1)} km` : `${routeData.distanceMeters} m`;
-        const initEtaMin = Math.max(1, Math.ceil(routeData.distanceMeters / 280));
+        // Compute pickup leg duration and any background progress elapsed during refresh / module switch
+        let pickupTrafficMultiplier = 1.0;
+        const pickupTraffic = routeData.trafficTelemetry;
+        if (pickupTraffic && pickupTraffic.congestion_level) {
+            if (pickupTraffic.congestion_level === 'severe') pickupTrafficMultiplier = 1.45;
+            else if (pickupTraffic.congestion_level === 'heavy') pickupTrafficMultiplier = 1.30;
+            else if (pickupTraffic.congestion_level === 'moderate') pickupTrafficMultiplier = 1.15;
+        }
+        const totalRouteDistM = routeData.distanceMeters || 1000;
+        const basePickupMs = Math.max(26000, Math.min(38000, Math.round(totalRouteDistM * 28)));
+        const pickupDurationMs = Math.round(basePickupMs * pickupTrafficMultiplier);
+
+        let resumedDist = 0;
+        let awayMs = 0;
+        if (resumeState) {
+            awayMs = typeof resumeState.extraAwayMs === 'number'
+                ? resumeState.extraAwayMs
+                : Math.max(0, Date.now() - (resumeState.lastUpdatedAt || resumeState.phaseStartedAt || resumeState.timestamp || Date.now()));
+            const savedDist = Number(resumeState.currentDist) || ((Number(resumeState.progress) || 0) * totalRouteDistM);
+            const nominalMps = totalRouteDistM / (pickupDurationMs / 1000);
+            const effectiveMps = nominalMps * 0.82;
+            resumedDist = savedDist + (effectiveMps * (awayMs / 1000));
+
+            if (resumedDist >= totalRouteDistM) {
+                // Driver already arrived at pickup while user was refreshing or on another module!
+                const distRemToPickup = Math.max(0, totalRouteDistM - savedDist);
+                const timeToReachPickupMs = (distRemToPickup / Math.max(1, effectiveMps)) * 1000;
+                const leftoverAfterPickupMs = Math.max(0, awayMs - timeToReachPickupMs);
+                const totalBoardWaitMs = booking.service_type === 'food' ? 3800 : 4000;
+
+                const arrivedIcon = this.getDriverIcon(booking, 'Arrived', 'Now');
+                if (this.tripSimulation.driverMarker) {
+                    try { this.map.removeLayer(this.tripSimulation.driverMarker); } catch(e) {}
+                }
+                this.tripSimulation.driverMarker = L.marker(pickup, { icon: arrivedIcon, zIndexOffset: 2500 }).addTo(this.map);
+
+                if (leftoverAfterPickupMs >= totalBoardWaitMs) {
+                    this.proceedToDropoff({
+                        ...resumeState,
+                        driverCoords,
+                        currentDist: 0,
+                        progress: 0,
+                        extraAwayMs: leftoverAfterPickupMs - totalBoardWaitMs
+                    });
+                } else {
+                    const remSec = Math.max(1, Math.ceil((totalBoardWaitMs - leftoverAfterPickupMs) / 1000));
+                    this.onArrivedAtPickup(remSec);
+                }
+                return;
+            }
+        }
+
+        const remDistM = Math.max(0, Math.round(totalRouteDistM - resumedDist));
+        const initDistText = remDistM >= 1000 ? `${(remDistM / 1000).toFixed(1)} km` : `${remDistM} m`;
+        const initEtaMin = Math.max(1, Math.ceil(remDistM / 280));
+        const spawnCoords = resumedDist > 0 ? this.getPointAtDistance(routeData.waypoints, resumedDist) : driverCoords;
+        const initProgressPct = Math.min(100, Math.round((resumedDist / totalRouteDistM) * 100));
 
         // Create driver marker with live remaining distance on top of the icon (Google Maps style)
         const driverIcon = this.getDriverIcon(booking, initDistText, `${initEtaMin} min`);
@@ -6723,7 +6916,7 @@ const BookingModule = {
         if (this.tripSimulation.driverMarker) {
             try { this.map.removeLayer(this.tripSimulation.driverMarker); } catch(e) {}
         }
-        this.tripSimulation.driverMarker = L.marker(driverCoords, { icon: driverIcon, zIndexOffset: 2500 }).addTo(this.map);
+        this.tripSimulation.driverMarker = L.marker(spawnCoords, { icon: driverIcon, zIndexOffset: 2500 }).addTo(this.map);
 
         // Ensure dropoff marker on the map shows its distance on top
         if (this.dropoffCoords) {
@@ -6757,7 +6950,6 @@ const BookingModule = {
         // Update Google Maps Bottom HUD with real driving road distance
         const hud = document.getElementById('active-trip-hud');
         if (hud) {
-            const isParcel = booking.service_type === 'parcel';
             const nameEl = document.getElementById('hud-driver-name');
             const vehEl = document.getElementById('hud-driver-vehicle');
             const codeEl = document.getElementById('hud-trip-code');
@@ -6769,6 +6961,7 @@ const BookingModule = {
             const distEl = document.getElementById('hud-distance-value');
             const etaEl = document.getElementById('hud-eta-value');
             const clockEl = document.getElementById('hud-clock-arrival');
+            const barEl = document.getElementById('hud-progress-bar');
 
             if (nameEl) nameEl.innerText = booking.driver_name;
             if (vehEl) vehEl.innerText = `${booking.vehicle_model} • ${booking.vehicle_plate}`;
@@ -6778,10 +6971,11 @@ const BookingModule = {
             if (currLocEl) currLocEl.innerText = this.tripSimulation.driverOriginName || "Locating exact address...";
             if (addrEl) addrEl.innerText = booking.pickup || 'Pickup Point';
             if (arrivalBar) arrivalBar.classList.add('hidden');
+            if (barEl) barEl.style.width = `${initProgressPct}%`;
 
             if (distEl) distEl.innerText = initDistText;
             if (etaEl) etaEl.innerText = `${initEtaMin} min`;
-            const targetClock = this.formatClockTime(initEtaMin);
+            const targetClock = (resumeState && resumeState.targetArrivalClock) || this.formatClockTime(initEtaMin);
             this.tripSimulation.targetArrivalClock = targetClock;
             if (clockEl) clockEl.innerText = targetClock;
 
@@ -6808,15 +7002,24 @@ const BookingModule = {
         }
 
         this.tripSimulation.phase = 'en_route_pickup';
-        try {
-            localStorage.setItem('hirna_active_trip_sim', JSON.stringify({
-                booking: booking,
-                phase: 'en_route_pickup',
-                timestamp: Date.now()
-            }));
-        } catch(e) {}
+        if (!resumeState) {
+            this.tripSimulation.phaseStartedAt = Date.now();
+        }
+        this.tripSimulation.currentDist = resumedDist;
+        this.tripSimulation.totalDistM = totalRouteDistM;
+        this.tripSimulation.legDurationMs = pickupDurationMs;
+        this.tripSimulation.currentProgress = resumedDist / totalRouteDistM;
+        this.saveActiveTripState({
+            phase: 'en_route_pickup',
+            driverCoords: driverCoords,
+            currentCoords: spawnCoords,
+            currentDist: resumedDist,
+            totalDist: totalRouteDistM,
+            legDurationMs: pickupDurationMs,
+            progress: resumedDist / totalRouteDistM
+        });
 
-        if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
+        if (!resumeState && typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
             const b = this.tripSimulation.booking || {};
             SupabaseBridge.logAudit("Booking System", "DRIVER_DISPATCHED", b.booking_code || b.id || "N/A", b.passenger_name || b.sender_name || "juan.delacruz@example.com", {
                 booking_code: b.booking_code,
@@ -6830,20 +7033,10 @@ const BookingModule = {
             });
         }
 
-        // Animate driver traveling along the actual road route to pickup (sync with road traffic conditions)
-        let pickupTrafficMultiplier = 1.0;
-        const pickupTraffic = routeData.trafficTelemetry;
-        if (pickupTraffic && pickupTraffic.congestion_level) {
-            if (pickupTraffic.congestion_level === 'severe') pickupTrafficMultiplier = 1.45;
-            else if (pickupTraffic.congestion_level === 'heavy') pickupTrafficMultiplier = 1.30;
-            else if (pickupTraffic.congestion_level === 'moderate') pickupTrafficMultiplier = 1.15;
-        }
-        const basePickupMs = Math.max(26000, Math.min(38000, Math.round((routeData.distanceMeters || 1000) * 28)));
-        const pickupDurationMs = Math.round(basePickupMs * pickupTrafficMultiplier);
-        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, pickupDurationMs, () => this.onArrivedAtPickup(), routeData);
+        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, pickupDurationMs, () => this.onArrivedAtPickup(), routeData, resumedDist);
     },
 
-    animateAlongRoute(waypoints, totalDistMeters, durationMs, onArrival, routeData) {
+    animateAlongRoute(waypoints, totalDistMeters, durationMs, onArrival, routeData, initialDistM = 0) {
         if (!waypoints || waypoints.length === 0) {
             if (typeof onArrival === 'function') onArrival();
             return;
@@ -6998,16 +7191,37 @@ const BookingModule = {
         let targetVarianceKmh = 0;
         let nextVarianceChangeTime = performance.now() + 2500;
 
-        let currentDist = 0;
+        let currentDist = Math.max(0, Math.min(totalDist, Number(initialDistM) || 0));
+        this.tripSimulation.currentDist = currentDist;
+        this.tripSimulation.currentProgress = totalDist > 0 ? Math.min(1.0, currentDist / totalDist) : 0;
+
+        // Mark any intersection/turn stops that were already passed prior to resume
+        for (const st of finalStops) {
+            if (st.dist <= currentDist + 2) {
+                st.hasStopped = true;
+            }
+        }
+
         let lastFrameTime = performance.now();
         let lastDomUpdate = 0;
-        let currentSpeedFactor = 0.25; // Gentle initial roll
+        let lastPersistUpdate = performance.now();
+        let currentSpeedFactor = currentDist > 35 ? Math.min(1.0, trafficCruisingMultiplier * 0.85) : 0.25;
         let smoothedSpeedKmh = Math.round(38 * trafficCruisingMultiplier);
 
         // Live per-segment traffic from Mapbox driving-traffic congestion annotations
         // (one label per route segment: low / moderate / heavy / severe / unknown)
         const liveCongestion = Array.isArray(activeRoute.congestion) ? activeRoute.congestion : [];
         let cruiseSeg = 0;
+        while (cruiseSeg < cumDistances.length - 2 && currentDist > cumDistances[cruiseSeg + 1]) {
+            cruiseSeg++;
+        }
+
+        if (currentDist >= totalDist) {
+            if (typeof onArrival === 'function') {
+                onArrival();
+            }
+            return;
+        }
 
         const animate = (now) => {
             if (!this.tripSimulation.active) {
@@ -7224,6 +7438,7 @@ const BookingModule = {
             const speedFactor = currentSpeedFactor;
 
             const progress = totalDist > 0 ? Math.min(1.0, currentDist / totalDist) : 1.0;
+            this.tripSimulation.currentDist = currentDist;
             this.tripSimulation.currentProgress = progress;
             const targetDist = currentDist;
 
@@ -7269,6 +7484,18 @@ const BookingModule = {
                 try {
                     this.map.panTo([curLat, curLng], { animate: false });
                 } catch(e) {}
+            }
+
+            // Periodically persist trip progress to localStorage (~350ms) so refresh or module switch never resets progress
+            if (now - lastPersistUpdate >= 350 || progress >= 1.0) {
+                lastPersistUpdate = now;
+                this.saveActiveTripState({
+                    currentCoords: [curLat, curLng],
+                    currentDist: currentDist,
+                    totalDist: totalDist,
+                    legDurationMs: durationMs,
+                    progress: progress
+                });
             }
 
             // Throttle heavier DOM reflows and text updates to ~70ms
@@ -7505,17 +7732,20 @@ const BookingModule = {
         }
     },
 
-    onArrivedAtPickup() {
+    onArrivedAtPickup(initialCountdownSec = 4) {
+        const isResumedCountdown = typeof initialCountdownSec === 'number' && initialCountdownSec < 4;
         this.tripSimulation.phase = 'arrived_pickup';
-        try {
-            localStorage.setItem('hirna_active_trip_sim', JSON.stringify({
-                booking: this.tripSimulation.booking,
-                phase: 'arrived_pickup',
-                timestamp: Date.now()
-            }));
-        } catch(e) {}
+        if (!isResumedCountdown) {
+            this.tripSimulation.phaseStartedAt = Date.now();
+        }
+        const pickup = this.normalizeCoords(this.tripSimulation.booking?.pickup_coords || this.pickupCoords, [14.5583, 121.0189]);
+        this.saveActiveTripState({
+            phase: 'arrived_pickup',
+            currentCoords: pickup,
+            progress: 1.0
+        });
 
-        if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
+        if (!isResumedCountdown && typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
             const b = this.tripSimulation.booking || {};
             SupabaseBridge.logAudit("Booking System", "DRIVER_ARRIVED_PICKUP", b.booking_code || b.id || "N/A", b.passenger_name || b.sender_name || "juan.delacruz@example.com", {
                 booking_code: b.booking_code,
@@ -7537,12 +7767,21 @@ const BookingModule = {
         const assignModal = document.getElementById('driver-assignment-modal');
         if (assignModal) assignModal.classList.add('hidden');
 
-        const pickup = this.normalizeCoords(this.tripSimulation.booking?.pickup_coords || this.pickupCoords);
-        if (this.tripSimulation.driverMarker && pickup) {
-            try { this.tripSimulation.driverMarker.setLatLng(pickup); } catch(e) {}
+        const booking = this.tripSimulation.booking || {};
+        if (pickup && this.map) {
+            if (this.tripSimulation.driverMarker) {
+                try { this.tripSimulation.driverMarker.setLatLng(pickup); } catch(e) {}
+            } else {
+                const arrivedIcon = this.getDriverIcon(booking, 'Arrived', 'Now');
+                this.tripSimulation.driverMarker = L.marker(pickup, { icon: arrivedIcon, zIndexOffset: 2500 }).addTo(this.map);
+            }
         }
 
         // Update Google Maps Bottom HUD telemetry state
+        const nameEl = document.getElementById('hud-driver-name');
+        const vehEl = document.getElementById('hud-driver-vehicle');
+        const codeEl = document.getElementById('hud-trip-code');
+        const avatarEl = document.getElementById('hud-driver-avatar');
         const labelEl = document.getElementById('hud-trip-status-label');
         const currLocEl = document.getElementById('hud-current-location');
         const addrEl = document.getElementById('hud-target-address');
@@ -7555,7 +7794,10 @@ const BookingModule = {
         const turnDistEl = document.getElementById('hud-turn-dist');
         const turnIconEl = document.getElementById('hud-turn-icon');
 
-        const booking = this.tripSimulation.booking || {};
+        if (nameEl) nameEl.innerText = booking.driver_name || 'Ricardo Dalisay';
+        if (vehEl) vehEl.innerText = `${booking.vehicle_model || 'Toyota Vios'} • ${booking.vehicle_plate || 'TXI-5431'}`;
+        if (codeEl) codeEl.innerText = `#${booking.booking_code || 'HRN'}`;
+        if (avatarEl) avatarEl.innerHTML = this.getVehicleIcon(booking);
         if (currLocEl) currLocEl.innerText = booking.pickup || 'Pickup Point';
         if (addrEl) addrEl.innerText = booking.dropoff || 'Dropoff Destination';
         if (distEl) distEl.innerText = "0 m";
@@ -7593,11 +7835,12 @@ const BookingModule = {
                 this.checkHudDocking();
             }
 
-            if (typeof App !== 'undefined' && App.showToast) {
+            if (!isResumedCountdown && typeof App !== 'undefined' && App.showToast) {
                 App.showToast("Rider reached the store. Collecting your meal and packing into the motorcycle box...", "info");
             }
 
-            // Realistic store preparation delay: after 3.8s, automatically proceed to dropoff
+            // Realistic store preparation delay: after remaining delay, automatically proceed to dropoff
+            const foodWaitMs = isResumedCountdown ? Math.max(600, initialCountdownSec * 950) : 3800;
             setTimeout(() => {
                 if (this.tripSimulation && this.tripSimulation.active && this.tripSimulation.phase === 'arrived_pickup') {
                     if (typeof App !== 'undefined' && App.showToast) {
@@ -7605,7 +7848,7 @@ const BookingModule = {
                     }
                     this.proceedToDropoff();
                 }
-            }, 3800);
+            }, foodWaitMs);
             return;
         }
 
@@ -7666,7 +7909,7 @@ const BookingModule = {
 
         // AUTOMATIC DEPARTURE COUNTDOWN (4 Seconds)
         // Gives passenger or sender realistic time to prepare and board before departure
-        let countdownSec = 4;
+        let countdownSec = Math.max(1, Math.min(4, Math.round(Number(initialCountdownSec) || 4)));
         const countdownBadge = document.getElementById('pickup-auto-countdown-badge');
         const countdownText = document.getElementById('pickup-auto-countdown-text');
         if (countdownBadge) countdownBadge.innerText = `${countdownSec}s`;
@@ -8008,9 +8251,17 @@ const BookingModule = {
         }
     },
 
-    async proceedToDropoff() {
+    async proceedToDropoff(resumeState = null) {
+        if (this.tripSimulation._pickupCountdownInterval) {
+            clearInterval(this.tripSimulation._pickupCountdownInterval);
+            this.tripSimulation._pickupCountdownInterval = null;
+        }
+
         const modal = document.getElementById('pickup-arrival-modal');
         if (modal) modal.classList.add('hidden');
+
+        const assignModal = document.getElementById('driver-assignment-modal');
+        if (assignModal) assignModal.classList.add('hidden');
 
         const arrivalBar = document.getElementById('hud-arrival-action-bar');
         if (arrivalBar) arrivalBar.classList.add('hidden');
@@ -8026,15 +8277,13 @@ const BookingModule = {
         this.updateTrackButtonUI(true);
 
         this.tripSimulation.phase = 'en_route_dropoff';
-        try {
-            localStorage.setItem('hirna_active_trip_sim', JSON.stringify({
-                booking: this.tripSimulation.booking,
-                phase: 'en_route_dropoff',
-                timestamp: Date.now()
-            }));
-        } catch(e) {}
+        if (!resumeState) {
+            this.tripSimulation.phaseStartedAt = Date.now();
+            this.tripSimulation.currentDist = 0;
+            this.tripSimulation.currentProgress = 0;
+        }
 
-        if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
+        if (!resumeState && typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
             const b = this.tripSimulation.booking || {};
             SupabaseBridge.logAudit("Booking System", "PASSENGER_BOARDED_IN_TRANSIT", b.booking_code || b.id || "N/A", b.passenger_name || b.sender_name || "juan.delacruz@example.com", {
                 booking_code: b.booking_code,
@@ -8050,9 +8299,66 @@ const BookingModule = {
         booking.pickup_coords = pickup;
         booking.dropoff_coords = dropoff;
 
+        if (!this.map) {
+            this.initMap();
+        }
+
         // Fetch real road driving route from pickup to dropoff!
         const routeData = await this.getDrivingRoute(pickup, dropoff);
         this.tripSimulation.activeRouteData = routeData;
+
+        // Compute dropoff leg duration and any background progress elapsed during refresh / module switch
+        let dropoffTrafficMultiplier = 1.0;
+        const dropoffTraffic = routeData.trafficTelemetry;
+        if (dropoffTraffic && dropoffTraffic.congestion_level) {
+            if (dropoffTraffic.congestion_level === 'severe') dropoffTrafficMultiplier = 1.45;
+            else if (dropoffTraffic.congestion_level === 'heavy') dropoffTrafficMultiplier = 1.30;
+            else if (dropoffTraffic.congestion_level === 'moderate') dropoffTrafficMultiplier = 1.15;
+        }
+        const totalRouteDistM = routeData.distanceMeters || 1500;
+        const baseDropoffMs = Math.max(42000, Math.min(72000, Math.round(totalRouteDistM * 22)));
+        const dropoffDurationMs = Math.round(baseDropoffMs * dropoffTrafficMultiplier);
+
+        let resumedDist = 0;
+        if (resumeState) {
+            const awayMs = typeof resumeState.extraAwayMs === 'number'
+                ? resumeState.extraAwayMs
+                : Math.max(0, Date.now() - (resumeState.lastUpdatedAt || resumeState.phaseStartedAt || resumeState.timestamp || Date.now()));
+            const savedDist = Number(resumeState.currentDist) || ((Number(resumeState.progress) || 0) * totalRouteDistM);
+            const nominalMps = totalRouteDistM / (dropoffDurationMs / 1000);
+            const effectiveMps = nominalMps * 0.82;
+            resumedDist = savedDist + (effectiveMps * (awayMs / 1000));
+
+            if (resumedDist >= totalRouteDistM) {
+                // Vehicle finished dropoff leg while user was refreshing or on another module!
+                const arrivedIcon = this.getDriverIcon(booking, 'Arrived', 'Now');
+                if (this.tripSimulation.driverMarker) {
+                    try { this.map.removeLayer(this.tripSimulation.driverMarker); } catch(e) {}
+                }
+                if (this.map) {
+                    this.tripSimulation.driverMarker = L.marker(dropoff, { icon: arrivedIcon, zIndexOffset: 2500 }).addTo(this.map);
+                }
+                this.onArrivedAtDropoff();
+                return;
+            }
+        }
+
+        const remDistM = Math.max(0, Math.round(totalRouteDistM - resumedDist));
+        const initDistText = remDistM >= 1000 ? `${(remDistM / 1000).toFixed(1)} km` : `${remDistM} m`;
+        const initEtaMin = Math.max(1, Math.ceil(remDistM / 280));
+        const spawnCoords = resumedDist > 0 ? this.getPointAtDistance(routeData.waypoints, resumedDist) : pickup;
+        const initProgressPct = Math.min(100, Math.round((resumedDist / totalRouteDistM) * 100));
+
+        // Ensure driver marker exists on map (critical when resuming directly into en_route_dropoff after refresh)
+        const driverIcon = this.getDriverIcon(booking, initDistText, `${initEtaMin} min`);
+        if (this.tripSimulation.driverMarker) {
+            try {
+                this.tripSimulation.driverMarker.setIcon(driverIcon);
+                this.tripSimulation.driverMarker.setLatLng(spawnCoords);
+            } catch(e) {}
+        } else if (this.map) {
+            this.tripSimulation.driverMarker = L.marker(spawnCoords, { icon: driverIcon, zIndexOffset: 2500 }).addTo(this.map);
+        }
 
         // Ensure dropoff marker is present with real driving distance badge on top (Google Maps style)
         const dropoffDistText = `${routeData.distanceKm} km`;
@@ -8083,6 +8389,10 @@ const BookingModule = {
         } catch(e) {}
 
         // Update Google Maps Bottom HUD with real road distance & target destination
+        const nameEl = document.getElementById('hud-driver-name');
+        const vehEl = document.getElementById('hud-driver-vehicle');
+        const codeEl = document.getElementById('hud-trip-code');
+        const avatarEl = document.getElementById('hud-driver-avatar');
         const labelEl = document.getElementById('hud-trip-status-label');
         const currLocEl = document.getElementById('hud-current-location');
         const addrEl = document.getElementById('hud-target-address');
@@ -8091,16 +8401,18 @@ const BookingModule = {
         const etaEl = document.getElementById('hud-eta-value');
         const clockEl = document.getElementById('hud-clock-arrival');
 
+        if (nameEl) nameEl.innerText = booking.driver_name || 'Ricardo Dalisay';
+        if (vehEl) vehEl.innerText = `${booking.vehicle_model || 'Toyota Vios'} • ${booking.vehicle_plate || 'TXI-5431'}`;
+        if (codeEl) codeEl.innerText = `#${booking.booking_code || 'HRN'}`;
+        if (avatarEl) avatarEl.innerHTML = this.getVehicleIcon(booking);
         if (labelEl) labelEl.innerText = "In Transit to Dropoff";
         if (currLocEl) currLocEl.innerText = booking.pickup || 'Pickup Point';
         if (addrEl) addrEl.innerText = booking.dropoff || 'Dropoff Destination';
-        if (barEl) barEl.style.width = "0%";
+        if (barEl) barEl.style.width = `${initProgressPct}%`;
 
-        const initDistText = routeData.distanceMeters >= 1000 ? `${(routeData.distanceMeters / 1000).toFixed(1)} km` : `${routeData.distanceMeters} m`;
-        const initEtaMin = Math.max(1, Math.ceil(routeData.distanceMeters / 280));
         if (distEl) distEl.innerText = initDistText;
         if (etaEl) etaEl.innerText = `${initEtaMin} min`;
-        const dropoffClock = this.formatClockTime(initEtaMin);
+        const dropoffClock = (resumeState && resumeState.targetArrivalClock) || this.formatClockTime(initEtaMin);
         this.tripSimulation.targetArrivalClock = dropoffClock;
         if (clockEl) clockEl.innerText = dropoffClock;
 
@@ -8131,31 +8443,35 @@ const BookingModule = {
             driverEtaBadgeDrop.classList.remove('hidden');
         }
 
-        // Animate trip to dropoff along actual road waypoints (sync with road traffic conditions)
-        let dropoffTrafficMultiplier = 1.0;
-        const dropoffTraffic = routeData.trafficTelemetry;
-        if (dropoffTraffic && dropoffTraffic.congestion_level) {
-            if (dropoffTraffic.congestion_level === 'severe') dropoffTrafficMultiplier = 1.45;
-            else if (dropoffTraffic.congestion_level === 'heavy') dropoffTrafficMultiplier = 1.30;
-            else if (dropoffTraffic.congestion_level === 'moderate') dropoffTrafficMultiplier = 1.15;
-        }
-        const baseDropoffMs = Math.max(42000, Math.min(72000, Math.round((routeData.distanceMeters || 1500) * 22)));
-        const dropoffDurationMs = Math.round(baseDropoffMs * dropoffTrafficMultiplier);
-        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, dropoffDurationMs, () => this.onArrivedAtDropoff(), routeData);
+        this.tripSimulation.currentDist = resumedDist;
+        this.tripSimulation.totalDistM = totalRouteDistM;
+        this.tripSimulation.legDurationMs = dropoffDurationMs;
+        this.tripSimulation.currentProgress = resumedDist / totalRouteDistM;
+        this.saveActiveTripState({
+            phase: 'en_route_dropoff',
+            currentCoords: spawnCoords,
+            currentDist: resumedDist,
+            totalDist: totalRouteDistM,
+            legDurationMs: dropoffDurationMs,
+            progress: resumedDist / totalRouteDistM
+        });
+
+        this.animateAlongRoute(routeData.waypoints, routeData.distanceMeters, dropoffDurationMs, () => this.onArrivedAtDropoff(), routeData, resumedDist);
     },
 
     onArrivedAtDropoff() {
         if (this.tripSimulation._settled) return;
         this.tripSimulation._settled = true;
 
+        const dropoff = this.normalizeCoords(this.tripSimulation.booking?.dropoff_coords || this.dropoffCoords, [14.5517, 121.0509]);
         this.tripSimulation.phase = 'arrived_dropoff';
-        try {
-            localStorage.setItem('hirna_active_trip_sim', JSON.stringify({
-                booking: this.tripSimulation.booking,
-                phase: 'arrived_dropoff',
-                timestamp: Date.now()
-            }));
-        } catch(e) {}
+        this.tripSimulation.phaseStartedAt = Date.now();
+        this.tripSimulation.currentProgress = 1.0;
+        this.saveActiveTripState({
+            phase: 'arrived_dropoff',
+            currentCoords: dropoff,
+            progress: 1.0
+        });
 
         if (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.logAudit) {
             const b = this.tripSimulation.booking || {};
@@ -8172,9 +8488,14 @@ const BookingModule = {
             });
         }
 
-        const dropoff = this.normalizeCoords(this.tripSimulation.booking?.dropoff_coords || this.dropoffCoords, [14.5517, 121.0509]);
-        if (this.tripSimulation.driverMarker && dropoff) {
-            try { this.tripSimulation.driverMarker.setLatLng(dropoff); } catch(e) {}
+        const booking = this.tripSimulation.booking || {};
+        if (dropoff && this.map) {
+            if (this.tripSimulation.driverMarker) {
+                try { this.tripSimulation.driverMarker.setLatLng(dropoff); } catch(e) {}
+            } else {
+                const arrivedIcon = this.getDriverIcon(booking, 'Arrived', 'Now');
+                this.tripSimulation.driverMarker = L.marker(dropoff, { icon: arrivedIcon, zIndexOffset: 2500 }).addTo(this.map);
+            }
         }
 
         // Update badges on driver and dropoff markers
@@ -8187,6 +8508,10 @@ const BookingModule = {
         if (dropoffBadge) dropoffBadge.innerText = "Arrived";
 
         // Update HUD
+        const nameEl = document.getElementById('hud-driver-name');
+        const vehEl = document.getElementById('hud-driver-vehicle');
+        const codeEl = document.getElementById('hud-trip-code');
+        const avatarEl = document.getElementById('hud-driver-avatar');
         const labelEl = document.getElementById('hud-trip-status-label');
         const currLocEl = document.getElementById('hud-current-location');
         const addrEl = document.getElementById('hud-target-address');
@@ -8199,7 +8524,10 @@ const BookingModule = {
         const turnDistEl = document.getElementById('hud-turn-dist');
         const turnIconEl = document.getElementById('hud-turn-icon');
 
-        const booking = this.tripSimulation.booking || {};
+        if (nameEl) nameEl.innerText = booking.driver_name || 'Ricardo Dalisay';
+        if (vehEl) vehEl.innerText = `${booking.vehicle_model || 'Toyota Vios'} • ${booking.vehicle_plate || 'TXI-5431'}`;
+        if (codeEl) codeEl.innerText = `#${booking.booking_code || 'HRN'}`;
+        if (avatarEl) avatarEl.innerHTML = this.getVehicleIcon(booking);
         if (labelEl) labelEl.innerText = "Destination Reached";
         if (currLocEl) currLocEl.innerText = booking.dropoff || 'Destination';
         if (addrEl) addrEl.innerText = booking.dropoff || 'Destination';
