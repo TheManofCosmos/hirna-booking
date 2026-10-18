@@ -254,18 +254,18 @@
                 </div>
 
                 <!-- Form -->
-                <form id="login-form" class="space-y-3 text-xs">
+                <form id="login-form" class="space-y-3 text-xs" autocomplete="off">
                     <div id="login-error-msg" class="p-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg hidden font-medium"></div>
                     <div>
                         <label class="block text-slate-700 font-semibold mb-1">Email Address</label>
                         <div class="relative">
-                            <input type="email" id="login-email" value="superadmin@hirna.ph" required class="w-full p-2.5 pr-8 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 text-xs" autocomplete="chrome-off" data-lpignore="true" data-form-type="other" spellcheck="false">
+                            <input type="email" id="login-email" value="superadmin@hirna.ph" required class="w-full p-2.5 pr-8 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 text-xs" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocapitalize="off" autocorrect="off" data-1p-ignore="true">
                             <button type="button" id="login-email-clear-btn" onclick="BookingModule.clearInput('login-email')" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-600 hover:text-slate-900 text-[10px] font-black flex items-center justify-center transition cursor-pointer" title="Clear"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>
                         </div>
                     </div>
                     <div>
                         <label class="block text-slate-700 font-semibold mb-1">Password</label>
-                        <input type="password" id="login-password" value="admin" required class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 text-xs" autocomplete="chrome-off" data-lpignore="true" data-form-type="other" spellcheck="false">
+                        <input type="password" id="login-password" value="admin" required class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 text-xs" autocomplete="new-password" data-lpignore="true" data-form-type="other" spellcheck="false" autocapitalize="off" autocorrect="off" data-1p-ignore="true">
                     </div>
                     <button type="submit" class="w-full py-3 bg-hirna-700 hover:bg-hirna-800 text-white font-black text-xs rounded-xl shadow-lg transition">
                         Sign In to Hirna Portal →
@@ -438,18 +438,18 @@
                 </button>
             </div>
 
-            <form id="rbac-account-form" onsubmit="SSOGateway.handleSaveAccount(event); return false;" class="p-6 space-y-4 text-xs">
+            <form id="rbac-account-form" onsubmit="SSOGateway.handleSaveAccount(event); return false;" class="p-6 space-y-4 text-xs" autocomplete="off">
                 <input type="hidden" id="rbac-account-original-email" value="">
                 <input type="hidden" id="rbac-modal-mode" value="add">
 
                 <div id="rbac-name-group">
                     <label class="block text-slate-700 font-bold mb-1">Full Name / Display Title</label>
-                    <input type="text" id="rbac-account-name" required placeholder="e.g. Master SuperAdmin" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none">
+                    <input type="text" id="rbac-account-name" required placeholder="e.g. Master SuperAdmin" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other" data-1p-ignore="true">
                 </div>
 
                 <div id="rbac-email-group">
                     <label class="block text-slate-700 font-bold mb-1">Email Address (Gmail / Corporate ID)</label>
-                    <input type="email" id="rbac-account-email" required placeholder="e.g. superadmin.official@gmail.com" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none">
+                    <input type="email" id="rbac-account-email" required placeholder="e.g. superadmin.official@gmail.com" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-gold-500 focus:outline-none" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other" data-1p-ignore="true">
                     <p class="text-[10px] text-slate-500 mt-1">Real emails (e.g. @gmail.com) receive real 6-digit OTPs in their inbox.</p>
                 </div>
 
@@ -468,7 +468,7 @@
                         <span class="text-[10px] text-gold-600 font-semibold">SuperAdmin Editable</span>
                     </div>
                     <div class="relative">
-                        <input type="password" id="rbac-account-password" placeholder="Enter new account password" class="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:ring-2 focus:ring-gold-500 focus:outline-none">
+                        <input type="password" id="rbac-account-password" placeholder="Enter new account password" class="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:ring-2 focus:ring-gold-500 focus:outline-none" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other" data-1p-ignore="true">
                         <button type="button" onclick="SSOGateway.toggleModalPasswordVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer" title="Hide/Unhide Password">
                             <span id="rbac-modal-eye-icon">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -535,7 +535,7 @@
                         <label class="block text-xs font-bold text-slate-700">Home Address Details</label>
                         <button type="button" id="home-address-input-field-clear-btn" onclick="BookingModule.clearAddressInput('home-address-input-field')" class="hidden text-[10px] text-slate-400 hover:text-rose-600 font-bold transition cursor-pointer flex items-center space-x-0.5"><svg class="w-3 h-3 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg><span>Clear</span></button>
                     </div>
-                    <textarea id="home-address-input-field" rows="3" placeholder="Enter your full home address (e.g. Unit 402, Building 3, Emerald Ave, Pasig City)" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl p-3 font-medium focus:ring-2 focus:ring-hirna-500 focus:bg-white text-slate-800 transition outline-none resize-none"></textarea>
+                    <textarea id="home-address-input-field" rows="3" placeholder="Enter your full home address (e.g. Unit 402, Building 3, Emerald Ave, Pasig City)" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl p-3 font-medium focus:ring-2 focus:ring-hirna-500 focus:bg-white text-slate-800 transition outline-none resize-none" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other" data-1p-ignore="true"></textarea>
                 </div>
 
                 <!-- Quick fill with current location -->
@@ -744,7 +744,7 @@
                     <button type="button" onclick="FoodDeliveryModule.updateModalQty(-1)" class="w-10 h-10 rounded-xl bg-white hover:bg-slate-100 active:scale-95 border border-slate-200 text-slate-800 font-black text-lg flex items-center justify-center transition shadow-xs cursor-pointer select-none">
                         −
                     </button>
-                    <input type="number" id="food-modal-qty" min="1" max="99" value="1" oninput="FoodDeliveryModule.handleModalQtyInput(this.value)" class="w-16 h-10 text-center font-mono font-black text-base bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-hidden text-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" autocomplete="chrome-off" data-lpignore="true" data-form-type="other">
+                    <input type="number" id="food-modal-qty" min="1" max="99" value="1" oninput="FoodDeliveryModule.handleModalQtyInput(this.value)" class="w-16 h-10 text-center font-mono font-black text-base bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-hidden text-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" autocomplete="off" data-lpignore="true" data-form-type="other" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore="true">
                     <button type="button" onclick="FoodDeliveryModule.updateModalQty(1)" class="w-10 h-10 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-hirna-950 font-black text-lg flex items-center justify-center transition shadow-xs cursor-pointer select-none">
                         +
                     </button>
@@ -755,7 +755,7 @@
             <div class="space-y-1">
                 <label class="text-[11px] font-semibold text-slate-600 block">Special Instructions (Optional)</label>
                 <div class="relative">
-                    <input type="text" id="food-modal-notes" placeholder="e.g. Less spicy, extra sauce, separate packaging..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-8 focus:ring-2 focus:ring-amber-500 focus:bg-white text-slate-800" autocomplete="chrome-off" data-lpignore="true" data-form-type="other" spellcheck="false">
+                    <input type="text" id="food-modal-notes" placeholder="e.g. Less spicy, extra sauce, separate packaging..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-8 focus:ring-2 focus:ring-amber-500 focus:bg-white text-slate-800" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocapitalize="off" autocorrect="off" data-1p-ignore="true">
                     <button type="button" id="food-modal-notes-clear-btn" onclick="BookingModule.clearInput('food-modal-notes')" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-600 hover:text-slate-900 text-[10px] font-black flex items-center justify-center transition cursor-pointer" title="Clear"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
             </div>

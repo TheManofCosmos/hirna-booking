@@ -882,12 +882,54 @@ const AuthModule = {
     currentUser: null,
 
     init() {
+        this.disableChromeAutofill();
         this.loadSession();
         this.bindEvents();
         this.updateUI();
         this.bindGlobalListeners();
         this.fetchAccountsFromServer();
         this.requestGPSLocation();
+    },
+
+    disableChromeAutofill() {
+        const applyNoAutofill = (root = document) => {
+            if (!root || !root.querySelectorAll) return;
+            root.querySelectorAll('form').forEach(form => {
+                form.setAttribute('autocomplete', 'off');
+            });
+            const nonTextTypes = new Set(['radio', 'checkbox', 'hidden', 'range', 'button', 'submit', 'reset', 'image']);
+            root.querySelectorAll('input, textarea').forEach(el => {
+                const type = (el.getAttribute('type') || (el.tagName === 'TEXTAREA' ? 'textarea' : 'text')).toLowerCase();
+                if (nonTextTypes.has(type)) return;
+
+                el.setAttribute('autocomplete', type === 'password' ? 'new-password' : 'off');
+                el.setAttribute('autocorrect', 'off');
+                el.setAttribute('autocapitalize', 'off');
+                el.setAttribute('spellcheck', 'false');
+                el.setAttribute('data-lpignore', 'true');
+                el.setAttribute('data-form-type', 'other');
+                el.setAttribute('data-1p-ignore', 'true');
+            });
+        };
+
+        applyNoAutofill(document);
+
+        if (typeof MutationObserver !== 'undefined' && document.body && !this._autofillObserver) {
+            this._autofillObserver = new MutationObserver((mutations) => {
+                for (const m of mutations) {
+                    for (const node of m.addedNodes) {
+                        if (node.nodeType === 1) {
+                            if (node.matches && (node.matches('input, textarea, form'))) {
+                                applyNoAutofill(node.parentElement || document);
+                            } else if (node.querySelectorAll) {
+                                applyNoAutofill(node);
+                            }
+                        }
+                    }
+                }
+            });
+            this._autofillObserver.observe(document.body, { childList: true, subtree: true });
+        }
     },
 
     loadSession() {

@@ -1865,7 +1865,7 @@ const FoodDeliveryModule = {
                 <div class="flex items-center justify-between pt-1 border-t border-slate-100">
                     <div class="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-lg p-0.5">
                         <button type="button" onclick="FoodDeliveryModule.updateCartItemQty(${idx}, -1)" class="w-6 h-6 rounded bg-white hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center transition cursor-pointer select-none">−</button>
-                        <input type="number" min="1" max="99" value="${item.qty}" onchange="FoodDeliveryModule.setCartItemQty(${idx}, this.value)" class="w-10 text-center text-xs font-mono font-bold bg-transparent border-0 focus:outline-hidden text-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+                        <input type="number" min="1" max="99" value="${item.qty}" onchange="FoodDeliveryModule.setCartItemQty(${idx}, this.value)" autocomplete="off" data-lpignore="true" data-form-type="other" class="w-10 text-center text-xs font-mono font-bold bg-transparent border-0 focus:outline-hidden text-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
                         <button type="button" onclick="FoodDeliveryModule.updateCartItemQty(${idx}, 1)" class="w-6 h-6 rounded bg-amber-500 hover:bg-amber-400 text-hirna-950 font-bold text-xs flex items-center justify-center transition cursor-pointer select-none">+</button>
                     </div>
                     <div class="text-xs font-black text-slate-900 font-mono">

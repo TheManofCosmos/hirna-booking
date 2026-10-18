@@ -268,13 +268,17 @@
                                 <span class="w-2.5 h-2.5 rounded-full bg-hirna-700"></span>
                                 <span>7-Day Predictive Demand & Traffic Delay Curve</span>
                             </h3>
-                            <p class="text-xs text-slate-500">Grounded in AI exponential smoothing, passenger demand, and corridor congestion</p>
+                            <p class="text-xs text-slate-500">Holt-Winters seasonal AI model • Click any day or chart point to sync Hourly Curve &amp; Hotspots</p>
                         </div>
-                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 self-start sm:self-auto">
-                            AI Confidence: 94.2%
+                        <span id="selected-day-confidence" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 self-start sm:self-auto">
+                            96% Forecast Confidence
                         </span>
                     </div>
-                    <div class="h-64 w-full relative">
+                    <!-- Interactive Selectable Day Strip -->
+                    <div id="forecast-day-selector" class="flex items-center gap-1.5 overflow-x-auto pb-1.5 pt-0.5 scrollbar-thin">
+                        <!-- Populated dynamically by AnalyticsModule.renderDaySelector() -->
+                    </div>
+                    <div class="h-60 w-full relative">
                         <canvas id="chart-revenue-forecast"></canvas>
                     </div>
                     <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center text-xs">
@@ -283,12 +287,12 @@
                             <span id="dash-7day-projected-revenue" class="font-mono font-bold text-slate-800">1,850 trips</span>
                         </div>
                         <div class="p-2 bg-slate-50 rounded-xl">
-                            <span class="text-slate-400 text-[10px] block uppercase font-bold">Peak Corridor Slowdown</span>
-                            <span class="font-mono font-bold text-amber-700">+48% Traffic Delay</span>
+                            <span class="text-slate-400 text-[10px] block uppercase font-bold">Selected Day Delay</span>
+                            <span id="selected-day-traffic" class="font-mono font-bold text-amber-700">+38% Delay</span>
                         </div>
                         <div class="p-2 bg-slate-50 rounded-xl">
-                            <span class="text-slate-400 text-[10px] block uppercase font-bold">Fleet Demand Fulfillment</span>
-                            <span class="font-mono font-bold text-emerald-700">98.5% Rate</span>
+                            <span class="text-slate-400 text-[10px] block uppercase font-bold">Selected Day Surge</span>
+                            <span id="selected-day-surge" class="font-mono font-bold text-emerald-700">1.28x Expected Surge</span>
                         </div>
                     </div>
                 </div>
@@ -300,15 +304,15 @@
                             <div>
                                 <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
                                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                                    <span>Live Fleet Status & Demand Curve</span>
+                                    <span>Live Fleet Status &amp; Hourly Demand Curve</span>
                                 </h3>
-                                <p class="text-xs text-slate-500">Current driver allocation & dispatch capacity</p>
+                                <p id="hourly-chart-subtitle" class="text-xs text-slate-500">Projected hourly Car &amp; Motorcycle trip distribution</p>
                             </div>
-                            <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-mono text-[10px] font-bold rounded-md">Live</span>
+                            <span id="hourly-chart-day-badge" class="px-2 py-0.5 bg-orange-100 text-orange-800 border border-orange-200 font-mono text-[10px] font-bold rounded-md">Tomorrow</span>
                         </div>
 
                         <!-- Mini Hourly Distribution Chart -->
-                        <div class="h-44 w-full relative mt-3">
+                        <div class="h-48 w-full relative mt-3">
                             <canvas id="chart-hourly-demand"></canvas>
                         </div>
                     </div>
@@ -318,23 +322,17 @@
                         <div class="flex justify-between items-center text-xs">
                             <span class="text-slate-600 font-medium flex items-center space-x-1.5">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                <span>Dispatched / On Trip (294 drivers)</span>
+                                <span id="dash-fleet-active-label">Active Fleet Deployed (9 Registered Owners • 3 Cars, 6 Moto)</span>
                             </span>
-                            <span class="font-mono font-bold text-slate-800">86%</span>
+                            <span class="font-mono font-bold text-emerald-700">100% Online</span>
                         </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="bg-emerald-500 h-full rounded-full" style="width: 86%"></div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden flex">
+                            <div class="bg-hirna-700 h-full" style="width: 33.3%" title="Car Owners (3)"></div>
+                            <div class="bg-amber-500 h-full" style="width: 66.7%" title="Motorcycle Owners (6)"></div>
                         </div>
-
-                        <div class="flex justify-between items-center text-xs pt-1">
-                            <span class="text-slate-600 font-medium flex items-center space-x-1.5">
-                                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                                <span>Available / Roaming Idle (48 drivers)</span>
-                            </span>
-                            <span class="font-mono font-bold text-slate-800">14%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div class="bg-amber-400 h-full rounded-full" style="width: 14%"></div>
+                        <div class="flex justify-between items-center text-[11px] text-slate-500 font-semibold pt-0.5">
+                            <span>3 Car Units (33%) • 6 Motorcycle Units (67%)</span>
+                            <span id="hourly-chart-peak-summary" class="text-hirna-800 font-bold">Peak: 7–9 AM &amp; 5–8 PM</span>
                         </div>
                     </div>
                 </div>
@@ -342,110 +340,71 @@
 
             <!-- 4. REAL-TIME ACTIVITY FEED & HIGH DEMAND HOTSPOTS (2 COLUMNS) -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                <!-- Left 6-Col: Real-time Live Bookings Feed -->
-                <div class="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-900">Recent Live Trip Dispatches</h3>
-                            <p class="text-xs text-slate-500">Real-time telemetry and booking stream</p>
+                <!-- Left 6-Col: Real-time Live Bookings Feed (All Drivers & All Users) -->
+                <div class="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="text-sm font-bold text-slate-900">Recent Live Trip Dispatches</h3>
+                                    <span id="recent-dispatches-count-badge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-800 border border-emerald-200">9 Active Trips • All Users</span>
+                                </div>
+                                <p class="text-xs text-slate-500">Complete multi-user trip log across all 9 Car &amp; Motorcycle fleet drivers</p>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button type="button" id="dispatch-filter-all" onclick="AnalyticsModule.setDispatchFilter('all')" class="px-2.5 py-1 bg-hirna-700 text-white text-[10px] font-bold rounded-lg transition cursor-pointer">All (9)</button>
+                                <button type="button" id="dispatch-filter-car" onclick="AnalyticsModule.setDispatchFilter('car')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition cursor-pointer">Cars (3)</button>
+                                <button type="button" id="dispatch-filter-moto" onclick="AnalyticsModule.setDispatchFilter('moto')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition cursor-pointer">Moto (6)</button>
+                            </div>
                         </div>
+                        <div class="space-y-2 text-xs max-h-[380px] overflow-y-auto pr-1 scrollbar-thin" id="dashboard-recent-bookings">
+                            <!-- Populated dynamically by AnalyticsModule.renderRecentDispatches() with all drivers' recent trips from all users -->
+                        </div>
+                    </div>
+                    <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-semibold">
+                        <span id="recent-dispatches-summary">Showing all 9 fleet drivers across all passenger accounts</span>
                         <a href="booking.html" class="text-xs font-bold text-hirna-700 hover:text-hirna-900 transition flex items-center space-x-1">
-                            <span>View All</span>
+                            <span>Dispatch Console</span>
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         </a>
-                    </div>
-                    <div class="space-y-2.5 text-xs" id="dashboard-recent-bookings">
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                            <div class="flex items-start space-x-3">
-                                <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm shrink-0"><svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg></span>
-                                <div>
-                                    <div class="font-bold text-slate-800">TNVS-2026-0091 • Juan Dela Cruz</div>
-                                    <div class="text-slate-500 text-[11px] truncate max-w-xs">Ayala Malls Circuit → BGC High Street</div>
-                                </div>
-                            </div>
-                            <div class="text-right shrink-0">
-                                <span class="font-mono font-bold text-hirna-800">₱237.60</span>
-                                <span class="block text-[10px] text-emerald-600 font-bold">● Completed</span>
-                            </div>
-                        </div>
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                            <div class="flex items-start space-x-3">
-                                <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-sm shrink-0"><svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4zM5 11l2-5h10l2 5m-14 0h14m-14 0v6h14v-6"/></svg></span>
-                                <div>
-                                    <div class="font-bold text-slate-800">TNVS-2026-0092 • Maria Santos</div>
-                                    <div class="text-slate-500 text-[11px] truncate max-w-xs">Ortigas Center → SM Mall of Asia</div>
-                                </div>
-                            </div>
-                            <div class="text-right shrink-0">
-                                <span class="font-mono font-bold text-hirna-800">₱520.80</span>
-                                <span class="block text-[10px] text-emerald-600 font-bold">● Completed</span>
-                            </div>
-                        </div>
-                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                            <div class="flex items-start space-x-3">
-                                <span class="w-8 h-8 rounded-lg bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-sm shrink-0"><svg class="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
-                                <div>
-                                    <div class="font-bold text-slate-800">PRCL-2026-0041 • Express Parcel</div>
-                                    <div class="text-slate-500 text-[11px] truncate max-w-xs">Makati CBD → Greenhills, San Juan</div>
-                                </div>
-                            </div>
-                            <div class="text-right shrink-0">
-                                <span class="font-mono font-bold text-hirna-800">₱185.00</span>
-                                <span class="block text-[10px] text-blue-600 font-bold">● In Transit</span>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
-                <!-- Right 6-Col: AI Demand Hotspots & Surge Table -->
-                <div class="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-900">High-Demand Hotspots & AI Surge</h3>
-                            <p class="text-xs text-slate-500">Live demand density and recommended fleet repositioning</p>
+                <!-- Right 6-Col: AI Demand Hotspots & Surge Table (100% Graph-Synced) -->
+                <div class="lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 flex flex-col justify-between">
+                    <div class="space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                            <div>
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="text-sm font-bold text-slate-900">High-Demand Hotspots &amp; AI Surge</h3>
+                                    <span id="hotspots-sync-badge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-orange-50 text-orange-800 border border-orange-200">Synced: Tomorrow</span>
+                                </div>
+                                <p id="hotspots-sync-subtitle" class="text-xs text-slate-500">Synchronized with 7-Day Demand Curve, Corridor Traffic Delay &amp; Hourly Peak</p>
+                            </div>
+                            <a href="analytics.html" class="text-xs font-bold text-hirna-700 hover:text-hirna-900 transition flex items-center space-x-1 self-start sm:self-auto">
+                                <span>Forecasting Hub</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </a>
                         </div>
-                        <a href="analytics.html" class="text-xs font-bold text-hirna-700 hover:text-hirna-900 transition flex items-center space-x-1">
-                            <span>Forecasting Hub</span>
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                        </a>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100">
+                                        <th class="pb-2">Zone &amp; Corridor Delay</th>
+                                        <th class="pb-2">Peak / Daily Demand</th>
+                                        <th class="pb-2">Rec. Fleet Split</th>
+                                        <th class="pb-2 text-right">AI Surge Level</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="demand-forecast-tbody" class="divide-y divide-slate-100 font-medium">
+                                    <!-- Dynamically synced with #chart-revenue-forecast & #chart-hourly-demand by AnalyticsModule.renderDemandForecastTable() -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead>
-                                <tr class="text-[10px] uppercase font-bold text-slate-400 border-b border-slate-100">
-                                    <th class="pb-2">Zone</th>
-                                    <th class="pb-2">Demand</th>
-                                    <th class="pb-2">Rec. Drivers</th>
-                                    <th class="pb-2 text-right">Surge Level</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 font-medium">
-                                <tr>
-                                    <td class="py-2.5 font-semibold text-slate-800">Makati Central Business District</td>
-                                    <td class="py-2.5 font-mono text-blue-600 font-bold">340 req/hr</td>
-                                    <td class="py-2.5 text-slate-600">45 units</td>
-                                    <td class="py-2.5 text-right"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">Critical (1.45x)</span></td>
-                                </tr>
-                                <tr>
-                                    <td class="py-2.5 font-semibold text-slate-800">Bonifacio Global City (BGC)</td>
-                                    <td class="py-2.5 font-mono text-blue-600 font-bold">290 req/hr</td>
-                                    <td class="py-2.5 text-slate-600">38 units</td>
-                                    <td class="py-2.5 text-right"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">High (1.30x)</span></td>
-                                </tr>
-                                <tr>
-                                    <td class="py-2.5 font-semibold text-slate-800">Ortigas Center, Pasig</td>
-                                    <td class="py-2.5 font-mono text-blue-600 font-bold">210 req/hr</td>
-                                    <td class="py-2.5 text-slate-600">28 units</td>
-                                    <td class="py-2.5 text-right"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">High (1.25x)</span></td>
-                                </tr>
-                                <tr>
-                                    <td class="py-2.5 font-semibold text-slate-800">NAIA Terminal 3 Airport Complex</td>
-                                    <td class="py-2.5 font-mono text-blue-600 font-bold">185 req/hr</td>
-                                    <td class="py-2.5 text-slate-600">25 units</td>
-                                    <td class="py-2.5 text-right"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Normal (1.10x)</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 font-semibold">
+                        <span id="hotspots-total-summary">Total Peak: -- req/hr • Total Day: -- trips</span>
+                        <span id="hotspots-surge-summary" class="font-mono font-bold text-amber-700">Avg Corridor Delay: --% • Avg Surge: --x</span>
                     </div>
                 </div>
             </div>
@@ -728,18 +687,18 @@
                 </div>
 
                 <!-- Form -->
-                <form id="login-form" class="space-y-3 text-xs">
+                <form id="login-form" class="space-y-3 text-xs" autocomplete="off">
                     <div id="login-error-msg" class="p-2 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg hidden font-medium"></div>
                     <div>
                         <label class="block text-slate-700 font-semibold mb-1">Email Address</label>
                         <div class="relative">
-                            <input type="email" id="login-email" value="superadmin@hirna.ph" required class="w-full p-2.5 pr-8 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 text-xs" autocomplete="chrome-off" data-lpignore="true" data-form-type="other" spellcheck="false">
+                            <input type="email" id="login-email" value="superadmin@hirna.ph" required class="w-full p-2.5 pr-8 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 text-xs" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocapitalize="off" autocorrect="off" data-1p-ignore="true">
                             <button type="button" id="login-email-clear-btn" onclick="BookingModule.clearInput('login-email')" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-600 hover:text-slate-900 text-[10px] font-black flex items-center justify-center transition cursor-pointer" title="Clear"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>
                         </div>
                     </div>
                     <div>
                         <label class="block text-slate-700 font-semibold mb-1">Password</label>
-                        <input type="password" id="login-password" value="admin" required class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 text-xs" autocomplete="chrome-off" data-lpignore="true" data-form-type="other" spellcheck="false">
+                        <input type="password" id="login-password" value="admin" required class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-hirna-500 text-xs" autocomplete="new-password" data-lpignore="true" data-form-type="other" spellcheck="false" autocapitalize="off" autocorrect="off" data-1p-ignore="true">
                     </div>
                     <button type="submit" class="w-full py-3 bg-hirna-700 hover:bg-hirna-800 text-white font-black text-xs rounded-xl shadow-lg transition">
                         Sign In to Hirna Portal →
@@ -939,7 +898,7 @@
                         <label class="block text-xs font-bold text-slate-700">Home Address Details</label>
                         <button type="button" id="home-address-input-field-clear-btn" onclick="BookingModule.clearAddressInput('home-address-input-field')" class="hidden text-[10px] text-slate-400 hover:text-rose-600 font-bold transition cursor-pointer flex items-center space-x-0.5"><svg class="w-3 h-3 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg><span>Clear</span></button>
                     </div>
-                    <textarea id="home-address-input-field" rows="3" placeholder="Enter your full home address (e.g. Unit 402, Building 3, Emerald Ave, Pasig City)" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl p-3 font-medium focus:ring-2 focus:ring-hirna-500 focus:bg-white text-slate-800 transition outline-none resize-none"></textarea>
+                    <textarea id="home-address-input-field" rows="3" placeholder="Enter your full home address (e.g. Unit 402, Building 3, Emerald Ave, Pasig City)" class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl p-3 font-medium focus:ring-2 focus:ring-hirna-500 focus:bg-white text-slate-800 transition outline-none resize-none" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other" data-1p-ignore="true"></textarea>
                 </div>
 
                 <!-- Quick fill with current location -->
@@ -1148,7 +1107,7 @@
                     <button type="button" onclick="FoodDeliveryModule.updateModalQty(-1)" class="w-10 h-10 rounded-xl bg-white hover:bg-slate-100 active:scale-95 border border-slate-200 text-slate-800 font-black text-lg flex items-center justify-center transition shadow-xs cursor-pointer select-none">
                         −
                     </button>
-                    <input type="number" id="food-modal-qty" min="1" max="99" value="1" oninput="FoodDeliveryModule.handleModalQtyInput(this.value)" class="w-16 h-10 text-center font-mono font-black text-base bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-hidden text-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" autocomplete="chrome-off" data-lpignore="true" data-form-type="other">
+                    <input type="number" id="food-modal-qty" min="1" max="99" value="1" oninput="FoodDeliveryModule.handleModalQtyInput(this.value)" class="w-16 h-10 text-center font-mono font-black text-base bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-hidden text-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" autocomplete="off" data-lpignore="true" data-form-type="other" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore="true">
                     <button type="button" onclick="FoodDeliveryModule.updateModalQty(1)" class="w-10 h-10 rounded-xl bg-amber-500 hover:bg-amber-400 active:scale-95 text-hirna-950 font-black text-lg flex items-center justify-center transition shadow-xs cursor-pointer select-none">
                         +
                     </button>
@@ -1159,7 +1118,7 @@
             <div class="space-y-1">
                 <label class="text-[11px] font-semibold text-slate-600 block">Special Instructions (Optional)</label>
                 <div class="relative">
-                    <input type="text" id="food-modal-notes" placeholder="e.g. Less spicy, extra sauce, separate packaging..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-8 focus:ring-2 focus:ring-amber-500 focus:bg-white text-slate-800" autocomplete="chrome-off" data-lpignore="true" data-form-type="other" spellcheck="false">
+                    <input type="text" id="food-modal-notes" placeholder="e.g. Less spicy, extra sauce, separate packaging..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-8 focus:ring-2 focus:ring-amber-500 focus:bg-white text-slate-800" autocomplete="off" data-lpignore="true" data-form-type="other" spellcheck="false" autocapitalize="off" autocorrect="off" data-1p-ignore="true">
                     <button type="button" id="food-modal-notes-clear-btn" onclick="BookingModule.clearInput('food-modal-notes')" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-600 hover:text-slate-900 text-[10px] font-black flex items-center justify-center transition cursor-pointer" title="Clear"><svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
             </div>
@@ -1260,18 +1219,18 @@
                 <button type="button" onclick="SSOGateway.closeAccountModal()" class="text-white hover:text-slate-200 transition p-1 cursor-pointer"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
 
-            <form id="rbac-account-form" onsubmit="SSOGateway.handleSaveAccount(event); return false;" class="p-6 space-y-4 text-xs">
+            <form id="rbac-account-form" onsubmit="SSOGateway.handleSaveAccount(event); return false;" class="p-6 space-y-4 text-xs" autocomplete="off">
                 <input type="hidden" id="rbac-account-original-email" value="">
                 <input type="hidden" id="rbac-modal-mode" value="add">
 
                 <div id="rbac-name-group">
                     <label class="block text-slate-700 font-bold mb-1">Full Name</label>
-                    <input type="text" id="rbac-account-name" required placeholder="e.g. John Santos" class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-gold-500 focus:outline-none text-xs text-slate-900">
+                    <input type="text" id="rbac-account-name" required placeholder="e.g. John Santos" class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-gold-500 focus:outline-none text-xs text-slate-900" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other" data-1p-ignore="true">
                 </div>
 
                 <div id="rbac-email-group">
                     <label class="block text-slate-700 font-bold mb-1">Email Address (Login ID)</label>
-                    <input type="email" id="rbac-account-email" required placeholder="e.g. user@hirna.ph" class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-gold-500 focus:outline-none text-xs text-slate-900">
+                    <input type="email" id="rbac-account-email" required placeholder="e.g. user@hirna.ph" class="w-full p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-gold-500 focus:outline-none text-xs text-slate-900" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other" data-1p-ignore="true">
                 </div>
 
                 <div id="rbac-role-group">
@@ -1289,7 +1248,7 @@
                         <span class="text-[10px] text-gold-600 font-semibold">SuperAdmin Editable</span>
                     </div>
                     <div class="relative">
-                        <input type="password" id="rbac-account-password" placeholder="Enter new account password" class="w-full pl-3 pr-10 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-gold-500 focus:outline-none text-xs font-mono text-slate-900">
+                        <input type="password" id="rbac-account-password" placeholder="Enter new account password" class="w-full pl-3 pr-10 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-gold-500 focus:outline-none text-xs font-mono text-slate-900" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" data-lpignore="true" data-form-type="other" data-1p-ignore="true">
                         <button type="button" onclick="SSOGateway.toggleModalPasswordVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer" title="Hide/Unhide Password">
                             <span id="rbac-modal-eye-icon">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>

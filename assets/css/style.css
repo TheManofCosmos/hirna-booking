@@ -187,6 +187,49 @@ body.bg-slate-950 select:focus,
 }
 
 /* ==========================================================================
+   CHROME AUTOFILL SUPPRESSION
+   Eliminates yellow/blue WebKit autofill backgrounds and browser autofill icons
+   ========================================================================== */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+textarea:-webkit-autofill:active,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus,
+select:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    -webkit-text-fill-color: #0f172a !important;
+    caret-color: #0f172a !important;
+    transition: background-color 99999s ease-in-out 0s !important;
+}
+
+body.bg-slate-950 input:-webkit-autofill,
+body.bg-slate-950 input:-webkit-autofill:hover,
+body.bg-slate-950 input:-webkit-autofill:focus,
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #0b1120 inset !important;
+    -webkit-text-fill-color: #f8fafc !important;
+    caret-color: #f8fafc !important;
+}
+
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+    visibility: hidden !important;
+    display: none !important;
+    pointer-events: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+}
+
+/* ==========================================================================
    OFFICIAL TRIP RECEIPT PRINT STYLING
    Ensure printout isolates only the clean receipt document:
    - Suppresses page backdrop, modals overlay, and headers
