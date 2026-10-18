@@ -901,8 +901,13 @@ const PaymentsModule = {
         const invoiceNo = this.activeBooking.invoice_no || `INV-2026-${Math.floor(10000 + Math.random() * 90000)}`;
         const paidAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
+        const isCancelledMidTrip = this.activeBooking.status === 'completed_early' ||
+            !!this.activeBooking.is_cancelled_mid_trip ||
+            !!this.activeBooking.cancelled_mid_trip;
+        const targetStatus = isCancelledMidTrip ? 'completed_early' : 'completed';
+
         this.activeBooking.payment_status = 'completed';
-        this.activeBooking.status = 'completed';
+        this.activeBooking.status = targetStatus;
         this.activeBooking.payment_method = method;
         this.activeBooking.invoice_no = invoiceNo;
         this.activeBooking.txn_ref = txnRef;
@@ -913,7 +918,17 @@ const PaymentsModule = {
             const bookingKey = this.activeBooking.booking_code || this.activeBooking.id;
             SupabaseBridge.update('bookings', bookingKey, {
                 payment_status: 'completed',
-                status: 'completed',
+                status: targetStatus,
+                is_cancelled_mid_trip: isCancelledMidTrip,
+                cancelled_mid_trip: isCancelledMidTrip,
+                cancellation_coords: this.activeBooking.cancellation_coords || null,
+                actual_dropoff_coords: this.activeBooking.actual_dropoff_coords || null,
+                cancellation_street: this.activeBooking.cancellation_street || null,
+                cancellation_progress: this.activeBooking.cancellation_progress || null,
+                traveled_waypoints: this.activeBooking.traveled_waypoints || null,
+                all_waypoints: this.activeBooking.all_waypoints || null,
+                traffic_telemetry: this.activeBooking.traffic_telemetry || null,
+                cancellation_note: this.activeBooking.cancellation_note || null,
                 payment_method: method,
                 invoice_no: invoiceNo,
                 txn_ref: txnRef,
@@ -937,6 +952,17 @@ const PaymentsModule = {
                 surge_multiplier: this.activeBooking.surge_multiplier || 1.0,
                 payment_method: method,
                 payment_status: 'completed',
+                status: targetStatus,
+                is_cancelled_mid_trip: isCancelledMidTrip,
+                cancelled_mid_trip: isCancelledMidTrip,
+                cancellation_coords: this.activeBooking.cancellation_coords || null,
+                actual_dropoff_coords: this.activeBooking.actual_dropoff_coords || null,
+                cancellation_street: this.activeBooking.cancellation_street || null,
+                cancellation_progress: this.activeBooking.cancellation_progress || null,
+                traveled_waypoints: this.activeBooking.traveled_waypoints || null,
+                all_waypoints: this.activeBooking.all_waypoints || null,
+                traffic_telemetry: this.activeBooking.traffic_telemetry || null,
+                cancellation_note: this.activeBooking.cancellation_note || null,
                 service_type: this.activeBooking.service_type || 'standard',
                 created_at: paidAt,
                 is_archived: false

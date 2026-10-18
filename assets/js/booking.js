@@ -6867,6 +6867,9 @@ const BookingModule = {
         }
 
         const totalDist = totalCalculatedDist > 0 ? totalCalculatedDist : (totalDistMeters || 1000);
+        this.tripSimulation.waypoints = waypoints;
+        this.tripSimulation.cumDistances = cumDistances;
+        this.tripSimulation.segmentDistances = segmentDistances;
         this.tripSimulation.totalDistM = totalDist;
         this.tripSimulation.legDurationMs = durationMs;
         this.tripSimulation.legStartTime = performance.now();
@@ -6887,6 +6890,15 @@ const BookingModule = {
         if (congestionLevel === 'severe' || congestionRatio >= 1.60) trafficStopDelayFactor = 1.65;
         else if (congestionLevel === 'heavy' || congestionRatio >= 1.30) trafficStopDelayFactor = 1.35;
         else if (congestionLevel === 'moderate' || congestionRatio >= 1.15) trafficStopDelayFactor = 1.15;
+
+        // Works reliably on dense polyline vertices from Mapbox and OSRM
+        const computeBearing = (p1, p2) => {
+            const dLat = (p2[0] - p1[0]);
+            const avgLatRad = ((p1[0] + p2[0]) / 2) * Math.PI / 180;
+            const dLng = (p2[1] - p1[1]) * Math.cos(avgLatRad);
+            let angle = Math.atan2(dLng, dLat) * 180 / Math.PI;
+            return (angle + 360) % 360;
+        };
 
         const milestones = activeRoute.stepMilestones || [];
         
@@ -7003,14 +7015,6 @@ const BookingModule = {
         connectedIntersections.sort((a, b) => a.dist - b.dist);
 
         // 3. Precompute road bends / curves from polyline geometry across chords (~20-30m lookahead)
-        // Works reliably on dense polyline vertices from Mapbox and OSRM
-        const computeBearing = (p1, p2) => {
-            const dLat = (p2[0] - p1[0]);
-            const avgLatRad = ((p1[0] + p2[0]) / 2) * Math.PI / 180;
-            const dLng = (p2[1] - p1[1]) * Math.cos(avgLatRad);
-            let angle = Math.atan2(dLng, dLat) * 180 / Math.PI;
-            return (angle + 360) % 360;
-        };
 
         const roadBends = [];
         if (waypoints.length >= 3) {
@@ -7311,6 +7315,7 @@ const BookingModule = {
                 }
                 segIndex = i;
             }
+            this.tripSimulation.currentSegIndex = segIndex;
 
             const p1 = waypoints[segIndex];
             const p2 = waypoints[segIndex + 1] || p1;
@@ -7928,17 +7933,36 @@ const BookingModule = {
             const proratedQuote = this.tripSimulation._pendingProratedQuote;
 
             // Get current location street name and traveled coordinates
-            const currStreet = document.getElementById('hud-current-location')?.innerText || `Mid-Trip Point (km ${traveledDistKm})`;
+            let currStreet = document.getElementById('hud-current-location')?.innerText;
+            const milestones = this.tripSimulation.activeRouteData?.stepMilestones || [];
+            if (milestones.length > 0) {
+                const targetDist = (this.tripSimulation.currentProgress || 0) * (this.tripSimulation.totalDistM || 1);
+                const curStep = milestones.find(s => targetDist >= s.startDist && targetDist <= s.endDist);
+                if (curStep && curStep.name && curStep.name.trim() !== '') {
+                    currStreet = curStep.name;
+                }
+            }
+            if (!currStreet || currStreet.trim() === '' || currStreet === booking.pickup) {
+                currStreet = `Mid-Trip Point (km ${traveledDistKm})`;
+            }
 
             // Extract the actual traveled road waypoints from simulation
             let traveledWaypoints = [];
-            if (Array.isArray(this.tripSimulation.waypoints) && this.tripSimulation.waypoints.length > 0) {
-                const totalWp = this.tripSimulation.waypoints.length;
-                const prog = this.tripSimulation.currentProgress || (traveledDistKm / (booking.distance_km || 1));
-                const cutIdx = Math.max(1, Math.min(totalWp - 1, Math.round(totalWp * Math.min(1.0, prog))));
-                traveledWaypoints = this.tripSimulation.waypoints.slice(0, cutIdx);
+            const allWp = this.tripSimulation.waypoints || [];
+            if (Array.isArray(allWp) && allWp.length > 0) {
+                let cutIdx = 0;
+                if (typeof this.tripSimulation.currentSegIndex === 'number' && this.tripSimulation.currentSegIndex >= 0) {
+                    cutIdx = Math.min(allWp.length, this.tripSimulation.currentSegIndex + 1);
+                } else {
+                    const prog = this.tripSimulation.currentProgress || (traveledDistKm / (booking.distance_km || 1));
+                    cutIdx = Math.max(1, Math.min(allWp.length, Math.round(allWp.length * Math.min(1.0, prog))));
+                }
+                traveledWaypoints = allWp.slice(0, cutIdx);
                 if (curCoords) {
-                    traveledWaypoints.push(curCoords);
+                    const lastWp = traveledWaypoints[traveledWaypoints.length - 1];
+                    if (!lastWp || this.computeDistanceMeters(lastWp, curCoords) > 4) {
+                        traveledWaypoints.push(curCoords);
+                    }
                 }
             } else if (curCoords && this.pickupCoords) {
                 traveledWaypoints = [this.pickupCoords, curCoords];
@@ -7956,6 +7980,13 @@ const BookingModule = {
             booking.cancellation_street = currStreet;
             booking.cancellation_progress = this.tripSimulation.currentProgress || (traveledDistKm / (booking.distance_km || 1));
             booking.traveled_waypoints = traveledWaypoints;
+            if (allWp.length > 0) {
+                booking.all_waypoints = allWp;
+            }
+            const activeRoute = this.tripSimulation.activeRouteData || {};
+            if (activeRoute.trafficTelemetry) {
+                booking.traffic_telemetry = activeRoute.trafficTelemetry;
+            }
             booking.cancellation_note = `Ride ended mid-trip at km ${traveledDistKm} (${traveledDurMin} mins) near ${currStreet}`;
 
             if (proratedQuote) {
@@ -7978,6 +8009,8 @@ const BookingModule = {
                     cancellation_street: currStreet,
                     cancellation_progress: booking.cancellation_progress,
                     traveled_waypoints: traveledWaypoints,
+                    all_waypoints: booking.all_waypoints || null,
+                    traffic_telemetry: booking.traffic_telemetry || null,
                     cancellation_note: booking.cancellation_note,
                     base_fare: booking.base_fare,
                     distance_fare: booking.distance_fare,
@@ -7991,7 +8024,18 @@ const BookingModule = {
                         amount: proratedFare,
                         total_fare: proratedFare,
                         distance_fare: booking.distance_fare,
-                        time_fare: booking.time_fare
+                        time_fare: booking.time_fare,
+                        status: 'completed_early',
+                        is_cancelled_mid_trip: true,
+                        cancelled_mid_trip: true,
+                        cancellation_coords: curCoords,
+                        actual_dropoff_coords: curCoords,
+                        cancellation_street: currStreet,
+                        cancellation_progress: booking.cancellation_progress,
+                        traveled_waypoints: traveledWaypoints,
+                        all_waypoints: booking.all_waypoints || null,
+                        traffic_telemetry: booking.traffic_telemetry || null,
+                        cancellation_note: booking.cancellation_note
                     });
                 }
 

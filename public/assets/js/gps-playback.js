@@ -220,8 +220,24 @@ const GPSModule = {
                 if (!code) return;
                 if (TEMPLATE_CODES_AND_IDS.includes(code) || TEMPLATE_CODES_AND_IDS.includes(p.booking_id) || TEMPLATE_CODES_AND_IDS.includes(p.id)) return;
                 if (p.is_archived) return;
-                const exists = bookings.some(b => (b.booking_code && b.booking_code === code) || b.id === p.booking_id || b.id === p.id);
-                if (!exists) {
+                const existingIdx = bookings.findIndex(b => (b.booking_code && b.booking_code === code) || b.id === p.booking_id || b.id === p.id);
+                if (existingIdx !== -1) {
+                    const eb = bookings[existingIdx];
+                    if (p.is_cancelled_mid_trip || p.status === 'completed_early' || (p.cancellation_note && p.cancellation_note.includes('mid-trip'))) {
+                        eb.is_cancelled_mid_trip = true;
+                        eb.cancelled_mid_trip = true;
+                        eb.status = 'completed_early';
+                        if (p.cancellation_coords && !eb.cancellation_coords) eb.cancellation_coords = p.cancellation_coords;
+                        if (p.actual_dropoff_coords && !eb.actual_dropoff_coords) eb.actual_dropoff_coords = p.actual_dropoff_coords;
+                        if (p.cancellation_street && !eb.cancellation_street) eb.cancellation_street = p.cancellation_street;
+                        if (p.cancellation_progress && !eb.cancellation_progress) eb.cancellation_progress = p.cancellation_progress;
+                        if (p.traveled_waypoints && !eb.traveled_waypoints) eb.traveled_waypoints = p.traveled_waypoints;
+                        if (p.all_waypoints && !eb.all_waypoints) eb.all_waypoints = p.all_waypoints;
+                        if (p.traffic_telemetry && !eb.traffic_telemetry) eb.traffic_telemetry = p.traffic_telemetry;
+                        if (p.cancellation_note && !eb.cancellation_note) eb.cancellation_note = p.cancellation_note;
+                    }
+                } else {
+                    const isCancelled = p.status === 'completed_early' || !!p.is_cancelled_mid_trip || !!p.cancelled_mid_trip || (p.cancellation_note && p.cancellation_note.includes('mid-trip'));
                     bookings.push({
                         id: p.booking_id || p.id || `b-${p.invoice_no}`,
                         booking_code: code,
@@ -238,10 +254,20 @@ const GPSModule = {
                         total_fare: p.total_fare || p.amount || 150,
                         payment_method: p.payment_method || 'GCash',
                         payment_status: 'completed',
-                        status: 'completed',
+                        status: p.status || (isCancelled ? 'completed_early' : 'completed'),
+                        is_cancelled_mid_trip: isCancelled,
+                        cancelled_mid_trip: isCancelled,
+                        cancellation_coords: p.cancellation_coords || null,
+                        actual_dropoff_coords: p.actual_dropoff_coords || null,
+                        cancellation_street: p.cancellation_street || null,
+                        cancellation_progress: p.cancellation_progress || null,
+                        traveled_waypoints: p.traveled_waypoints || null,
+                        all_waypoints: p.all_waypoints || null,
+                        traffic_telemetry: p.traffic_telemetry || null,
+                        cancellation_note: p.cancellation_note || null,
                         created_at: p.created_at || new Date().toISOString().replace('T', ' ').substring(0, 19),
-                        duration_min: 22,
-                        distance_km: 6.8
+                        duration_min: p.duration_min || (isCancelled ? 12 : 22),
+                        distance_km: p.distance_km || (isCancelled ? 3.4 : 6.8)
                     });
                 }
             });
@@ -558,7 +584,8 @@ const GPSModule = {
         const isCancelledMidTrip = booking.status === 'completed_early' ||
             !!booking.is_cancelled_mid_trip ||
             !!booking.cancelled_mid_trip ||
-            (booking.cancellation_note && booking.cancellation_note.includes('mid-trip'));
+            (booking.cancellation_note && booking.cancellation_note.toLowerCase().includes('mid-trip')) ||
+            (booking.cancellation_street && booking.cancellation_street.length > 0 && booking.cancellation_street !== booking.dropoff);
         this.isCancelledMidTrip = isCancelledMidTrip;
 
         // 1. Update Title and Badges
@@ -674,19 +701,22 @@ const GPSModule = {
         let fullWaypoints = [];
         let fullSteps = [];
 
-        // Check if traveled_waypoints was explicitly stored at cancellation time
-        if (isCancelledMidTrip && Array.isArray(booking.traveled_waypoints) && booking.traveled_waypoints.length >= 2) {
-            this.waypoints = booking.traveled_waypoints.map(p => this.normalizeCoords(p));
-            // Also fetch full route to destination to show untraveled cancelled segment
-            const fullRoute = await this.fetchRouteWaypointsAndSteps(pickup, dropoff, booking.id);
-            fullWaypoints = fullRoute.waypoints || [pickup, dropoff];
-            fullSteps = fullRoute.steps || [];
-        } else {
-            const routeResult = await this.fetchRouteWaypointsAndSteps(pickup, dropoff, booking.id);
-            fullWaypoints = routeResult.waypoints || [pickup, dropoff];
-            fullSteps = routeResult.steps || [];
+        // Check if all original road waypoints are preserved
+        if (Array.isArray(booking.all_waypoints) && booking.all_waypoints.length >= 2) {
+            fullWaypoints = booking.all_waypoints.map(p => this.normalizeCoords(p));
+        }
 
-            if (isCancelledMidTrip) {
+        const routeResult = await this.fetchRouteWaypointsAndSteps(pickup, dropoff, booking.id);
+        if (fullWaypoints.length === 0) {
+            fullWaypoints = routeResult.waypoints || [pickup, dropoff];
+        }
+        fullSteps = routeResult.steps || [];
+
+        if (isCancelledMidTrip) {
+            // Check if traveled_waypoints was explicitly stored at cancellation time
+            if (Array.isArray(booking.traveled_waypoints) && booking.traveled_waypoints.length > 2) {
+                this.waypoints = booking.traveled_waypoints.map(p => this.normalizeCoords(p));
+            } else {
                 // Determine slice point: either cancellation_coords or cancellation_progress / prorated distance ratio
                 const cancelCoords = booking.cancellation_coords || booking.actual_dropoff_coords;
                 let sliceIdx = -1;
@@ -704,36 +734,46 @@ const GPSModule = {
                 }
 
                 if (sliceIdx <= 0 || sliceIdx >= fullWaypoints.length) {
-                    const prog = booking.cancellation_progress || (booking.distance_km ? (parseFloat(booking.distance_km) / 6.5) : 0.55);
+                    const prog = (typeof booking.cancellation_progress === 'number' && booking.cancellation_progress > 0)
+                        ? booking.cancellation_progress
+                        : (booking.distance_km ? Math.min(0.85, parseFloat(booking.distance_km) / 6.5) : 0.55);
                     sliceIdx = Math.max(2, Math.min(fullWaypoints.length - 2, Math.round(fullWaypoints.length * Math.min(0.9, prog))));
                 }
 
                 this.waypoints = fullWaypoints.slice(0, sliceIdx + 1);
                 if (cancelCoords) {
-                    this.waypoints.push(this.normalizeCoords(cancelCoords));
+                    const lastWp = this.waypoints[this.waypoints.length - 1];
+                    const normCancel = this.normalizeCoords(cancelCoords);
+                    if (!lastWp || this.computeDistanceMeters(lastWp, normCancel) > 5) {
+                        this.waypoints.push(normCancel);
+                    }
                 }
-            } else {
-                this.waypoints = fullWaypoints;
             }
-        }
 
-        // Untraveled / Cancelled segment beyond early dropoff
-        if (isCancelledMidTrip && fullWaypoints.length > 0) {
-            const lastTraveledPt = this.waypoints[this.waypoints.length - 1];
-            // Find closest index in fullWaypoints to lastTraveledPt
-            let matchIdx = fullWaypoints.length - 1;
-            let bestD = Infinity;
-            for (let i = 0; i < fullWaypoints.length; i++) {
-                const d = this.computeDistanceMeters(lastTraveledPt, fullWaypoints[i]);
-                if (d < bestD) {
-                    bestD = d;
-                    matchIdx = i;
+            // Untraveled / Cancelled segment beyond early dropoff
+            if (fullWaypoints.length > 0) {
+                const lastTraveledPt = this.waypoints[this.waypoints.length - 1];
+                let matchIdx = fullWaypoints.length - 1;
+                let bestD = Infinity;
+                for (let i = 0; i < fullWaypoints.length; i++) {
+                    const d = this.computeDistanceMeters(lastTraveledPt, fullWaypoints[i]);
+                    if (d < bestD) {
+                        bestD = d;
+                        matchIdx = i;
+                    }
                 }
+                const remaining = fullWaypoints.slice(matchIdx);
+                this.cancelledWaypoints = [lastTraveledPt, ...remaining];
+            } else {
+                this.cancelledWaypoints = [];
             }
-            const remaining = fullWaypoints.slice(matchIdx);
-            this.cancelledWaypoints = [lastTraveledPt, ...remaining];
+
+            // Scale base replay duration proportionally for early cancelled trip
+            this.baseDurationMs = Math.max(12000, Math.min(20000, Math.round(22000 * ((booking.distance_km || 3.5) / 6.0))));
         } else {
+            this.waypoints = fullWaypoints;
             this.cancelledWaypoints = [];
+            this.baseDurationMs = 22000;
         }
 
         this.stepMilestones = fullSteps;
@@ -886,6 +926,15 @@ const GPSModule = {
         const waypoints = this.waypoints;
         const cumDistances = this.cumDistances;
 
+        const routeTraffic = this.activeBooking?.traffic_telemetry || {};
+        const congestionLevel = routeTraffic?.congestion_level || 'low';
+        const congestionRatio = routeTraffic?.congestion_ratio || 1.0;
+
+        let trafficStopDelayFactor = 1.0;
+        if (congestionLevel === 'severe' || congestionRatio >= 1.60) trafficStopDelayFactor = 1.65;
+        else if (congestionLevel === 'heavy' || congestionRatio >= 1.30) trafficStopDelayFactor = 1.35;
+        else if (congestionLevel === 'moderate' || congestionRatio >= 1.15) trafficStopDelayFactor = 1.15;
+
         const computeBearing = (p1, p2) => {
             const dLat = (p2[0] - p1[0]);
             const avgLatRad = ((p1[0] + p2[0]) / 2) * Math.PI / 180;
@@ -925,7 +974,7 @@ const GPSModule = {
                         dist: Math.round(step.startDist),
                         name: step.name ? `${actionName} (${step.name})` : actionName,
                         isTurn: isTurn,
-                        stopDurationMs: Math.round(2000 + Math.random() * 2000), // 2s to 4s
+                        stopDurationMs: Math.round((2000 + Math.random() * 2000) * trafficStopDelayFactor), // 2s to 4s scaled by traffic
                         hasStopped: false,
                         stopStartTime: 0
                     });
@@ -1044,20 +1093,42 @@ const GPSModule = {
             }
         }
 
+        let trafficCruisingMultiplier = 1.22;
+        let trafficLabel = "Smooth Traffic Commute";
+        let trafficDotClass = "bg-emerald-400";
+        let trafficModeClass = "text-emerald-400";
+
+        if (congestionLevel === 'severe' || congestionRatio >= 1.60) {
+            trafficCruisingMultiplier = 0.42;
+            trafficLabel = "Severe Traffic Congestion";
+            trafficDotClass = "bg-rose-500 animate-pulse";
+            trafficModeClass = "text-rose-400";
+        } else if (congestionLevel === 'heavy' || congestionRatio >= 1.30) {
+            trafficCruisingMultiplier = 0.65;
+            trafficLabel = "Heavy Traffic Slowdown";
+            trafficDotClass = "bg-orange-500 animate-pulse";
+            trafficModeClass = "text-orange-400";
+        } else if (congestionLevel === 'moderate' || congestionRatio >= 1.15) {
+            trafficCruisingMultiplier = 0.90;
+            trafficLabel = "Moderate Traffic Flow";
+            trafficDotClass = "bg-amber-400";
+            trafficModeClass = "text-amber-400";
+        }
+
         this.drivingDynamics = {
             finalStops: finalStops,
             signalStops: finalStops,
             connectedIntersections: connectedIntersections,
             roadBends: roadBends,
-            trafficCruisingMultiplier: 1.15,
-            trafficLabel: "Normal Commute Speed",
-            trafficDotClass: "bg-emerald-400",
-            trafficModeClass: "text-emerald-400",
+            trafficCruisingMultiplier: trafficCruisingMultiplier,
+            trafficLabel: trafficLabel,
+            trafficDotClass: trafficDotClass,
+            trafficModeClass: trafficModeClass,
             currentVarianceKmh: 0,
             targetVarianceKmh: 0,
             nextVarianceChangeTime: performance.now() + 2500,
             currentSpeedFactor: 0.25,
-            smoothedSpeedKmh: 38,
+            smoothedSpeedKmh: Math.round(38 * trafficCruisingMultiplier),
             activeStop: null
         };
     },
@@ -1459,6 +1530,11 @@ const GPSModule = {
 
             if (newProgress >= 1.0) {
                 this.pause();
+                this.seekToProgress(1.0, {
+                    speed: 0,
+                    behavior: this.isCancelledMidTrip ? "Trip Ended Mid-Transit" : "Arrived at Destination",
+                    behaviorClass: this.isCancelledMidTrip ? "text-amber-400" : "text-emerald-300"
+                });
                 return;
             }
 
