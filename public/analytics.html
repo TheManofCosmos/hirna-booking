@@ -141,27 +141,104 @@
 
 
         <div id="tab-analytics" class="tab-content-panel space-y-6 ">
-            <!-- Executive KPI Cards -->
+            <!-- Executive Fleet-Centric KPI Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Gross Revenue (MTD)</span>
-                    <span id="kpi-revenue" class="text-2xl font-black text-hirna-900 font-mono mt-1 block">₱343,558.40</span>
-                    <span class="text-[11px] text-emerald-600 font-semibold">↑ +18.4% growth</span>
+                <!-- Card 1: Active Fleet Composition -->
+                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Fleet Composition</span>
+                            <span id="kpi-fleet-readiness" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">● 100% Online</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2 mt-1.5">
+                            <span id="kpi-fleet-units" class="text-2xl font-black text-hirna-900 font-mono">9 Active Units</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
+                            <div id="kpi-fleet-car-bar" class="h-full bg-blue-600 transition-all duration-300" style="width: 33.3%" title="Car Owners (33.3%)"></div>
+                            <div id="kpi-fleet-moto-bar" class="h-full bg-amber-500 transition-all duration-300" style="width: 66.7%" title="Motorcycle Owners (66.7%)"></div>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] font-semibold">
+                            <button type="button" onclick="AnalyticsModule.setFleetFilter('car')" class="flex items-center space-x-1 text-blue-700 hover:underline cursor-pointer">
+                                <span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>
+                                <span id="kpi-fleet-car-count">3 Cars (33%)</span>
+                            </button>
+                            <button type="button" onclick="AnalyticsModule.setFleetFilter('motorcycle')" class="flex items-center space-x-1 text-amber-700 hover:underline cursor-pointer">
+                                <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+                                <span id="kpi-fleet-moto-count">6 Motorcycles (67%)</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Total Completed Trips</span>
-                    <span id="kpi-trips" class="text-2xl font-black text-hirna-700 font-mono mt-1 block">1,422</span>
-                    <span class="text-[11px] text-slate-500">99.2% Fulfillment Rate</span>
+
+                <!-- Card 2: Total Fleet Trips & Service Split -->
+                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Fleet Trips</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">99.4% Fulfillment</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2 mt-1.5">
+                            <span id="kpi-trips" class="text-2xl font-black text-hirna-700 font-mono">4,805</span>
+                            <span id="kpi-trips-sub" class="text-xs font-bold text-slate-500">completed trips</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
+                            <div id="kpi-trips-car-bar" class="h-full bg-indigo-600 transition-all duration-300" style="width: 25.9%" title="4-Wheel Car Rides"></div>
+                            <div id="kpi-trips-moto-bar" class="h-full bg-amber-500 transition-all duration-300" style="width: 74.1%" title="2-Wheel Moto & Express"></div>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] font-semibold">
+                            <span id="kpi-trips-car-split" class="text-indigo-700">Cars: 1,245 (26%)</span>
+                            <span id="kpi-trips-moto-split" class="text-amber-700">Moto: 3,560 (74%)</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Avg AI Surge Index</span>
-                    <span id="kpi-surge-avg" class="text-2xl font-black text-gold-600 font-mono mt-1 block">1.28x</span>
-                    <span class="text-[11px] text-gold-700 font-semibold">Peak Demand Yield</span>
+
+                <!-- Card 3: Fleet Rating & Safety Score -->
+                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Fleet Rating & Safety</span>
+                            <span id="kpi-driver-safety" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 font-mono">98.7% Safety</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2 mt-1.5">
+                            <span id="kpi-fleet-rating" class="text-2xl font-black text-amber-600 font-mono">4.93 ★</span>
+                            <span class="text-xs font-bold text-slate-500">fleet avg</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div id="kpi-safety-bar" class="h-full bg-emerald-500 transition-all duration-300" style="width: 98.7%"></div>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-600 font-semibold truncate">
+                            <span id="kpi-top-performer" class="truncate" title="Top Rated: Arman Mendoza (4.98 ★) • Most Trips: Carlo Mendoza (720)">Top: Arman M. (4.98 ★) • Carlo M. (720)</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Hirna Safety Index</span>
-                    <span id="kpi-driver-safety" class="text-2xl font-black text-emerald-600 font-mono mt-1 block">98.4%</span>
-                    <span class="text-[11px] text-emerald-700">SOP Compliance Score</span>
+
+                <!-- Card 4: Fleet Gross Revenue & AI Surge -->
+                <div class="bg-white p-5 rounded-2xl border border-hirna-100 shadow-sm flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Fleet Gross Revenue</span>
+                            <span id="kpi-surge-avg" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 font-mono">1.22x AI Surge</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2 mt-1.5">
+                            <span id="kpi-revenue" class="text-2xl font-black text-hirna-900 font-mono">₱508,005.00</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
+                            <div id="kpi-rev-car-bar" class="h-full bg-hirna-700 transition-all duration-300" style="width: 45.3%" title="Car Fleet Share"></div>
+                            <div id="kpi-rev-moto-bar" class="h-full bg-gold-500 transition-all duration-300" style="width: 54.7%" title="Motorcycle Fleet Share"></div>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] font-semibold">
+                            <span id="kpi-avg-fare" class="text-slate-600">Avg: ₱105.72 / trip</span>
+                            <span id="kpi-live-bookings-badge" class="text-emerald-700">↑ Live Synced</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

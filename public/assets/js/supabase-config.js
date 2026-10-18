@@ -6284,9 +6284,10 @@ const SupabaseBridge = {
                     if (CRMModule.renderFeedback) CRMModule.renderFeedback();
                 }
             }
-            if (table === 'drivers') {
-                if (typeof AnalyticsModule !== 'undefined' && AnalyticsModule.renderFleetInventory) {
-                    AnalyticsModule.renderFleetInventory();
+            if (table === 'bookings' || table === 'payments' || table === 'drivers') {
+                if (typeof AnalyticsModule !== 'undefined') {
+                    if (AnalyticsModule.renderKPIs) AnalyticsModule.renderKPIs();
+                    if (AnalyticsModule.renderFleetInventory) AnalyticsModule.renderFleetInventory();
                 }
             }
             if (typeof AuditModule !== 'undefined') {

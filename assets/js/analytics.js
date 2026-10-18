@@ -277,15 +277,129 @@ const AnalyticsModule = {
 
     renderKPIs() {
         if (!document.getElementById('kpi-revenue')) return;
-        const bookings = SupabaseBridge.getData('bookings');
-        const totalRevenue = bookings.reduce((sum, b) => sum + parseFloat(b.total_fare || 0), 0);
-        const totalTrips = bookings.length;
-        const avgSurge = (bookings.reduce((sum, b) => sum + parseFloat(b.surge_multiplier || 1), 0) / (totalTrips || 1)).toFixed(2);
 
-        document.getElementById('kpi-revenue').innerText = `₱${(totalRevenue + 342800).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
-        document.getElementById('kpi-trips').innerText = (totalTrips + 1420).toLocaleString();
-        document.getElementById('kpi-surge-avg').innerText = `${avgSurge}x`;
-        document.getElementById('kpi-driver-safety').innerText = "98.4%";
+        const allOwners = this.getFleetOwners();
+        const carOwners = allOwners.filter(d => !this.isMotorcycleOwner(d));
+        const motoOwners = allOwners.filter(d => this.isMotorcycleOwner(d));
+        const totalUnits = allOwners.length || 1;
+        const activeUnits = allOwners.filter(d => !d.status || d.status === 'available' || d.status === 'active').length;
+        const readinessPct = Math.round((activeUnits / totalUnits) * 100);
+
+        const carUnitPct = ((carOwners.length / totalUnits) * 100).toFixed(1);
+        const motoUnitPct = ((motoOwners.length / totalUnits) * 100).toFixed(1);
+
+        // Card 1: Active Fleet Composition
+        const unitsEl = document.getElementById('kpi-fleet-units');
+        if (unitsEl) unitsEl.innerText = `${activeUnits} Active Units`;
+        const readyEl = document.getElementById('kpi-fleet-readiness');
+        if (readyEl) readyEl.innerText = `● ${readinessPct}% Online`;
+        const carBar = document.getElementById('kpi-fleet-car-bar');
+        if (carBar) carBar.style.width = `${carUnitPct}%`;
+        const motoBar = document.getElementById('kpi-fleet-moto-bar');
+        if (motoBar) motoBar.style.width = `${motoUnitPct}%`;
+        const carCountEl = document.getElementById('kpi-fleet-car-count');
+        if (carCountEl) carCountEl.innerText = `${carOwners.length} Cars (${Math.round(Number(carUnitPct))}%)`;
+        const motoCountEl = document.getElementById('kpi-fleet-moto-count');
+        if (motoCountEl) motoCountEl.innerText = `${motoOwners.length} Motorcycles (${Math.round(Number(motoUnitPct))}%)`;
+
+        // Card 2: Total Fleet Trips & Car vs Motorcycle Split
+        const bookings = (typeof SupabaseBridge !== 'undefined' && SupabaseBridge.getData)
+            ? (SupabaseBridge.getData('bookings') || []).filter(b => !b.is_archived)
+            : [];
+
+        const baseCarTrips = carOwners.reduce((sum, d) => sum + (Number(d.total_trips) || 0), 0);
+        const baseMotoTrips = motoOwners.reduce((sum, d) => sum + (Number(d.total_trips) || 0), 0);
+
+        let liveCarTrips = 0;
+        let liveMotoTrips = 0;
+        let liveCarRev = 0;
+        let liveMotoRev = 0;
+
+        bookings.forEach(b => {
+            const fare = parseFloat(b.total_fare || 0);
+            const vc = (b.vehicle_class || '').toLowerCase();
+            const st = (b.service_type || '').toLowerCase();
+            const isMotoBooking = st === 'express' || vc.includes('scooter') || vc.includes('manual') || vc.includes('moto') || vc.includes('underbone');
+            if (isMotoBooking) {
+                liveMotoTrips++;
+                liveMotoRev += fare;
+            } else {
+                liveCarTrips++;
+                liveCarRev += fare;
+            }
+        });
+
+        const totalCarTrips = baseCarTrips + liveCarTrips;
+        const totalMotoTrips = baseMotoTrips + liveMotoTrips;
+        const totalFleetTrips = (totalCarTrips + totalMotoTrips) || 1;
+        const carTripPct = ((totalCarTrips / totalFleetTrips) * 100).toFixed(1);
+        const motoTripPct = ((totalMotoTrips / totalFleetTrips) * 100).toFixed(1);
+
+        document.getElementById('kpi-trips').innerText = totalFleetTrips.toLocaleString();
+        const tripsCarBar = document.getElementById('kpi-trips-car-bar');
+        if (tripsCarBar) tripsCarBar.style.width = `${carTripPct}%`;
+        const tripsMotoBar = document.getElementById('kpi-trips-moto-bar');
+        if (tripsMotoBar) tripsMotoBar.style.width = `${motoTripPct}%`;
+        const tripsCarSplit = document.getElementById('kpi-trips-car-split');
+        if (tripsCarSplit) tripsCarSplit.innerText = `Cars: ${totalCarTrips.toLocaleString()} (${Math.round(Number(carTripPct))}%)`;
+        const tripsMotoSplit = document.getElementById('kpi-trips-moto-split');
+        if (tripsMotoSplit) tripsMotoSplit.innerText = `Moto: ${totalMotoTrips.toLocaleString()} (${Math.round(Number(motoTripPct))}%)`;
+
+        // Card 3: Fleet Rating & Safety Score
+        const avgRating = (allOwners.reduce((s, d) => s + (Number(d.rating) || 4.9), 0) / totalUnits).toFixed(2);
+        const avgSafety = (allOwners.reduce((s, d) => s + (Number(d.safety_score) || 98), 0) / totalUnits).toFixed(1);
+
+        const ratingEl = document.getElementById('kpi-fleet-rating');
+        if (ratingEl) ratingEl.innerText = `${avgRating} ★`;
+        const safetyEl = document.getElementById('kpi-driver-safety');
+        if (safetyEl) safetyEl.innerText = `${avgSafety}% Safety`;
+        const safetyBar = document.getElementById('kpi-safety-bar');
+        if (safetyBar) safetyBar.style.width = `${Math.min(100, Number(avgSafety))}%`;
+
+        const topRatedOwner = [...allOwners].sort((a, b) => (Number(b.rating) || 0) - (Number(a.rating) || 0))[0];
+        const topTripsOwner = [...allOwners].sort((a, b) => (Number(b.total_trips) || 0) - (Number(a.total_trips) || 0))[0];
+        const topPerformerEl = document.getElementById('kpi-top-performer');
+        if (topPerformerEl && topRatedOwner && topTripsOwner) {
+            const shortName = n => {
+                const parts = String(n || '').trim().split(' ');
+                return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}.` : parts[0];
+            };
+            topPerformerEl.innerText = `Top: ${shortName(topRatedOwner.name)} (${Number(topRatedOwner.rating).toFixed(2)} ★) • ${shortName(topTripsOwner.name)} (${topTripsOwner.total_trips})`;
+        }
+
+        // Card 4: Fleet Gross Revenue & AI Surge
+        const baseCarRevenue = baseCarTrips * 185;
+        const baseMotoRevenue = baseMotoTrips * 78;
+        const totalCarRevenue = baseCarRevenue + liveCarRev;
+        const totalMotoRevenue = baseMotoRevenue + liveMotoRev;
+        const totalRevenue = totalCarRevenue + totalMotoRevenue;
+        const avgFarePerTrip = totalRevenue / totalFleetTrips;
+
+        const revCarPct = ((totalCarRevenue / (totalRevenue || 1)) * 100).toFixed(1);
+        const revMotoPct = ((totalMotoRevenue / (totalRevenue || 1)) * 100).toFixed(1);
+
+        let avgSurge = '1.22';
+        if (bookings.length > 0) {
+            avgSurge = (bookings.reduce((sum, b) => sum + parseFloat(b.surge_multiplier || 1.2), 0) / bookings.length).toFixed(2);
+        } else if (typeof AIEngines !== 'undefined' && AIEngines.DemandPrediction && AIEngines.DemandPrediction.getForecast) {
+            const zones = AIEngines.DemandPrediction.getForecast() || [];
+            if (zones.length > 0) {
+                avgSurge = (zones.reduce((sum, z) => sum + parseFloat(z.surgeMultiplier || 1.2), 0) / zones.length).toFixed(2);
+            }
+        }
+
+        document.getElementById('kpi-revenue').innerText = `₱${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        document.getElementById('kpi-surge-avg').innerText = `${avgSurge}x AI Surge`;
+        const revCarBar = document.getElementById('kpi-rev-car-bar');
+        if (revCarBar) revCarBar.style.width = `${revCarPct}%`;
+        const revMotoBar = document.getElementById('kpi-rev-moto-bar');
+        if (revMotoBar) revMotoBar.style.width = `${revMotoPct}%`;
+        const avgFareEl = document.getElementById('kpi-avg-fare');
+        if (avgFareEl) avgFareEl.innerText = `Avg: ₱${avgFarePerTrip.toFixed(2)} / trip`;
+        const liveBadgeEl = document.getElementById('kpi-live-bookings-badge');
+        if (liveBadgeEl) {
+            liveBadgeEl.innerText = bookings.length > 0 ? `+${bookings.length} Live Bookings` : '↑ Live Synced';
+        }
     },
 
     renderCharts() {
